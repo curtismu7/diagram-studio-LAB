@@ -64,6 +64,10 @@ dragged (in memory; Reset puts them back). Options: `theme=light|dark`, `speed=s
 Only this URL may be framed, and only by a page on `http://localhost:*` or `http://127.0.0.1:*` (the Content-Security-Policy
 `frame-ancestors` list; the browser also lets `https://localhost` and `https://127.0.0.1` match, which is harmless on loopback). The full studio and the API refuse framing, and every other response also sends `X-Frame-Options: DENY`. An IPv6 origin cannot be allowed: browsers reject it in that directive.
 
+**Save as HTML** writes one self-contained file: the overview and one picture per arrow are baked in, with Play, Pause, Prev, Next, Reset, a speed
+control and the current step (with its story line and trace hop). It needs no server, no network and no library, so you can email it or open it
+offline. It is a snapshot (boxes do not move there; open the studio to edit). Its Content-Security-Policy allows nothing but its own inline style and script.
+
 ## Presenter mode
 
 **Present** (or `?present=1`) enlarges the type and canvas, hides the edit and file controls, and shows the current step in a big panel.
