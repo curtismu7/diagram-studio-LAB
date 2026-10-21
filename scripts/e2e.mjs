@@ -140,7 +140,7 @@ try {
   await T('node-delete').click();
   check(await true, 'deleting a box leaves the diagram valid');
   const stepsOk = await page.evaluate(() => [...document.querySelectorAll('li[data-testid^="step-"]')].length);
-  check(stepsOk === 2, `deleting a box keeps only steps that still have arrows (${stepsOk} left)`);
+  check(stepsOk === 3 && (await T('stepedit-3-noarrows').count()) === 1, `deleting a box keeps every step (${stepsOk} left) and flags the one with no arrows`);
   // leave guard: dismiss keeps us here
   page.removeAllListeners('dialog');
   let asked = false; page.once('dialog', (d) => { asked = true; d.dismiss(); });
@@ -256,6 +256,13 @@ try {
   check((await T('step-4').innerText()).includes('Audit the call') && (await T('step-4-links').innerText()).includes('audit-log'), 'edited steps and hop survive save and reload');
   await T('simulate').click(); await T('pause').click(); await T('next').click(); await T('next').click(); await T('next').click().catch(() => {});
   check(await page.locator('.step--active').count() >= 1, 'a new step highlights when its arrow plays');
+  // Small print accepts spaces and new lines in a real browser.
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('edit-toggle').waitFor(); await T('edit-toggle').click();
+  await T('node-user').click(); await T('node-sub').waitFor();
+  await T('node-sub').fill(''); await T('node-sub').pressSequentially('two words');
+  await page.keyboard.press('Enter'); await T('node-sub').pressSequentially('and a new line');
+  check((await T('node-sub').inputValue()) === 'two words\nand a new line', 'the small print box takes spaces and new lines while typing');
+  await T('edit-toggle').click();
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

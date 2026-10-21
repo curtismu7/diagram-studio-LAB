@@ -296,7 +296,7 @@ describe("App", () => {
     await user.type(screen.getByTestId("stepedit-6-hop"), "audit.log");
     await user.type(screen.getByTestId("stepedit-6-story"), "s02");
     expect(screen.getByTestId("stepedit-6-story")).toHaveValue("S02");
-    expect(screen.getByTestId("stepedit-6-storystep")).toHaveValue(1);
+    expect(screen.getByTestId("stepedit-6-storystep")).toHaveValue("1");
     expect(screen.queryByTestId("problems")).toBeNull();
     expect(screen.getByTestId("step-6")).toHaveTextContent("6. Audit");
     expect(screen.getByTestId("step-6-links")).toHaveTextContent("Story S02 · step 1: Ask");

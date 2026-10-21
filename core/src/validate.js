@@ -69,7 +69,7 @@ export function validateDiagram(d) {
       if (!isObj(s) || !str(s.title, 120)) return p.push(`${at}: title is required`);
       if (typeof s.what !== 'string' || s.what.length > 600) p.push(`${at}: what must be text (max 600)`);
       if (s.why !== undefined && (typeof s.why !== 'string' || s.why.length > 600)) p.push(`${at}: why must be text (max 600)`);
-      if (s.story !== undefined && !(isObj(s.story) && STORY_ID.test(s.story.id) && Number.isInteger(s.story.step) && s.story.step >= 1 && s.story.step <= 99)) p.push(`${at}: story must be { id: "S01", step: 1 }`);
+      if (s.story !== undefined && !(isObj(s.story) && STORY_ID.test(s.story.id) && Number.isInteger(s.story.step) && s.story.step >= 1 && s.story.step <= 99)) p.push(`${at}: story must be { id: "S01", step: 1 }: the id is S and two digits, the step a whole number from 1 to 99`);
       if (s.hop !== undefined && !(typeof s.hop === 'string' && HOP.test(s.hop))) p.push(`${at}: hop must be a short id (letters, digits . _ : / -)`);
       const n = Array.isArray(d.edges) ? d.edges.length : 0;
       if (!Array.isArray(s.edges) || !s.edges.every((x) => Number.isInteger(x) && x >= 0 && x < n)) p.push(`${at}: edges must list valid edge numbers`);
