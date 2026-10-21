@@ -65,11 +65,12 @@ const LABEL_SHAPES = [{ chars: 34, lines: 3, cost: 0 }, { chars: 22, lines: 4, c
 
 /**
  * @param d  a diagram document; it is validated first and an invalid one throws (the UI validates before calling)
- * @param o  { theme: 'light'|'dark', step: arrow index to highlight (or -1), title: true to add the title row }
+ * @param o  { theme: 'light'|'dark', step: arrow index to highlight (or -1), title: true to add the title row,
+ *            idPrefix: prefix for the marker ids, so several pictures can share one HTML page }
  * @returns { svg, width, height, report } where report counts drawing problems that remain: label/label overlaps,
  *          labels sitting on a box, and arrows that still cross a box they do not connect
  */
-export function toSvg(d, { theme = 'light', step = -1, title = true } = {}) {
+export function toSvg(d, { theme = 'light', step = -1, title = true, idPrefix = '' } = {}) {
   const problems = validateDiagram(d);
   if (problems.length) throw new Error(`toSvg: diagram is not valid: ${problems[0]}`);
   const T = THEMES[theme] || THEMES.light;
@@ -158,7 +159,7 @@ export function toSvg(d, { theme = 'light', step = -1, title = true } = {}) {
   out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13">`);
   out.push(`<title>${xmlText(d.title)}</title>`);
   out.push(`<desc>${xmlText(d.lede || `${d.nodes.length} boxes, ${d.edges.length} arrows`)}</desc>`);
-  out.push(`<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${T.edge}"/></marker><marker id="ahh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${T.hot}"/></marker></defs>`);
+  out.push(`<defs><marker id="${idPrefix}ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${T.edge}"/></marker><marker id="${idPrefix}ahh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${T.hot}"/></marker></defs>`);
   out.push(`<rect width="${width}" height="${height}" fill="${T.bg}"/>`);
   if (title) {
     out.push(`<text x="${MARGIN}" y="34" font-size="20" font-weight="700" fill="${T.text}">${xmlText(wrap(d.title, Math.floor((width - MARGIN * 2) / 10), 1)[0])}</text>`);
@@ -167,7 +168,7 @@ export function toSvg(d, { theme = 'light', step = -1, title = true } = {}) {
   for (const g of geo) {
     const now = step === g.i; const future = step >= 0 && g.i > step;
     const stroke = now ? T.hot : T.edge;
-    out.push(`<path class="e" d="M${(g.p0[0] + ox).toFixed(1)},${(g.p0[1] + oy).toFixed(1)} Q${(g.ctrl[0] + ox).toFixed(1)},${(g.ctrl[1] + oy).toFixed(1)} ${(g.p1[0] + ox).toFixed(1)},${(g.p1[1] + oy).toFixed(1)}" fill="none" stroke="${stroke}" stroke-width="${now ? 4 : 2}"${g.e.dashed || now ? ` stroke-dasharray="${now ? '10 6' : '8 6'}"` : ''}${future ? ' opacity="0.35"' : ''} marker-end="url(#${now ? 'ahh' : 'ah'})"/>`);
+    out.push(`<path class="e" d="M${(g.p0[0] + ox).toFixed(1)},${(g.p0[1] + oy).toFixed(1)} Q${(g.ctrl[0] + ox).toFixed(1)},${(g.ctrl[1] + oy).toFixed(1)} ${(g.p1[0] + ox).toFixed(1)},${(g.p1[1] + oy).toFixed(1)}" fill="none" stroke="${stroke}" stroke-width="${now ? 4 : 2}"${g.e.dashed || now ? ` stroke-dasharray="${now ? '10 6' : '8 6'}"` : ''}${future ? ' opacity="0.35"' : ''} marker-end="url(#${idPrefix}${now ? 'ahh' : 'ah'})"/>`);
   }
   for (const b of boxes) {
     const ring = hot.has(b.id);
