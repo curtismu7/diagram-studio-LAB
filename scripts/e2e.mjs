@@ -202,7 +202,6 @@ try {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.keyboard.press('Escape'); await page.reload(); await T('edit-toggle').waitFor();
   check(!(await T('now').count()), 'after Esc a reload stays out of presenter mode');
-  await T('present').click();
 
   // Step-to-story links: open a story step from a step card.
   await page.goto(`${base}/?d=auth-code-pkce`); await T('step-1-links').waitFor();
@@ -214,6 +213,31 @@ try {
   await T('now-links').waitFor();
   check((await T('now-links').innerText()).includes('We send the fingerprint, not the secret.') && (await T('now-links').innerText()).includes('authorize'), 'the presenter panel shows the story Say line and the trace hop');
   await page.keyboard.press('Escape');
+  // SVG and PNG export: downloads are real images with the diagram's content.
+  await page.goto(`${base}/?d=mcp-step-up`); await T('export-svg').waitFor();
+  const [svgDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
+  const svgText = fs.readFileSync(await svgDl.path(), 'utf8');
+  check(svgDl.suggestedFilename() === 'mcp-step-up.svg' && svgText.startsWith('<svg xmlns=') && (svgText.match(/<path class="e" /g) || []).length === 7 && svgText.includes('MCP gateway'), 'Export SVG downloads a standalone SVG with all 7 arrows');
+  const [pngDl] = await Promise.all([page.waitForEvent('download'), T('export-png').click()]);
+  const png = fs.readFileSync(await pngDl.path());
+  const w = png.readUInt32BE(16); const h = png.readUInt32BE(20);
+  check(pngDl.suggestedFilename() === 'mcp-step-up.png' && png.subarray(1, 4).toString() === 'PNG' && w > 600 && h > 300, `Export PNG downloads a PNG (${w}x${h})`);
+  const painted = await page.evaluate(async (b64) => { const img = new Image(); img.src = `data:image/png;base64,${b64}`; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const px = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < px.length; i += 4) if (px[i] < 200 || px[i + 1] < 200 || px[i + 2] < 200) n++; return n / (px.length / 4); }, png.toString('base64'));
+  check(painted > 0.05 && painted < 0.9, `the PNG is not blank (${(painted * 100).toFixed(0)}% of pixels are drawn)`);
+  const svgW = Number(/<svg[^>]* width="(\d+)"/.exec(svgText)[1]); const svgH = Number(/<svg[^>]* height="(\d+)"/.exec(svgText)[1]);
+  check(w === Math.round(svgW * 2) && h === Math.round(svgH * 2), `the PNG is exactly 2x the SVG (${svgW}x${svgH} -> ${w}x${h})`);
+  check(svgText.includes('fill="#ffffff"') && !svgText.includes('url(#ahh)'), 'the light default exports a white page with no arrow highlighted');
+  // Focused arrow and dark theme carry into the export.
+  await T('simulate').click(); await T('pause').click(); await T('next').click();
+  const [stepDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
+  const stepSvg = fs.readFileSync(await stepDl.path(), 'utf8');
+  check((stepSvg.match(/marker-end="url\(#ahh\)"/g) || []).length === 1 && stepSvg.includes('opacity="0.35"'), 'exporting mid-walkthrough highlights exactly the focused arrow and fades later ones');
+  await page.getByRole('button', { name: /Toggle dark/ }).click();
+  const [darkDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
+  check(fs.readFileSync(await darkDl.path(), 'utf8').includes('fill="#12161d"'), 'dark theme exports a dark page');
+  await page.getByRole('button', { name: /Toggle dark|Light/ }).click(); await T('reset').click();
+  await page.screenshot({ path: path.join(shots, '5-exports-page.png') });
+  fs.writeFileSync(path.join(shots, 'mcp-step-up.png'), png); fs.writeFileSync(path.join(shots, 'mcp-step-up.svg'), svgText);
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

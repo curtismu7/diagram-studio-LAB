@@ -28,6 +28,15 @@ Development: `npm run dev` (API on 6001, Vite on 6002).
 - **Export JSON** downloads the diagram you see (including unsaved edits). **Import JSON** checks the file and saves it as a new diagram;
   an id that already exists is refused.
 
+## Export for decks
+
+**Export SVG** and **Export PNG** draw the diagram you see: current box positions, light or dark to match the page, and the focused arrow
+highlighted if a walkthrough is on. The picture is built from the diagram data (boxes sized from their text), so it is close to, not
+pixel-identical with, the screen. Arrows bend around boxes in their way, parallel and reverse arrows fan out, and each arrow label is
+placed where it touches no box and no other label (a narrower, taller label when the gap is small). Across the 35 built-in diagrams a test
+pins the few collisions that remain in the busiest ones (ciba-link, davinci-lifecycle). The PNG is the SVG at 2x, smaller for very large
+diagrams; past 8192 px the app says so and you export SVG instead. An invalid diagram is not exported; the editor shows why.
+
 ## Presenter mode
 
 **Present** (or `?present=1`) enlarges the type and canvas, hides the edit and file controls, and shows the current step in a big panel.

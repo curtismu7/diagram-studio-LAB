@@ -3,7 +3,11 @@ import { render, screen, within, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SAMPLES } from "@diagram-studio/core";
 import App from "./App.jsx";
+import * as exportImage from "./exportImage.js";
 import { toFlow } from "./Canvas.jsx";
+
+vi.mock("./exportImage.js", async (orig) => ({ ...(await orig()), download: vi.fn(), svgToPng: vi.fn() }));
+const readBlob = (blob) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsText(blob); });
 
 function mockApi() {
   globalThis.fetch = vi.fn(async (url) => {
@@ -209,6 +213,73 @@ describe("App", () => {
     expect(within(links).getByText(/We send the fingerprint, not the secret\./)).toBeVisible();
     expect(links).toHaveTextContent("authorize");
     localStorage.clear(); delete document.documentElement.dataset.present;
+  });
+
+  describe("SVG and PNG export from the page", () => {
+    beforeEach(() => { exportImage.download.mockClear(); exportImage.svgToPng.mockReset(); });
+
+    it("exports the edited (unsaved) diagram as image/svg+xml with the right file name", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("edit-toggle"));
+      await user.click(screen.getByTestId("add-box"));
+      await user.click(screen.getByTestId("export-svg"));
+      expect(exportImage.download).toHaveBeenCalledTimes(1);
+      const [blob, name] = exportImage.download.mock.calls[0];
+      expect(name).toBe("auth-code-pkce.svg");
+      expect(blob.type).toBe("image/svg+xml");
+      const text = await readBlob(blob);
+      expect(text).toContain(">New box</text>");
+      expect(text).toContain('fill="#ffffff"');
+    });
+
+    it("refuses to export an invalid diagram and says why", async () => {
+      const bad = { ...SAMPLES[0], title: "" };
+      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: bad.id, title: "Broken", builtin: true }] } : { diagram: bad, builtin: true }) }));
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("export-svg"));
+      expect(screen.getByTestId("msg")).toHaveTextContent(/Not exported: .*title is required/);
+      await user.click(screen.getByTestId("export-png"));
+      expect(exportImage.download).not.toHaveBeenCalled();
+      expect(exportImage.svgToPng).not.toHaveBeenCalled();
+    });
+
+    it("highlights the focused arrow and follows the dark theme button", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("simulate"));
+      await user.click(screen.getByTestId("pause"));
+      await user.click(screen.getByTestId("export-svg"));
+      const text = await readBlob(exportImage.download.mock.calls[0][0]);
+      expect(text.match(/marker-end="url\(#ahh\)"/g)).toHaveLength(1);
+      await user.click(screen.getByRole("button", { name: /Toggle dark/ }));
+      await user.click(screen.getByTestId("export-svg"));
+      const dark = await readBlob(exportImage.download.mock.calls[1][0]);
+      expect(dark).toContain('fill="#12161d"');
+      expect(dark).not.toContain('fill="#ffffff"/>');
+    });
+
+    it("PNG export reports too-large and draw failures differently, and downloads on success", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByTestId("picker");
+      exportImage.svgToPng.mockRejectedValueOnce(new Error("too_large"));
+      await user.click(screen.getByTestId("export-png"));
+      expect(await screen.findByText(/too large for a PNG\. Export SVG instead\./)).toBeInTheDocument();
+      exportImage.svgToPng.mockRejectedValueOnce(new Error("render_failed"));
+      await user.click(screen.getByTestId("export-png"));
+      expect(await screen.findByText(/Could not draw the PNG/)).toBeInTheDocument();
+      expect(exportImage.download).not.toHaveBeenCalled();
+      const png = new Blob(["x"], { type: "image/png" });
+      exportImage.svgToPng.mockResolvedValueOnce(png);
+      await user.click(screen.getByTestId("export-png"));
+      await waitFor(() => expect(exportImage.download).toHaveBeenCalledWith(png, "auth-code-pkce.png"));
+      expect(exportImage.svgToPng.mock.calls[2][1]).toBeGreaterThan(300);
+    });
   });
 
   it("renders label text inertly (no HTML interpretation)", async () => {
