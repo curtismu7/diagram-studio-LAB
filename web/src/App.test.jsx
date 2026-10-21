@@ -68,6 +68,31 @@ describe("App", () => {
     expect(await screen.findByText(/unsaved changes/)).toBeInTheDocument();
   });
 
+  it("presenter mode hides editing and file controls, shows the step panel, and keys drive the walkthrough", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("present"));
+    expect(document.documentElement.dataset.present).toBe("1");
+    expect(screen.getByTestId("present")).toHaveTextContent("Exit presenting");
+    expect(screen.queryByTestId("add-box")).toBeNull();
+    expect(screen.getByTestId("now")).toHaveTextContent(/Space plays/);
+    await user.keyboard("{ArrowRight}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 1 of 6"));
+    expect(screen.getByTestId("now")).toHaveTextContent("1. Start");
+    await user.keyboard("{ArrowRight}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 2 of 6"));
+    await user.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 1 of 6"));
+    await user.keyboard("3");
+    expect(screen.getByTestId("speed")).toHaveValue("fast");
+    await user.keyboard("r");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Not playing"));
+    await user.keyboard("{Escape}");
+    expect(document.documentElement.dataset.present).toBeUndefined();
+    expect(screen.getByTestId("edit-toggle")).toBeInTheDocument();
+  });
+
   it("renders label text inertly (no HTML interpretation)", async () => {
     const evil = { ...SAMPLES[0], nodes: SAMPLES[0].nodes.map((n, i) => (i ? n : { ...n, label: "<img src=x onerror=alert(1)>" })) };
     globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));

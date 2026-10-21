@@ -28,6 +28,12 @@ Development: `npm run dev` (API on 6001, Vite on 6002).
 - **Export JSON** downloads the diagram you see (including unsaved edits). **Import JSON** checks the file and saves it as a new diagram;
   an id that already exists is refused.
 
+## Presenter mode
+
+**Present** (or `?present=1`) enlarges the type and canvas, hides the edit and file controls, and shows the current step in a big panel.
+Keys: Space plays or pauses, ← → step (Right starts the walkthrough), R resets, 1 2 3 set slow, normal, fast, Esc exits.
+Keys are ignored while you type in a field, and Space on a focused button presses that button. The choice is remembered in this browser.
+
 ## Diagram format (`diagram-studio/1`)
 
 ```json
