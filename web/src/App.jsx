@@ -15,6 +15,7 @@ export default function App() {
   const [diagram, setDiagram] = useState(null);
   const [saved, setSaved] = useState(null); // last loaded or saved copy: Reset restores its layout, dirty compares to it
   const [builtin, setBuiltin] = useState(true);
+  const [mockOnly, setMockOnly] = useState(false); // hosted mock: sample data only, saving and importing are refused by the server
   const [editing, setEditing] = useState(false);
   const [sel, setSel] = useState({});
   const [msg, setMsg] = useState({ kind: "", text: "" });
@@ -27,6 +28,7 @@ export default function App() {
   const total = diagram ? diagram.edges.length : 0;
   const [st, dispatch] = useStepper(total);
 
+  useEffect(() => { api.getHealth().then((r) => { if (r.ok && r.data.mode === "mock-only") setMockOnly(true); }); }, []);
   const say = (kind, text) => setMsg({ kind, text });
   const refresh = useCallback(async () => {
     const r = await api.listDiagrams();
@@ -54,7 +56,7 @@ export default function App() {
     try { theme ? localStorage.setItem("studio-theme", theme) : localStorage.removeItem("studio-theme"); } catch { /* private mode */ }
   }, [theme]);
 
-  const dirty = diagram && saved && !same(diagram, saved);
+  const dirty = !mockOnly && diagram && saved && !same(diagram, saved); // nothing can be saved in the hosted mock, so nothing is ever "unsaved"
   useEffect(() => {
     if (!dirty) return undefined;
     const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
@@ -162,6 +164,7 @@ export default function App() {
 
   return (
     <div className="shell">
+      {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
         <label className="grow">Diagram{" "}
@@ -211,13 +214,13 @@ export default function App() {
         <div className="bar" role="toolbar" aria-label="Edit and file" data-admin-only>
           <button onClick={() => setEditing(!editing)} aria-pressed={editing} data-testid="edit-toggle">{editing ? "Done editing" : "Edit"}</button>
           {editing && <button onClick={() => edit((d) => addNode(d, { label: "New box" }))} data-testid="add-box">Add box</button>}
-          <button className="primary" onClick={save} disabled={builtin || !dirty || problems.length > 0} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>
-          <button onClick={saveCopy} data-testid="save-copy">Save a copy</button>
+          {!mockOnly && <button className="primary" onClick={save} disabled={builtin || !dirty || problems.length > 0} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>}
+          {!mockOnly && <button onClick={saveCopy} data-testid="save-copy">Save a copy</button>}
           <button onClick={exportFile} data-testid="export">Export JSON</button>
           <button onClick={exportSvg} data-testid="export-svg">Export SVG</button>
           <button onClick={exportPng} data-testid="export-png">Export PNG</button>
-          <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>
-          {!builtin && <button onClick={remove} data-testid="delete">Delete</button>}
+          {!mockOnly && <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>}
+          {!mockOnly && !builtin && <button onClick={remove} data-testid="delete">Delete</button>}
         </div>
         {msg.text && !present && <p role={msg.kind === "error" ? "alert" : "status"} className={`msg msg--${msg.kind}`} data-testid="msg">{msg.text}</p>}
 

@@ -6,13 +6,16 @@ import { parseDiagram } from '@diagram-studio/core';
 import { createStore, StoreError } from './store.js';
 import { createHealth } from './health.js';
 import { bindHost, runChecks } from './doctor.js';
+import { isMockOnly, mockGuard, mockDataDir } from './mock.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ALLOWED_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
 export function createApp({ dataDir, env = process.env, webDir = path.resolve(here, '../../web/dist') } = {}) {
+  const mockOnly = isMockOnly(env);
+  if (mockOnly) dataDir = mockDataDir();
   const store = createStore(dataDir);
-  const health = createHealth({ runChecks: () => runChecks({ env, dataDir }) });
+  const health = createHealth({ runChecks: () => runChecks({ env, dataDir }), mockOnly });
   const app = express();
   app.disable('x-powered-by');
 
@@ -40,6 +43,7 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     next();
   });
   app.use('/api/health', health.router);
+  if (mockOnly) app.use('/api', mockGuard);
   app.use('/api', express.json({ limit: '600kb', type: ['application/json'] }));
 
   const fail = (res, e) => {
@@ -88,15 +92,15 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     app.get('*', (_req, res) => res.sendFile(path.join(webDir, 'index.html')));
   }
   app.use((err, _req, res, _next) => res.status(err.status === 413 ? 413 : 400).json({ error: err.status === 413 ? 'too_large' : 'bad_request' }));
-  return { app, store, health, host: bindHost(env) };
+  return { app, store, health, host: bindHost(env), mockOnly, dataDir };
 }
 
 export async function startHttpServer({ port = Number(process.env.PORT) || 6001, env = process.env, dataDir = env.DATA_DIR || path.resolve(here, '../../.data') } = {}) {
-  const { app, health, host } = createApp({ dataDir, env });
+  const { app, health, host, mockOnly, dataDir: usedDir } = createApp({ dataDir, env });
   const server = await new Promise((resolve, reject) => {
     const s = app.listen(port, host, () => resolve(s));
     s.once('error', reject);
   });
   const url = `http://${host === '::1' ? '[::1]' : host}:${server.address().port}/`;
-  return { server, url, close: () => new Promise((r) => { health.stop(); server.close(r); }) };
+  return { server, url, close: () => new Promise((r) => { health.stop(); server.close(r); if (mockOnly) fs.rmSync(usedDir, { recursive: true, force: true }); }) };
 }
