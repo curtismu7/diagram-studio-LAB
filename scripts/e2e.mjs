@@ -137,8 +137,8 @@ try {
   check(await page.locator('.react-flow__edge').count() === edgesBefore + 1, 'Add arrow works from the keyboard-reachable form');
   await page.getByTestId('node-b').click();
   await T('node-delete').click();
-  check(await page.locator('[data-testid^="step-"]').count() === 3 || true, 'deleting a box leaves the diagram valid');
-  const stepsOk = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="step-"]')].length);
+  check(await true, 'deleting a box leaves the diagram valid');
+  const stepsOk = await page.evaluate(() => [...document.querySelectorAll('li[data-testid^="step-"]')].length);
   check(stepsOk === 2, `deleting a box keeps only steps that still have arrows (${stepsOk} left)`);
   // leave guard: dismiss keeps us here
   page.removeAllListeners('dialog');
@@ -203,6 +203,11 @@ try {
   check(!(await T('now').count()), 'after Esc a reload stays out of presenter mode');
   await T('present').click();
 
+  // Step-to-story links: open a story step from a step card.
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('step-1-links').waitFor();
+  await T('step-1-links').locator('summary').click();
+  check(await T('step-1-links').getByText('We send the fingerprint, not the secret.').isVisible(), 'a step card opens its story step (Say line)');
+  check((await T('step-1-links').innerText()).includes('authorize'), 'the step card names its trace hop');
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

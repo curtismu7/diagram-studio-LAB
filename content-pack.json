@@ -56,6 +56,7 @@
         "flow-diagram",
         "walkthrough"
       ],
+      "story": "S01",
       "action": {
         "type": "route",
         "href": "/"
@@ -239,5 +240,30 @@
       "href": "/?d=token-exchange"
     }
   ],
-  "stories": []
+  "stories": [
+    {
+      "id": "S01",
+      "title": "Why a stolen code is useless",
+      "say": "The client commits to a verifier hash first; only the holder of the verifier can redeem the code.",
+      "file": "content/stories/S01-why-a-stolen-code-is-useless.json"
+    },
+    {
+      "id": "S02",
+      "title": "Hand over a narrower token",
+      "say": "The token service issues a new token for B only, with a smaller scope.",
+      "file": "content/stories/S02-hand-over-a-narrower-token.json"
+    },
+    {
+      "id": "S03",
+      "title": "The agent cannot approve itself",
+      "say": "The gateway holds the call and waits for an approval on a separate channel.",
+      "file": "content/stories/S03-the-agent-cannot-approve-itself.json"
+    },
+    {
+      "id": "S04",
+      "title": "Who is really acting",
+      "say": "Each hop keeps the user as subject and nests an actor claim.",
+      "file": "content/stories/S04-who-is-really-acting.json"
+    }
+  ]
 }

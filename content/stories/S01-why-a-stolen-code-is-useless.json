@@ -1,0 +1,36 @@
+{
+  "id": "S01",
+  "title": "Why a stolen code is useless",
+  "goal": "A public app signs a user in without holding a secret.",
+  "obstacle": "Anything that crosses the browser can be intercepted, including the one-time code.",
+  "control": "The client commits to a verifier hash first; only the holder of the verifier can redeem the code.",
+  "modes": [
+    "studio"
+  ],
+  "demos": [
+    "E3"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Commit",
+      "tell": "The client hashes a random verifier and sends only the hash.",
+      "say": "We send the fingerprint, not the secret.",
+      "why": "An intercepted code cannot be redeemed without the verifier."
+    },
+    {
+      "n": 2,
+      "title": "Sign in",
+      "tell": "The user authenticates and approves at the authorization server.",
+      "say": "The user proves who they are to the server, never to the app.",
+      "why": "The app never sees the password."
+    },
+    {
+      "n": 3,
+      "title": "Redeem",
+      "tell": "The client sends the code and the verifier; the server checks the hash.",
+      "say": "Only the real client can finish the trade.",
+      "why": "The check ties the code to the client that asked."
+    }
+  ]
+}
