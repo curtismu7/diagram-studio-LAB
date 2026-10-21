@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SPEEDS, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
+import { SPEEDS, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
+import { download, svgToPng } from "./exportImage.js";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
@@ -109,6 +110,22 @@ export default function App() {
     const a = Object.assign(document.createElement("a"), { href: url, download: `${diagram.id}.diagram.json` });
     document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  const picture = () => {
+    const problems = validateDiagram(diagram);
+    if (problems.length) { say("error", `Not exported: ${problems.join("; ")}`); return null; }
+    const dark = theme ? theme === "dark" : window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    return toSvg(diagram, { theme: dark ? "dark" : "light", step: st.step });
+  };
+  function exportSvg() {
+    const r = picture(); if (!r) return;
+    download(new Blob([r.svg], { type: "image/svg+xml" }), `${diagram.id}.svg`);
+    say("ok", "SVG exported.");
+  }
+  async function exportPng() {
+    const r = picture(); if (!r) return;
+    try { download(await svgToPng(r.svg, r.width, r.height), `${diagram.id}.png`); say("ok", "PNG exported."); }
+    catch (e) { say("error", e.message === "too_large" ? "This diagram is too large for a PNG. Export SVG instead." : "Could not draw the PNG. Export SVG instead."); }
+  }
   async function importFile(e) {
     const f = e.target.files[0]; e.target.value = "";
     if (!f || !guardLeave()) return;
@@ -195,6 +212,8 @@ export default function App() {
           <button className="primary" onClick={save} disabled={builtin || !dirty} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>
           <button onClick={saveCopy} data-testid="save-copy">Save a copy</button>
           <button onClick={exportFile} data-testid="export">Export JSON</button>
+          <button onClick={exportSvg} data-testid="export-svg">Export SVG</button>
+          <button onClick={exportPng} data-testid="export-png">Export PNG</button>
           <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>
           {!builtin && <button onClick={remove} data-testid="delete">Delete</button>}
         </div>
