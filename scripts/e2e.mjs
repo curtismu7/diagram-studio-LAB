@@ -59,6 +59,7 @@ try {
   await page.waitForFunction(() => /Arrow 6 of 6/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
   check(true, 'fast speed auto-advances to the last arrow');
   check(await T('resume').isEnabled(), 'at the end it is paused and Resume is offered');
+  await T('speed').selectOption('slow'); // slow, so a loaded machine cannot tick past the arrows under test
   await T('resume').click(); // restarts from 1
   check(/Arrow 1 of 6/.test(await T('stepcount').innerText()), 'Resume at the end restarts from arrow 1');
   await T('pause').click();
