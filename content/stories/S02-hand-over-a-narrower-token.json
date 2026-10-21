@@ -1,0 +1,29 @@
+{
+  "id": "S02",
+  "title": "Hand over a narrower token",
+  "goal": "Service A needs service B to act, without sharing its own full-power token.",
+  "obstacle": "Forwarding the caller token gives B everything A had.",
+  "control": "The token service issues a new token for B only, with a smaller scope.",
+  "modes": [
+    "studio"
+  ],
+  "demos": [
+    "E3"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Ask",
+      "tell": "A presents its token and names the audience it needs.",
+      "say": "A asks for a token for B, not B for A's token.",
+      "why": "The request names exactly who the new token is for."
+    },
+    {
+      "n": 2,
+      "title": "Narrow",
+      "tell": "The token service checks policy and issues a token for B only.",
+      "say": "The new token is smaller and aimed at one place.",
+      "why": "The original token never reaches B."
+    }
+  ]
+}

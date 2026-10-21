@@ -1,0 +1,29 @@
+{
+  "id": "S03",
+  "title": "The agent cannot approve itself",
+  "goal": "An agent buys something, but big purchases need a person.",
+  "obstacle": "An agent that approves its own risky calls is no control at all.",
+  "control": "The gateway holds the call and waits for an approval on a separate channel.",
+  "modes": [
+    "studio"
+  ],
+  "demos": [
+    "E3"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Hold",
+      "tell": "The gateway refuses to forward the call and asks for approval.",
+      "say": "The agent asked; the gateway said not yet.",
+      "why": "The approval channel is one the agent cannot reach."
+    },
+    {
+      "n": 2,
+      "title": "Approve",
+      "tell": "The approver says yes out of band; the retry is forwarded.",
+      "say": "A person said yes somewhere the agent cannot type.",
+      "why": "Approval is bound to this call, not to the agent."
+    }
+  ]
+}

@@ -45,6 +45,10 @@ Page Up/Down are taken over for stepping while presenting, so they do not scroll
   "steps": [{ "title": "Start", "what": "text", "why": "optional", "edges": [0] }] }
 ```
 
+Optional step links: `"story": { "id": "S01", "step": 2 }` points at a story step and `"hop": "token"` names a trace hop (letters, digits `. _ : / -`, up to 64).
+The studio ships four stories (`content/stories/`, same shape as the demo family's story files); a step card shows the story step's
+Say, Tell and Why. A story id the studio does not ship (say, one from another demo) is shown as a plain label. The content pack lists the four stories.
+
 Colors: red, dark, grey, blue, green, amber. Limits: 60 boxes, 120 arrows, 60 steps, 8 groups. Anything else is refused with the reason.
 All text is shown as plain text, never as HTML.
 

@@ -94,5 +94,14 @@ const chain = {
 
 import { LIBRARY } from './library.js';
 
-export const BASICS = [authCode, exchange, mcp, chain];
+// Step links: [story id, story step] and a trace hop id per step, in step order (null = no story step).
+const LINKS = {
+  'auth-code-pkce': [['S01', 1, 'authorize'], ['S01', 2, 'authenticate'], [null, 0, 'redirect'], ['S01', 3, 'token'], [null, 0, 'api-call']],
+  'token-exchange': [['S02', 1, 'token-request'], ['S02', 2, 'token-issue'], [null, 0, 'call-b']],
+  'mcp-step-up': [[null, 0, 'call'], ['S03', 1, 'hold'], ['S03', 2, 'approve'], [null, 0, 'retry']],
+  'delegation-chain': [[null, 0, 'delegate'], ['S04', 1, 'exchange-1'], ['S04', 2, 'exchange-2'], [null, 0, 'use']],
+};
+const linked = (d) => ({ ...d, steps: d.steps.map((st, i) => { const [sid, n, hop] = LINKS[d.id][i]; return { ...st, ...(sid ? { story: { id: sid, step: n } } : {}), hop }; }) });
+
+export const BASICS = [authCode, exchange, mcp, chain].map(linked);
 export const SAMPLES = [...BASICS, ...LIBRARY];

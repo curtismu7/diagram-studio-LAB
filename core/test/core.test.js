@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
+import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
 
 const clone = (x) => structuredClone(x);
 
@@ -106,4 +106,55 @@ test('library: 31 imported diagrams, valid, unique ids, readable layout, every s
     assert.equal(pos.size, d.nodes.length, `${d.id}: two boxes share a position`);
     assert.doesNotMatch(JSON.stringify(d), /https?:\/\/|[A-Za-z0-9_-]{32,}/, `${d.id}: no URLs or long token-like strings`);
   }
+});
+
+test('stories are valid and every linked step resolves to a story step on the right diagram', () => {
+  for (const st of STORIES) { assert.deepEqual(validateStory(st), [], st.id); assert.ok(SAMPLES.some((d) => d.id === st.diagram), `${st.id} names a real diagram`); }
+  assert.equal(new Set(STORIES.map((s) => s.id)).size, STORIES.length);
+  let links = 0;
+  for (const d of SAMPLES) for (const stp of d.steps || []) if (stp.story) {
+    links++;
+    assert.ok(findStoryStep(stp.story), `${d.id}: ${stp.story.id} step ${stp.story.step} resolves`);
+    assert.equal(STORIES.find((s) => s.id === stp.story.id).diagram, d.id, 'a story step is linked from its own diagram');
+  }
+  assert.equal(links, 9);
+  assert.ok(SAMPLES.slice(0, 4).every((d) => d.steps.every((x) => x.hop)), 'every basic step names its trace hop');
+});
+
+test('validator checks step story and hop shapes', () => {
+  const bad = (mut, re) => { const d = clone(SAMPLES[0]); mut(d); assert.match(validateDiagram(d).join('|'), re); };
+  bad((d) => { d.steps[0].story = { id: 'X1', step: 1 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = { id: 'S01', step: 0 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = 'S01'; }, /story must be/);
+  bad((d) => { d.steps[0].hop = 'has space'; }, /hop must be/);
+  bad((d) => { d.steps[0].hop = 'x'.repeat(65); }, /hop must be/);
+  bad((d) => { d.steps[0].hop = '<img>'; }, /hop must be/);
+  bad((d) => { d.steps[0].story = { id: 'S01', step: 100 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = { id: 'S01', step: 1.5 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = { id: 'S01', step: '1' }; }, /story must be/);
+  bad((d) => { d.steps[0].story = null; }, /story must be/);
+  bad((d) => { d.steps[0].hop = null; }, /hop must be/);
+  bad((d) => { d.steps[0].hop = ''; }, /hop must be/);
+  for (const ok of [{ story: { id: 'S01', step: 99 } }, { hop: 'x'.repeat(64) }, { hop: 'a.b:c/d-e_f' }]) { const e = clone(SAMPLES[0]); Object.assign(e.steps[0], ok); assert.deepEqual(validateDiagram(e), [], JSON.stringify(ok).slice(0, 40)); }
+  assert.ok(STORY_ID.test('S05') && !STORY_ID.test('S5'));
+  const d = clone(SAMPLES[0]); d.steps[0].story = { id: 'S99', step: 3 };
+  assert.deepEqual(validateDiagram(d), [], 'a story id from another demo is allowed; the UI shows it as a plain chip');
+});
+
+test('findStoryStep honours the step number; validateStory rejects broken stories', () => {
+  assert.equal(findStoryStep({ id: 'S01', step: 3 }).title, 'Redeem');
+  assert.equal(findStoryStep({ id: 'S01', step: 1 }).title, 'Commit');
+  assert.equal(findStoryStep({ id: 'S01', step: 99 }), null);
+  assert.equal(findStoryStep({ id: 'S77', step: 1 }), null);
+  assert.equal(findStoryStep(null), null);
+  for (const d of SAMPLES) for (const s of d.steps || []) if (s.story) assert.equal(findStoryStep(s.story).n, s.story.step);
+  const good = clone(STORIES[0]);
+  const bad = (mut, re) => { const s = clone(good); mut(s); assert.match(validateStory(s).join('|'), re); };
+  bad((s) => { s.id = 'S1'; }, /id must/);
+  bad((s) => { s.goal = ''; }, /goal is required/);
+  bad((s) => { delete s.control; }, /control is required/);
+  bad((s) => { s.steps = []; }, /steps are required/);
+  bad((s) => { s.steps[1].n = 5; }, /n must be 2/);
+  bad((s) => { s.steps[0].say = ''; }, /say is required/);
+  assert.ok(validateStory(null).length);
 });
