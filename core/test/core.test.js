@@ -158,3 +158,134 @@ test('findStoryStep honours the step number; validateStory rejects broken storie
   bad((s) => { s.steps[0].say = ''; }, /say is required/);
   assert.ok(validateStory(null).length);
 });
+
+test('toSvg: one rect and one line per box/arrow, labels escaped, deterministic, highlight and themes', async () => {
+  const { toSvg, xmlText } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  const a = toSvg(d); const b = toSvg(d);
+  assert.equal(a.svg, b.svg, 'deterministic');
+  assert.match(a.svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="\d+" height="\d+" viewBox="0 0 \d+ \d+"/);
+  assert.equal((a.svg.match(/<path class="e" /g) || []).length, d.edges.length);
+  assert.ok((a.svg.match(/<rect /g) || []).length >= d.nodes.length + 1, 'background + one rect per box (+ legend swatches)');
+  assert.doesNotMatch(a.svg, /<script|onload|href=|<image|foreignObject/);
+  assert.equal(toSvg(d, { step: 2 }).svg.match(/marker-end="url\(#ahh\)"/g).length, 1, 'exactly one highlighted arrow');
+  assert.match(toSvg(d, { theme: 'dark' }).svg, /fill="#12161d"/);
+  assert.ok(!toSvg(d, { title: false }).svg.includes('font-size="20"'));
+  const evil = clone(d); evil.nodes[0].label = '<img src=x onerror=alert(1)> & "q" \u0000\u0007 \uD800';
+  evil.nodes[0].sub = ["]]></svg><script>alert(1)</script>"]; evil.title = 'A </title><script>x</script>';
+  const e = toSvg(evil).svg;
+  assert.doesNotMatch(e, /<img|<script|\u0000|\u0007|\uD800/);
+  assert.match(e, /&lt;img/);
+  assert.equal(xmlText('a&b<c>"d\'e'), 'a&amp;b&lt;c&gt;&quot;d&#39;e');
+  assert.equal(xmlText('😀'), '😀', 'a valid surrogate pair survives');
+});
+
+test('toSvg handles every built-in diagram and parallel arrows, long text, and negative coordinates', async () => {
+  const { toSvg } = await import('../src/index.js');
+  for (const d of SAMPLES) { const r = toSvg(d); assert.ok(r.width > 0 && r.height > 0, d.id); assert.equal((r.svg.match(/<path class="e" /g) || []).length, d.edges.length, d.id); }
+  const d = clone(SAMPLES[0]);
+  d.edges = [{ source: 'user', target: 'api', label: 'x'.repeat(160) }, { source: 'api', target: 'user' }, { source: 'user', target: 'api' }];
+  d.steps = [];
+  d.nodes[0].x = -500; d.nodes[0].y = -300; d.nodes[1].label = 'L'.repeat(80); d.nodes[1].sub = ['S'.repeat(120)];
+  const r = toSvg(d);
+  assert.deepEqual(validateDiagram(d), []);
+  const lines = [...r.svg.matchAll(/<path class="e" d="M([\d.-]+),([\d.-]+)/g)].map((m) => m[1] + ',' + m[2]);
+  assert.equal(new Set(lines).size, 3, 'parallel arrows do not overlap');
+  for (const m of r.svg.matchAll(/x="(-?[\d.]+)"/g)) assert.ok(Number(m[1]) >= -1 && Number(m[1]) <= r.width + 1, `x ${m[1]} inside the canvas`);
+});
+
+test('toSvg bends an arrow around a box that sits on its straight path', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  d.nodes = [{ id: 'a', group: 'people', label: 'A', x: 0, y: 0 }, { id: 'm', group: 'people', label: 'Middle', x: 400, y: 0 }, { id: 'b', group: 'people', label: 'B', x: 800, y: 0 }];
+  d.edges = [{ source: 'a', target: 'b', label: 'over' }]; d.steps = [];
+  const bent = toSvg(d).svg.match(/Q([\d.-]+),([\d.-]+)/);
+  assert.ok(Math.abs(Number(bent[2]) - (40 + 56 + 0)) > 40, 'control point moved off the straight line (y differs from the line)');
+  d.nodes[1].y = 600;
+  const straight = toSvg(d).svg.match(/M([\d.-]+),([\d.-]+) Q([\d.-]+),([\d.-]+)/);
+  assert.ok(Math.abs(Number(straight[4]) - Number(straight[2])) < 1, 'no box in the way: the arrow stays straight');
+});
+
+test('toSvg layout quality: labels and arrows stay clear across all 35 built-ins, perfectly on the 4 basics', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const { BASICS } = await import('../src/samples.js');
+  let lo = 0; let lb = 0; let ab = 0;
+  for (const d of SAMPLES) { const { report } = toSvg(d); lo += report.labelOverlaps; lb += report.labelBoxHits; ab += report.arrowBoxHits; }
+  assert.ok(lo <= 4 && lb <= 2 && ab <= 2, `collisions grew: label/label ${lo}, label/box ${lb}, arrow/box ${ab}`);
+  for (const d of BASICS) assert.deepEqual(toSvg(d).report, { labelOverlaps: 0, labelBoxHits: 0, arrowBoxHits: 0 }, d.id);
+});
+
+test('toSvg refuses an invalid diagram with a clear error, never NaN output', async () => {
+  const { toSvg } = await import('../src/index.js');
+  for (const bad of [null, {}, { ...clone(SAMPLES[0]), nodes: [] }, { ...clone(SAMPLES[0]), edges: undefined }]) assert.throws(() => toSvg(bad), /toSvg: diagram is not valid|toSvg/);
+  for (const d of SAMPLES) assert.doesNotMatch(toSvg(d).svg, /NaN|Infinity/, d.id);
+});
+
+test('toSvg keeps emoji whole when wrapping, outlines dark-theme boxes, and wraps a long legend', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  d.nodes[0].sub = ['a' + '\u{1F600}'.repeat(40)];
+  const svg = toSvg(d).svg;
+  assert.doesNotMatch(svg, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/, 'no lone surrogate in the picture');
+  assert.match(svg, /\u{1F600}/u);
+  assert.ok(!toSvg(SAMPLES[0]).svg.includes('stroke="#9aa5b8" stroke-width="1"'), 'light boxes have no outline');
+  assert.ok(toSvg(SAMPLES[0], { theme: 'dark' }).svg.includes('stroke="#9aa5b8" stroke-width="1"'), 'dark boxes get a light outline');
+  const g = clone(SAMPLES[0]); g.groups = Object.fromEntries(['one', 'two', 'three'].map((k, i) => [k, { label: 'L'.repeat(60) + i, color: ['red', 'dark', 'grey'][i] }]));
+  g.nodes.forEach((n, i) => { n.group = ['one', 'two', 'three'][i % 3]; });
+  const one = toSvg(SAMPLES[0]); const wide = toSvg(g);
+  assert.ok(wide.height > one.height, 'legend rows added height');
+});
+
+const svgLines = (svg) => svg.split('\n');
+const boxRects = (svg) => [...svg.matchAll(/<rect x="(-?[\d.]+)" y="(-?[\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="8"/g)].map((m) => ({ x: +m[1], y: +m[2], w: +m[3], h: +m[4] }));
+
+test('toSvg highlight: only the focused arrow is bold, only later arrows fade, only its two boxes are ringed', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]); // 6 arrows; arrow 1 is User -> Authorization server
+  const lines = svgLines(toSvg(d, { step: 1 }).svg);
+  const arrows = lines.filter((l) => l.startsWith('<path class="e"'));
+  assert.equal(arrows.length, 6);
+  assert.deepEqual(arrows.map((l) => l.includes('opacity="0.35"')), [false, false, false, true, true, true].map((x, i) => i >= 2), 'arrows after the focused one fade, earlier ones do not');
+  assert.deepEqual(arrows.map((l) => l.includes('marker-end="url(#ahh)"')), [false, true, false, false, false, false]);
+  assert.ok(arrows[1].includes('stroke-width="4"') && arrows[0].includes('stroke-width="2"'));
+  const ringed = lines.map((l, i) => (l.includes('<rect') && l.includes('rx="8"') && l.includes('stroke-width="4"') ? lines[i + 1] : null)).filter(Boolean);
+  assert.equal(ringed.length, 2, 'exactly two boxes carry the ring');
+  assert.ok(ringed.some((t) => t.includes('>User<')) && ringed.some((t) => t.includes('>Authorization<')));
+  const plain = toSvg(d).svg;
+  assert.ok(!plain.includes('url(#ahh)') && !plain.includes('opacity="0.35"') && !/rx="8"[^>]*stroke-width="4"/.test(plain), 'no step: nothing highlighted');
+});
+
+test('toSvg furniture: title, lede, legend, box width cap, header height and truncation', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  const full = toSvg(d); const bare = toSvg(d, { title: false });
+  assert.ok(full.svg.includes(`>${d.title}</text>`) && full.svg.includes(`>${d.lede.slice(0, 20)}`), 'title and intro are drawn');
+  assert.equal(full.height - bare.height, 56, 'the title row is 56 px');
+  assert.ok(!bare.svg.includes(`>${d.title}</text>`));
+  for (const g of Object.values(d.groups)) assert.ok(full.svg.includes(`>${g.label}</text>`), `legend has ${g.label}`);
+  assert.ok(boxRects(full.svg).every((b) => b.w <= 260 && b.w >= 176), 'box widths stay within 176..260');
+  const long = clone(d); long.title = 'T'.repeat(120); long.nodes[0].sub = ['word '.repeat(24).trim()]; long.edges[0].label = 'label '.repeat(26).trim();
+  const out = toSvg(long).svg;
+  assert.match(out, /font-size="20"[^>]*>T+…<\/text>/, 'a title longer than the canvas fits ends with an ellipsis');
+  assert.ok((out.match(/…/g) || []).length >= 3, 'long title, sub and arrow label are all cut with an ellipsis');
+  assert.ok(!full.svg.includes('…'), 'short text is never cut');
+});
+
+test('toSvg arrows start and end on the borders of their own boxes (single arrows)', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const { BASICS } = await import('../src/samples.js');
+  const dist = (x, y, b) => { const dx = Math.max(b.x - x, 0, x - (b.x + b.w)); const dy = Math.max(b.y - y, 0, y - (b.y + b.h)); return Math.hypot(dx, dy); };
+  const inside = (x, y, b) => x > b.x + 1 && x < b.x + b.w - 1 && y > b.y + 1 && y < b.y + b.h - 1;
+  for (const d of BASICS) {
+    const svg = toSvg(d).svg; const boxes = boxRects(svg);
+    const pairs = new Map(); d.edges.forEach((e) => { const k = [e.source, e.target].sort().join('|'); pairs.set(k, (pairs.get(k) || 0) + 1); });
+    const arrows = svgLines(svg).filter((l) => l.startsWith('<path class="e"')).map((l) => l.match(/M(-?[\d.]+),(-?[\d.]+) Q-?[\d.]+,-?[\d.]+ (-?[\d.]+),(-?[\d.]+)/).slice(1).map(Number));
+    d.edges.forEach((e, i) => {
+      if (pairs.get([e.source, e.target].sort().join('|')) > 1) return; // parallel arrows are fanned sideways on purpose
+      const a = boxes[d.nodes.findIndex((n) => n.id === e.source)]; const b = boxes[d.nodes.findIndex((n) => n.id === e.target)];
+      const [x1, y1, x2, y2] = arrows[i];
+      assert.ok(dist(x1, y1, a) < 1.5 && !inside(x1, y1, a), `${d.id} arrow ${i + 1} starts on its source box`);
+      assert.ok(dist(x2, y2, b) < 1.5 && !inside(x2, y2, b), `${d.id} arrow ${i + 1} ends on its target box`);
+    });
+  }
+});
