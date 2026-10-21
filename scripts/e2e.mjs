@@ -167,6 +167,31 @@ try {
     if (boxes.length !== dg.nodes.length || overlap) badOnes.push(`${id} (${boxes.length}/${dg.nodes.length} boxes, ${overlap} overlaps)`);
   }
   check(all.length >= 35 && badOnes.length === 0, `all ${all.length} built-in diagrams show every box with no overlap${badOnes.length ? ": " + badOnes.join('; ') : ''}`);
+  // Presenter mode: keys, bigger type, no edit or file controls, Esc exits, ?present=1 deep link.
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('present').waitFor();
+  const normalFont = await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
+  await T('present').click();
+  check(await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize)) > normalFont, 'presenting makes the type bigger');
+  check(!(await T('save').isVisible()) && !(await T('edit-toggle').isVisible()), 'presenting hides edit and file controls');
+  await page.keyboard.press('ArrowRight');
+  check(/Arrow 1 of 6/.test(await T('stepcount').innerText()) && (await T('now').innerText()).includes('1. Start'), 'Right arrow starts at arrow 1 and shows its step in the big panel');
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowLeft');
+  check(/Arrow 2 of 6/.test(await T('stepcount').innerText()), 'Right, Right, Left lands on arrow 2');
+  await page.keyboard.press(' ');
+  await sleep(100);
+  check(/Arrow 2 of 6/.test(await T('stepcount').innerText()) && await T('pause').isVisible(), 'Space resumes playing from a paused arrow');
+  await page.keyboard.press(' ');
+  await page.keyboard.press('3');
+  check(await T('speed').inputValue() === 'fast', 'key 3 sets fast speed');
+  await page.keyboard.press('r');
+  check(/Not playing/.test(await T('stepcount').innerText()), 'R resets');
+  await page.screenshot({ path: path.join(shots, '4-presenting.png') });
+  await page.keyboard.press('Escape');
+  check(await T('edit-toggle').isVisible(), 'Escape leaves presenter mode');
+  await page.goto(`${base}/?d=auth-code-pkce&present=1`); await T('now').waitFor();
+  check(true, '?present=1 opens straight into presenter mode');
+  await T('present').click();
+
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

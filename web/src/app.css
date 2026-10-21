@@ -54,3 +54,14 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 .msg { padding: 0.5rem 0.75rem; border-radius: 6px; } .msg--ok { background: var(--ok-wash); color: var(--ok); } .msg--error { background: var(--deny-wash); color: var(--deny); }
 @media (prefers-reduced-motion: reduce) { .react-flow__edge.animated path, .react-flow__edge .react-flow__edge-path, .edge--now .react-flow__edge-path { animation: none !important; } }
 @media (max-width: 40rem) { .canvas { height: 22rem; } }
+
+/* Presenter mode: bigger type, bigger canvas, no editing or file controls. */
+:root[data-present="1"] body { font-size: 20px; }
+:root[data-present="1"] [data-admin-only] { display: none; }
+:root[data-present="1"] .canvas { height: 56vh; min-height: 22rem; }
+:root[data-present="1"] .box { font-size: 1.05rem; }
+:root[data-present="1"] .box-sub { font-size: 0.9rem; }
+:root[data-present="1"] .react-flow__edge-text { font-size: 14px; }
+:root[data-present="1"] .caption { font-size: 1.15rem; }
+.now { border: 1px solid var(--now); border-radius: 8px; background: var(--card); padding: 0.5rem 1rem; margin: 0.5rem 0; }
+.now h3 { margin: 0.25rem 0; font-size: 1.3em; } .now p { margin: 0.25rem 0; }
