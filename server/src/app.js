@@ -25,11 +25,14 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     if (ALLOWED_HOST.test(req.headers.host || '') || (extra && req.headers.host === extra)) return next();
     res.status(421).json({ error: 'bad_host' });
   });
-  app.use((_req, res, next) => {
+  // Only the embed view (/?embed=1) may be framed, and only by a page on a loopback origin; everything else refuses framing.
+  const LOOPBACK_FRAMES = 'http://localhost:* http://127.0.0.1:* http://[::1]:*';
+  app.use((req, res, next) => {
+    const frameable = req.method === 'GET' && req.path === '/' && req.query.embed === '1';
     res.set({
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
-      'Content-Security-Policy': "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      'Content-Security-Policy': `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors ${frameable ? LOOPBACK_FRAMES : "'none'"}; base-uri 'none'; form-action 'self'`,
     });
     next();
   });
