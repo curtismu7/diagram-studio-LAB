@@ -4,6 +4,8 @@ export const SCHEMA = 'diagram-studio/1';
 export const LIMITS = { nodes: 60, edges: 120, steps: 60, groups: 8, text: 300, sub: 6, id: 48 };
 export const COLORS = ['red', 'dark', 'grey', 'blue', 'green', 'amber'];
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
+const STORY_ID = /^S\d{2}$/;
+const HOP = /^[A-Za-z0-9._:/-]{1,64}$/;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const str = (v, max = LIMITS.text) => typeof v === 'string' && v.length > 0 && v.length <= max;
@@ -67,6 +69,8 @@ export function validateDiagram(d) {
       if (!isObj(s) || !str(s.title, 120)) return p.push(`${at}: title is required`);
       if (typeof s.what !== 'string' || s.what.length > 600) p.push(`${at}: what must be text (max 600)`);
       if (s.why !== undefined && (typeof s.why !== 'string' || s.why.length > 600)) p.push(`${at}: why must be text (max 600)`);
+      if (s.story !== undefined && !(isObj(s.story) && STORY_ID.test(s.story.id) && Number.isInteger(s.story.step) && s.story.step >= 1 && s.story.step <= 99)) p.push(`${at}: story must be { id: "S01", step: 1 }`);
+      if (s.hop !== undefined && !(typeof s.hop === 'string' && HOP.test(s.hop))) p.push(`${at}: hop must be a short id (letters, digits . _ : / -)`);
       const n = Array.isArray(d.edges) ? d.edges.length : 0;
       if (!Array.isArray(s.edges) || !s.edges.every((x) => Number.isInteger(x) && x >= 0 && x < n)) p.push(`${at}: edges must list valid edge numbers`);
     });

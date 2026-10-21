@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPEEDS, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
+import StepLinks from "./StepLinks.jsx";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
@@ -177,7 +178,7 @@ export default function App() {
         {present && (
           <section className="now" aria-label="What is happening" data-testid="now" tabIndex={-1} ref={nowRef}>
             {activeStep >= 0
-              ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}</>)
+              ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}<StepLinks step={diagram.steps[activeStep]} testId="now-links" open /></>)
               : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
@@ -231,6 +232,7 @@ export default function App() {
                 <h4>{i + 1}. {s.title}</h4>
                 <p>{s.what}</p>
                 {s.why && <p className="muted"><strong>Why it matters:</strong> {s.why}</p>}
+                <StepLinks step={s} testId={`step-${i + 1}-links`} />
               </li>
             ))}
           </ol>
