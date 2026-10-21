@@ -224,6 +224,18 @@ try {
   check(pngDl.suggestedFilename() === 'mcp-step-up.png' && png.subarray(1, 4).toString() === 'PNG' && w > 600 && h > 300, `Export PNG downloads a PNG (${w}x${h})`);
   const painted = await page.evaluate(async (b64) => { const img = new Image(); img.src = `data:image/png;base64,${b64}`; await img.decode(); const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const px = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < px.length; i += 4) if (px[i] < 200 || px[i + 1] < 200 || px[i + 2] < 200) n++; return n / (px.length / 4); }, png.toString('base64'));
   check(painted > 0.05 && painted < 0.9, `the PNG is not blank (${(painted * 100).toFixed(0)}% of pixels are drawn)`);
+  const svgW = Number(/<svg[^>]* width="(\d+)"/.exec(svgText)[1]); const svgH = Number(/<svg[^>]* height="(\d+)"/.exec(svgText)[1]);
+  check(w === Math.round(svgW * 2) && h === Math.round(svgH * 2), `the PNG is exactly 2x the SVG (${svgW}x${svgH} -> ${w}x${h})`);
+  check(svgText.includes('fill="#ffffff"') && !svgText.includes('url(#ahh)'), 'the light default exports a white page with no arrow highlighted');
+  // Focused arrow and dark theme carry into the export.
+  await T('simulate').click(); await T('pause').click(); await T('next').click();
+  const [stepDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
+  const stepSvg = fs.readFileSync(await stepDl.path(), 'utf8');
+  check((stepSvg.match(/marker-end="url\(#ahh\)"/g) || []).length === 1 && stepSvg.includes('opacity="0.35"'), 'exporting mid-walkthrough highlights exactly the focused arrow and fades later ones');
+  await page.getByRole('button', { name: /Toggle dark/ }).click();
+  const [darkDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
+  check(fs.readFileSync(await darkDl.path(), 'utf8').includes('fill="#12161d"'), 'dark theme exports a dark page');
+  await page.getByRole('button', { name: /Toggle dark|Light/ }).click(); await T('reset').click();
   await page.screenshot({ path: path.join(shots, '5-exports-page.png') });
   fs.writeFileSync(path.join(shots, 'mcp-step-up.png'), png); fs.writeFileSync(path.join(shots, 'mcp-step-up.svg'), svgText);
   // Dark mode, small screen: no horizontal scroll.
