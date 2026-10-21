@@ -24,7 +24,7 @@ export function addNode(d, { label, group }) {
 export function removeNode(d, id) {
   const edges = d.edges.map((e, i) => ({ e, i })).filter(({ e }) => e.source !== id && e.target !== id);
   const remap = new Map(edges.map(({ i }, j) => [i, j]));
-  const steps = d.steps && d.steps.map((s) => ({ ...s, edges: s.edges.filter((x) => remap.has(x)).map((x) => remap.get(x)) })).filter((s) => s.edges.length);
+  const steps = d.steps && d.steps.map((s) => ({ ...s, edges: s.edges.filter((x) => remap.has(x)).map((x) => remap.get(x)) }));  // a step that lost all its arrows is kept (its text is the author's work); the editor flags it
   const out = { ...d, nodes: d.nodes.filter((n) => n.id !== id), edges: edges.map(({ e }) => e) };
   if (steps) out.steps = steps;
   return out;
@@ -38,7 +38,7 @@ export function addEdge(d, source, target, label = '') {
 }
 
 export function removeEdge(d, index) {
-  const steps = d.steps && d.steps.map((s) => ({ ...s, edges: s.edges.filter((x) => x !== index).map((x) => (x > index ? x - 1 : x)) })).filter((s) => s.edges.length);
+  const steps = d.steps && d.steps.map((s) => ({ ...s, edges: s.edges.filter((x) => x !== index).map((x) => (x > index ? x - 1 : x)) }));
   const out = { ...d, edges: d.edges.filter((_, i) => i !== index) };
   if (steps) out.steps = steps;
   return out;
@@ -64,9 +64,12 @@ export function captions(d) {
 
 // ---- titles, groups, steps -------------------------------------------------------------------------------------------
 
+/** Sets the title or the intro (the only two text fields); anything else is ignored. Value is coerced to text; an empty intro removes it. */
 export const setText = (d, key, value) => {
+  if (key !== 'title' && key !== 'lede') return d;
+  const text = String(value ?? '');
   const { [key]: _drop, ...rest } = d;
-  return key === 'lede' && !value ? rest : { ...rest, [key]: value };
+  return key === 'lede' && !text ? rest : { ...rest, [key]: text };
 };
 
 export const setNodeGroup = (d, id, group) => ({ ...d, nodes: d.nodes.map((n) => (n.id === id ? { ...n, group } : n)) });
@@ -122,6 +125,7 @@ export function removeStep(d, index) {
 }
 
 export function moveStep(d, index, delta) {
+  if (!Number.isInteger(index) || !Number.isInteger(delta)) return d;
   const to = index + delta;
   if (!d.steps || !d.steps[index] || to < 0 || to >= d.steps.length) return d;
   const steps = [...d.steps];
