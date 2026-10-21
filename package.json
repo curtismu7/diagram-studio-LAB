@@ -1,0 +1,17 @@
+{
+  "name": "diagram-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Diagram studio: pick or edit a flow diagram stored as data, move boxes, simulate, reset, change speed, save and export. Offline.",
+  "license": "MIT",
+  "workspaces": ["core", "server", "web"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w web",
+    "start": "npm start -w server",
+    "test": "npm test -w core && npm test -w server",
+    "doctor": "node scripts/doctor.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
+  }
+}
