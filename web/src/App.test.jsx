@@ -68,6 +68,108 @@ describe("App", () => {
     expect(await screen.findByText(/unsaved changes/)).toBeInTheDocument();
   });
 
+  it("presenter mode hides editing and file controls, shows the step panel, and keys drive the walkthrough", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("present"));
+    expect(document.documentElement.dataset.present).toBe("1");
+    expect(screen.getByTestId("present")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByTestId("add-box")).toBeNull();
+    expect(screen.getByTestId("now")).toHaveTextContent(/Space plays/);
+    await user.keyboard("{ArrowRight}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 1 of 6"));
+    expect(screen.getByTestId("now")).toHaveTextContent("1. Start");
+    await user.keyboard("{ArrowRight}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 2 of 6"));
+    await user.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 1 of 6"));
+    await user.keyboard("3");
+    expect(screen.getByTestId("speed")).toHaveValue("fast");
+    await user.keyboard("r");
+    await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Not playing"));
+    await user.keyboard("{Escape}");
+    expect(document.documentElement.dataset.present).toBeUndefined();
+    expect(screen.getByTestId("edit-toggle")).toBeInTheDocument();
+  });
+
+  describe("presenter persistence and guards", () => {
+    const setUrl = (q) => window.history.replaceState(null, "", `/${q}`);
+    afterEach(() => { setUrl(""); localStorage.clear(); delete document.documentElement.dataset.present; });
+
+    it("the URL wins on load, ?present=0 and junk are off, and the saved choice rules afterwards", async () => {
+      localStorage.setItem("studio-present", "1");
+      setUrl("?present=0");
+      const a = render(<App />);
+      await screen.findByTestId("picker");
+      expect(document.documentElement.dataset.present).toBeUndefined();
+      expect(screen.getByTestId("present")).toHaveAttribute("aria-pressed", "false");
+      expect(window.location.search).toBe("");
+      a.unmount();
+      localStorage.setItem("studio-present", "0");
+      setUrl("?present=1");
+      const b = render(<App />);
+      await screen.findByTestId("picker");
+      expect(document.documentElement.dataset.present).toBe("1");
+      expect(localStorage.getItem("studio-present")).toBe("1");
+      expect(window.location.search).toBe("");
+      b.unmount();
+      expect(document.documentElement.dataset.present).toBeUndefined();
+      localStorage.setItem("studio-present", "1"); setUrl("?present=foo");
+      render(<App />); await screen.findByTestId("picker");
+      expect(document.documentElement.dataset.present).toBeUndefined();
+    });
+
+    it("entering presenter drops edit mode and hides messages; the saved choice returns on remount", async () => {
+      const user = userEvent.setup();
+      const a = render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("edit-toggle"));
+      expect(screen.getByTestId("edit-panel")).toBeInTheDocument();
+      await user.click(screen.getByTestId("present"));
+      expect(screen.queryByTestId("edit-panel")).toBeNull();
+      expect(screen.queryByTestId("details-editor")).toBeNull();
+      expect(screen.getByTestId("save").closest("[data-admin-only]")).not.toBeNull();
+      expect(localStorage.getItem("studio-present")).toBe("1");
+      await user.keyboard("{Escape}");
+      expect(screen.getByTestId("edit-toggle")).toHaveAttribute("aria-pressed", "false");
+      await user.click(screen.getByTestId("present"));
+      a.unmount();
+      render(<App />); await screen.findByTestId("picker");
+      expect(document.documentElement.dataset.present).toBe("1");
+    });
+
+    it("keys: Space from idle starts, a handled key is default-prevented, an ignored one is not, focus moves to the step panel", async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("present"));
+      await waitFor(() => expect(screen.getByTestId("now")).toHaveFocus());
+      const down = (key) => { const ev = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }); document.body.dispatchEvent(ev); return ev.defaultPrevented; };
+      expect(down("x")).toBe(false);
+      expect(down(" ")).toBe(true);
+      await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 1 of 6"));
+      expect(screen.getByTestId("pause")).toBeInTheDocument();
+      expect(down("ArrowRight")).toBe(true);
+      await user.keyboard("{Escape}");
+      expect(screen.getByTestId("present")).toHaveFocus();
+    });
+
+    it("switching diagram stops the walkthrough; an arrow with no step shows its caption in the panel", async () => {
+      const user = userEvent.setup();
+      const d = { ...SAMPLES[0], steps: [SAMPLES[0].steps[0]] };
+      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [d, SAMPLES[1]].map((x) => ({ id: x.id, title: x.title, builtin: true })) } : { diagram: String(u).includes(SAMPLES[1].id) ? SAMPLES[1] : d, builtin: true }) }));
+      render(<App />);
+      await screen.findByTestId("picker");
+      await user.click(screen.getByTestId("present"));
+      await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+      await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 3 of 6"));
+      expect(screen.getByTestId("now")).toHaveTextContent("Authorization server → Client app");
+      await user.selectOptions(screen.getByTestId("picker"), SAMPLES[1].id);
+      await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Not playing"));
+    });
+  });
+
   it("renders label text inertly (no HTML interpretation)", async () => {
     const evil = { ...SAMPLES[0], nodes: SAMPLES[0].nodes.map((n, i) => (i ? n : { ...n, label: "<img src=x onerror=alert(1)>" })) };
     globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));
