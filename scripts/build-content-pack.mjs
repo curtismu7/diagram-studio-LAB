@@ -40,11 +40,16 @@ export function buildPack({ commit } = {}) {
 /** content/stories/*.json, one per story: [relative path, text]. Committed so a pack's `file` pointers resolve. */
 export const storyFiles = () => STORIES.map((x) => [storyFile(x), `${JSON.stringify({ id: x.id, title: x.title, goal: x.goal, obstacle: x.obstacle, control: x.control, modes: ['studio'], demos: ['E3'], steps: x.steps }, null, 2)}\n`]);
 
+/** Writes the story files under `root`; returns the relative paths written. */
+export function writeStoryFiles(root = ROOT) {
+  return storyFiles().map(([rel, text]) => { fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true }); fs.writeFileSync(path.join(root, rel), text); return rel; });
+}
+
 export const serialize = (pack) => `${JSON.stringify(pack, null, 2)}\n`;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const commit = process.argv.find((a) => a.startsWith('--commit='))?.slice(9);
   fs.writeFileSync(PACK_PATH, serialize(buildPack({ commit })));
-  for (const [rel, text] of storyFiles()) { fs.mkdirSync(path.dirname(path.join(ROOT, rel)), { recursive: true }); fs.writeFileSync(path.join(ROOT, rel), text); }
+  writeStoryFiles();
   console.log(`wrote ${path.relative(process.cwd(), PACK_PATH) || PACK_PATH}`);
 }

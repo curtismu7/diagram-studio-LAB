@@ -177,6 +177,9 @@ describe("App", () => {
     expect(links).toHaveTextContent("Trace hop authorize");
     await user.click(within(links).getByText(/Story S01 · step 1: Commit/));
     expect(within(links).getByText(/We send the fingerprint, not the secret\./)).toBeVisible();
+    expect(within(links).getByText(/The client hashes a random verifier and sends only the hash\./)).toBeVisible();
+    expect(within(links).getByText(/An intercepted code cannot be redeemed without the verifier\./)).toBeVisible();
+    expect(within(links).getByText("Why a stolen code is useless")).toBeVisible();
     expect(screen.getByTestId("step-3-links")).toHaveTextContent("redirect");
     expect(screen.getByTestId("step-3-links")).not.toHaveTextContent("Story");
   });
@@ -186,6 +189,26 @@ describe("App", () => {
     globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
     render(<App />);
     expect(await screen.findByText(/Story S99, step 3 \(not in this studio\)/)).toBeInTheDocument();
+  });
+
+  it("a shipped story id with a step that does not exist says so", async () => {
+    const d = { ...SAMPLES[0], steps: SAMPLES[0].steps.map((s, i) => (i ? s : { ...s, story: { id: "S01", step: 4 } })) };
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
+    render(<App />);
+    expect(await screen.findByText(/Story S01, step 4 \(no such step\)/)).toBeInTheDocument();
+  });
+
+  it("presenter mode shows the story Say line and hop in the big panel", async () => {
+    const user = userEvent.setup();
+    localStorage.clear();
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("present"));
+    await user.keyboard("{ArrowRight}");
+    const links = await screen.findByTestId("now-links");
+    expect(within(links).getByText(/We send the fingerprint, not the secret\./)).toBeVisible();
+    expect(links).toHaveTextContent("authorize");
+    localStorage.clear(); delete document.documentElement.dataset.present;
   });
 
   it("renders label text inertly (no HTML interpretation)", async () => {
