@@ -235,3 +235,57 @@ test('toSvg keeps emoji whole when wrapping, outlines dark-theme boxes, and wrap
   const one = toSvg(SAMPLES[0]); const wide = toSvg(g);
   assert.ok(wide.height > one.height, 'legend rows added height');
 });
+
+const svgLines = (svg) => svg.split('\n');
+const boxRects = (svg) => [...svg.matchAll(/<rect x="(-?[\d.]+)" y="(-?[\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="8"/g)].map((m) => ({ x: +m[1], y: +m[2], w: +m[3], h: +m[4] }));
+
+test('toSvg highlight: only the focused arrow is bold, only later arrows fade, only its two boxes are ringed', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]); // 6 arrows; arrow 1 is User -> Authorization server
+  const lines = svgLines(toSvg(d, { step: 1 }).svg);
+  const arrows = lines.filter((l) => l.startsWith('<path class="e"'));
+  assert.equal(arrows.length, 6);
+  assert.deepEqual(arrows.map((l) => l.includes('opacity="0.35"')), [false, false, false, true, true, true].map((x, i) => i >= 2), 'arrows after the focused one fade, earlier ones do not');
+  assert.deepEqual(arrows.map((l) => l.includes('marker-end="url(#ahh)"')), [false, true, false, false, false, false]);
+  assert.ok(arrows[1].includes('stroke-width="4"') && arrows[0].includes('stroke-width="2"'));
+  const ringed = lines.map((l, i) => (l.includes('<rect') && l.includes('rx="8"') && l.includes('stroke-width="4"') ? lines[i + 1] : null)).filter(Boolean);
+  assert.equal(ringed.length, 2, 'exactly two boxes carry the ring');
+  assert.ok(ringed.some((t) => t.includes('>User<')) && ringed.some((t) => t.includes('>Authorization<')));
+  const plain = toSvg(d).svg;
+  assert.ok(!plain.includes('url(#ahh)') && !plain.includes('opacity="0.35"') && !/rx="8"[^>]*stroke-width="4"/.test(plain), 'no step: nothing highlighted');
+});
+
+test('toSvg furniture: title, lede, legend, box width cap, header height and truncation', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  const full = toSvg(d); const bare = toSvg(d, { title: false });
+  assert.ok(full.svg.includes(`>${d.title}</text>`) && full.svg.includes(`>${d.lede.slice(0, 20)}`), 'title and intro are drawn');
+  assert.equal(full.height - bare.height, 56, 'the title row is 56 px');
+  assert.ok(!bare.svg.includes(`>${d.title}</text>`));
+  for (const g of Object.values(d.groups)) assert.ok(full.svg.includes(`>${g.label}</text>`), `legend has ${g.label}`);
+  assert.ok(boxRects(full.svg).every((b) => b.w <= 260 && b.w >= 176), 'box widths stay within 176..260');
+  const long = clone(d); long.title = 'T'.repeat(120); long.nodes[0].sub = ['word '.repeat(24).trim()]; long.edges[0].label = 'label '.repeat(26).trim();
+  const out = toSvg(long).svg;
+  assert.match(out, /font-size="20"[^>]*>T+…<\/text>/, 'a title longer than the canvas fits ends with an ellipsis');
+  assert.ok((out.match(/…/g) || []).length >= 3, 'long title, sub and arrow label are all cut with an ellipsis');
+  assert.ok(!full.svg.includes('…'), 'short text is never cut');
+});
+
+test('toSvg arrows start and end on the borders of their own boxes (single arrows)', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const { BASICS } = await import('../src/samples.js');
+  const dist = (x, y, b) => { const dx = Math.max(b.x - x, 0, x - (b.x + b.w)); const dy = Math.max(b.y - y, 0, y - (b.y + b.h)); return Math.hypot(dx, dy); };
+  const inside = (x, y, b) => x > b.x + 1 && x < b.x + b.w - 1 && y > b.y + 1 && y < b.y + b.h - 1;
+  for (const d of BASICS) {
+    const svg = toSvg(d).svg; const boxes = boxRects(svg);
+    const pairs = new Map(); d.edges.forEach((e) => { const k = [e.source, e.target].sort().join('|'); pairs.set(k, (pairs.get(k) || 0) + 1); });
+    const arrows = svgLines(svg).filter((l) => l.startsWith('<path class="e"')).map((l) => l.match(/M(-?[\d.]+),(-?[\d.]+) Q-?[\d.]+,-?[\d.]+ (-?[\d.]+),(-?[\d.]+)/).slice(1).map(Number));
+    d.edges.forEach((e, i) => {
+      if (pairs.get([e.source, e.target].sort().join('|')) > 1) return; // parallel arrows are fanned sideways on purpose
+      const a = boxes[d.nodes.findIndex((n) => n.id === e.source)]; const b = boxes[d.nodes.findIndex((n) => n.id === e.target)];
+      const [x1, y1, x2, y2] = arrows[i];
+      assert.ok(dist(x1, y1, a) < 1.5 && !inside(x1, y1, a), `${d.id} arrow ${i + 1} starts on its source box`);
+      assert.ok(dist(x2, y2, b) < 1.5 && !inside(x2, y2, b), `${d.id} arrow ${i + 1} ends on its target box`);
+    });
+  }
+});
