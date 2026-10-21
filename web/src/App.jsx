@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPEEDS, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import { useStepper } from "./useStepper.js";
+import { keyAction } from "./presenterKeys.js";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -15,6 +16,9 @@ export default function App() {
   const [sel, setSel] = useState({});
   const [msg, setMsg] = useState({ kind: "", text: "" });
   const [fitKey, setFitKey] = useState(0);
+  const [present, setPresent] = useState(() => {
+    try { const q = new URLSearchParams(window.location.search).get("present"); return q ? q === "1" : localStorage.getItem("studio-present") === "1"; } catch { return false; }
+  });
   const [arrow, setArrow] = useState({ from: "", to: "" });
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem("studio-theme") || ""; } catch { return ""; } });
   const total = diagram ? diagram.edges.length : 0;
@@ -31,7 +35,8 @@ export default function App() {
     if (!r.ok) return say("error", r.data.message || "Could not open that diagram.");
     setDiagram(r.data.diagram); setSaved(r.data.diagram); setBuiltin(r.data.builtin);
     setSel({}); setEditing(false); setMsg({ kind: "", text: "" }); setFitKey((k) => k + 1);
-  }, []);
+    dispatch({ type: "stop" });
+  }, [dispatch]);
   useEffect(() => {
     refresh().then((l) => {
       let want = new URLSearchParams(window.location.search).get("d");
@@ -53,6 +58,22 @@ export default function App() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+  useEffect(() => { // the saved choice, not the URL, rules after the first load
+    try { const u = new URL(window.location.href); if (u.searchParams.has("present")) { u.searchParams.delete("present"); window.history.replaceState(null, "", u); } } catch { /* no history */ }
+  }, []);
+  const nowRef = useRef(null);
+  const presentBtn = useRef(null);
+  const focusAfter = useRef(false); // set by the Present button: move focus once the new mode has rendered
+  useEffect(() => {
+    if (!focusAfter.current) return;
+    focusAfter.current = false;
+    (present ? nowRef.current : presentBtn.current)?.focus();
+  }, [present]);
+  useEffect(() => {
+    if (present) document.documentElement.dataset.present = "1"; else delete document.documentElement.dataset.present;
+    try { localStorage.setItem("studio-present", present ? "1" : "0"); } catch { /* private mode */ }
+    return () => { delete document.documentElement.dataset.present; };
+  }, [present]);
   const edit = (fn) => setDiagram((d) => fn(d));
   const onMove = useCallback((id, x, y) => setDiagram((d) => moveNode(d, id, x, y)), []);
 
@@ -96,6 +117,22 @@ export default function App() {
   }
   function reset() { dispatch({ type: "stop" }); setDiagram((d) => resetLayout(d, saved)); setFitKey((k) => k + 1); }
 
+  useEffect(() => {
+    const onKey = (e) => {
+      const a = keyAction(e, { present });
+      if (!a) return;
+      e.preventDefault();
+      if (a === "exit") { focusAfter.current = true; setPresent(false); }
+      else if (a === "toggle") dispatch({ type: st.step < 0 ? "simulate" : st.paused ? "resume" : "pause", total });
+      else if (a === "next") { if (st.step < 0) { dispatch({ type: "simulate", total }); dispatch({ type: "pause" }); } else dispatch({ type: "next" }); }
+      else if (a === "prev") dispatch({ type: "prev" });
+      else if (a === "reset") reset();
+      else if (a.startsWith("speed-")) dispatch({ type: "speed", speed: a.slice(6) });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const caps = useMemo(() => (diagram ? captions(diagram) : []), [diagram]);
   if (!diagram) return <div className="page"><p role="status">{msg.text || "Loading…"}</p></div>;
   const selNode = sel.node && diagram.nodes.find((n) => n.id === sel.node);
@@ -108,10 +145,11 @@ export default function App() {
       <header className="top">
         <h1>Diagram Studio</h1>
         <label className="grow">Diagram{" "}
-          <select aria-label="Diagram" value={diagram.id} onChange={(e) => pick(e.target.value)} data-testid="picker">
+          <select aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
             {list.map((d) => <option key={d.id} value={d.id}>{d.title}{d.builtin ? " (sample)" : ""}</option>)}
           </select>
         </label>
+        <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
         <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle dark and light">{theme === "dark" ? "Light" : "Dark"}</button>
       </header>
 
@@ -136,6 +174,13 @@ export default function App() {
         </div>
         <p className="caption" data-testid="caption" aria-live="polite">{st.step >= 0 ? caps[st.step] : "Press Simulate to walk the arrows in order. Drag any box to move it."}</p>
 
+        {present && (
+          <section className="now" aria-label="What is happening" data-testid="now" tabIndex={-1} ref={nowRef}>
+            {activeStep >= 0
+              ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}</>)
+              : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
+          </section>
+        )}
         <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge}
           onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={setSel} />
 
@@ -143,7 +188,7 @@ export default function App() {
           {Object.entries(diagram.groups).map(([k, g]) => <li key={k}><i className={`sw sw--${g.color}`} />{g.label}</li>)}
         </ul>
 
-        <div className="bar" role="toolbar" aria-label="Edit and file">
+        <div className="bar" role="toolbar" aria-label="Edit and file" data-admin-only>
           <button onClick={() => setEditing(!editing)} aria-pressed={editing} data-testid="edit-toggle">{editing ? "Done editing" : "Edit"}</button>
           {editing && <button onClick={() => edit((d) => addNode(d, { label: "New box" }))} data-testid="add-box">Add box</button>}
           <button className="primary" onClick={save} disabled={builtin || !dirty} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>
@@ -152,9 +197,9 @@ export default function App() {
           <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>
           {!builtin && <button onClick={remove} data-testid="delete">Delete</button>}
         </div>
-        {msg.text && <p role={msg.kind === "error" ? "alert" : "status"} className={`msg msg--${msg.kind}`} data-testid="msg">{msg.text}</p>}
+        {msg.text && !present && <p role={msg.kind === "error" ? "alert" : "status"} className={`msg msg--${msg.kind}`} data-testid="msg">{msg.text}</p>}
 
-        {editing && (
+        {editing && !present && (
           <section className="panel" aria-label="Edit selection" data-testid="edit-panel">
             {selNode && (
               <>
