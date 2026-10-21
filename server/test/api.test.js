@@ -109,3 +109,15 @@ test('doctor passes by default and fails on bad bind-free conditions', () => {
   assert.ok(allPassed(runChecks({ env: {}, dataDir: dir })));
   assert.ok(!allPassed(runChecks({ env: {}, dataDir: '/proc/nope/x' })));
 });
+
+test('only /?embed=1 may be framed, and only by loopback origins; every other response refuses framing', async () => {
+  const csp = async (p, opts) => (await fetch(`${base}${p}`, opts)).headers.get('content-security-policy');
+  const framed = await csp('?embed=1');
+  assert.match(framed, /frame-ancestors http:\/\/localhost:\* http:\/\/127\.0\.0\.1:\* http:\/\/\[::1\]:\*;/);
+  const directive = framed.split(';').map((x) => x.trim()).find((x) => x.startsWith('frame-ancestors'));
+  assert.equal(directive, 'frame-ancestors http://localhost:* http://127.0.0.1:* http://[::1]:*', 'exactly the three loopback origins, no bare * and no https');
+  for (const p of ['', '?embed=0', '?embed=1&embed=1', '?embed[]=1', '?embed=yes', 'api/diagrams', 'api/health', 'nope?embed=1']) {
+    assert.match(await csp(p), /frame-ancestors 'none'/, p || '/');
+  }
+  assert.match(await csp('?embed=1', { method: 'POST' }) || "frame-ancestors 'none'", /frame-ancestors 'none'/, 'writes are never frameable');
+});

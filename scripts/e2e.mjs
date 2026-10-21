@@ -263,6 +263,22 @@ try {
   await page.keyboard.press('Enter'); await T('node-sub').pressSequentially('and a new line');
   check((await T('node-sub').inputValue()) === 'two words\nand a new line', 'the small print box takes spaces and new lines while typing');
   await T('edit-toggle').click();
+  // Embed view inside an iframe on another loopback origin; the full studio refuses framing.
+  const hostOrigin = 'http://localhost:6049';
+  await page.route(`${hostOrigin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>host</title><iframe id="emb" title="diagram" width="900" height="560" src="${base}/?embed=1&d=mcp-step-up&speed=slow"></iframe><iframe id="full" title="full" width="400" height="200" src="${base}/"></iframe>` }));
+  await page.goto(`${hostOrigin}/host`);
+  const emb = page.frameLocator('#emb');
+  await emb.getByTestId('embed').waitFor();
+  check(!(await emb.getByTestId('picker').count()) && !(await emb.getByTestId('edit-toggle').count()), 'the embedded view has no picker or edit controls');
+  await emb.getByTestId('simulate').click();
+  await sleep(150);
+  check((await emb.getByTestId('caption').innerText()).includes('→'), 'Simulate works inside the iframe');
+  await emb.getByTestId('pause').click(); await emb.getByTestId('reset').click();
+  check((await emb.getByTestId('caption').innerText()).includes('MCP tool call'), 'Reset works inside the iframe');
+  await sleep(600);
+  const fullFrame = page.frames().find((f) => f.name() === '' && f.url().replace(/\/$/, '') === base);
+  check(!fullFrame || !(await fullFrame.getByTestId('picker').count().catch(() => 0)), 'the full studio cannot be framed (frame-ancestors none)');
+  await page.unroute(`${hostOrigin}/**`);
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();
