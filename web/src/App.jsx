@@ -3,6 +3,7 @@ import { SPEEDS, toSvg, addEdge, addNode, captions, moveNode, removeEdge, remove
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
+import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
@@ -151,6 +152,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  const problems = useMemo(() => (diagram ? validateDiagram(diagram) : []), [diagram]);
   const caps = useMemo(() => (diagram ? captions(diagram) : []), [diagram]);
   if (!diagram) return <div className="page"><p role="status">{msg.text || "Loading…"}</p></div>;
   const selNode = sel.node && diagram.nodes.find((n) => n.id === sel.node);
@@ -209,7 +211,7 @@ export default function App() {
         <div className="bar" role="toolbar" aria-label="Edit and file" data-admin-only>
           <button onClick={() => setEditing(!editing)} aria-pressed={editing} data-testid="edit-toggle">{editing ? "Done editing" : "Edit"}</button>
           {editing && <button onClick={() => edit((d) => addNode(d, { label: "New box" }))} data-testid="add-box">Add box</button>}
-          <button className="primary" onClick={save} disabled={builtin || !dirty} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>
+          <button className="primary" onClick={save} disabled={builtin || !dirty || problems.length > 0} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>
           <button onClick={saveCopy} data-testid="save-copy">Save a copy</button>
           <button onClick={exportFile} data-testid="export">Export JSON</button>
           <button onClick={exportSvg} data-testid="export-svg">Export SVG</button>
@@ -243,6 +245,8 @@ export default function App() {
             </div>
           </section>
         )}
+
+        {editing && <DetailsEditor diagram={diagram} edit={edit} problems={problems} selectedNode={sel.node} />}
 
         {diagram.steps?.length > 0 && (
           <ol className="steps" aria-label="Step by step">

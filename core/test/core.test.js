@@ -289,3 +289,35 @@ test('toSvg arrows start and end on the borders of their own boxes (single arrow
     });
   }
 });
+
+test('step, group and text edits are immutable, stay valid, and clear optional fields', async () => {
+  const E = await import('../src/index.js');
+  const base = clone(SAMPLES[0]); const frozen = JSON.stringify(base);
+  let d = E.addStep(base, 'Extra'); assert.equal(d.steps.length, 6);
+  d = E.updateStep(d, 5, { what: 'text', why: 'because', hop: 'x-1', story: { id: 'S01', step: 2 } });
+  d = E.toggleStepEdge(d, 5, 3); d = E.toggleStepEdge(d, 5, 1);
+  assert.deepEqual(d.steps[5].edges, [1, 3]);
+  assert.deepEqual(E.validateDiagram(d), []);
+  d = E.toggleStepEdge(d, 5, 1); assert.deepEqual(d.steps[5].edges, [3]);
+  assert.equal(E.toggleStepEdge(d, 5, 99), d, 'unknown arrow ignored');
+  d = E.updateStep(d, 5, { why: '', hop: '', story: null }); assert.deepEqual(Object.keys(d.steps[5]).sort(), ['edges', 'title', 'what']);
+  assert.equal(E.updateStep(d, 5, { evil: 1, __proto__: { x: 1 } }).steps[5].evil, undefined, 'unknown keys ignored');
+  assert.equal(E.moveStep(d, 0, -1), d); assert.equal(E.moveStep(d, 0, 1).steps[1].title, base.steps[0].title);
+  assert.equal(E.removeStep(d, 5).steps.length, 5);
+  assert.equal(JSON.stringify(base), frozen, 'input never mutated');
+  while ((d.steps || []).length < LIMITS.steps) d = E.addStep(d); assert.equal(E.addStep(d).steps.length, LIMITS.steps);
+
+  let g = E.addGroup(base, 'Audit trail', 'green'); assert.ok(Object.hasOwn(g.groups, 'audit-trail'));
+  g = E.addGroup(g, 'Audit trail', 'blue'); assert.ok(Object.hasOwn(g.groups, 'audit-trail-2'));
+  g = E.setGroup(g, 'audit-trail', { label: 'Audit', color: 'amber' }); assert.equal(g.groups['audit-trail'].color, 'amber');
+  assert.equal(E.setGroup(g, '__proto__', { label: 'x' }), g);
+  assert.equal(E.removeGroup(g, 'people'), g, 'a group in use stays');
+  assert.ok(!Object.hasOwn(E.removeGroup(g, 'audit-trail').groups, 'audit-trail'));
+  assert.equal(E.removeGroup({ ...base, nodes: [], groups: { only: base.groups.people } }, 'only').groups.only.label, base.groups.people.label, 'the last group stays');
+  assert.deepEqual(E.validateDiagram(E.setNodeGroup(g, 'user', 'audit-trail')), []);
+
+  const n = E.setNodeSub(base, 'user', ' one \n\n two \n'); assert.deepEqual(n.nodes[0].sub, ['one', 'two']);
+  assert.equal('sub' in E.setNodeSub(base, 'user', '  \n ').nodes[0], false);
+  assert.equal(E.setNodeSub(base, 'user', 'a\nb\nc\nd\ne\nf\ng\nh').nodes[0].sub.length, LIMITS.sub);
+  assert.equal('lede' in E.setText(base, 'lede', ''), false); assert.equal(E.setText(base, 'title', 'T').title, 'T');
+});
