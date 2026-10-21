@@ -38,6 +38,21 @@ placed where it touches no box and no other label (a narrower, taller label when
 pins the few collisions that remain in the busiest ones (ciba-link, davinci-lifecycle). The PNG is the SVG at 2x, smaller for very large
 diagrams; past 8192 px the app says so and you export SVG instead. An invalid diagram is not exported; the editor shows why.
 
+## Embed in a demo page
+
+```html
+<iframe title="Token exchange" width="900" height="560"
+  src="http://127.0.0.1:6001/?embed=1&d=token-exchange&theme=light&speed=slow&autoplay=1&panel=1"></iframe>
+```
+
+`/?embed=1&d=<diagram id>` shows only the canvas and the walkthrough controls (Simulate, Pause, Resume, Prev, Next, Reset, Speed) and an
+"Open in studio" link. It has no editing, saving, diagram picker or browser storage, so an embed never changes anything. Boxes can still be
+dragged (in memory; Reset puts them back). Options: `theme=light|dark`, `speed=slow|normal|fast`, `autoplay=1` (start playing on load),
+`panel=1` (show the current step, with its story and hop, under the canvas). Other values are ignored.
+
+Only this URL may be framed, and only by a page on `http://localhost:*` or `http://127.0.0.1:*` (the Content-Security-Policy
+`frame-ancestors` list). The full studio and the API refuse framing. An IPv6 origin cannot be allowed: browsers reject it in that directive.
+
 ## Presenter mode
 
 **Present** (or `?present=1`) enlarges the type and canvas, hides the edit and file controls, and shows the current step in a big panel.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPEEDS, captions, moveNode, resetLayout } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
@@ -34,10 +34,15 @@ export default function Embed() {
       setDiagram(r.data.diagram); setSaved(r.data.diagram);
       const speed = q.get("speed");
       if (SPEEDS.some((s) => s.id === speed)) dispatch({ type: "speed", speed });
-      if (q.get("autoplay") === "1") dispatch({ type: "simulate", total: r.data.diagram.edges.length });
     })();
     return () => { live = false; };
   }, [q, dispatch]);
+
+  // Autoplay starts after the stepper has taken the diagram's arrow count (an earlier start would be reset by it).
+  const started = useRef(false);
+  useEffect(() => {
+    if (diagram && total > 0 && q.get("autoplay") === "1" && !started.current) { started.current = true; dispatch({ type: "simulate", total }); }
+  }, [diagram, total, q, dispatch]);
 
   const onMove = useCallback((id, x, y) => setDiagram((d) => moveNode(d, id, x, y)), []);
   const caps = useMemo(() => (diagram ? captions(diagram) : []), [diagram]);

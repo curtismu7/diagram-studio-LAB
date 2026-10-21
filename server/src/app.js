@@ -26,7 +26,7 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     res.status(421).json({ error: 'bad_host' });
   });
   // Only the embed view (/?embed=1) may be framed, and only by a page on a loopback origin; everything else refuses framing.
-  const LOOPBACK_FRAMES = 'http://localhost:* http://127.0.0.1:* http://[::1]:*';
+  const LOOPBACK_FRAMES = 'http://localhost:* http://127.0.0.1:*'; // an IPv6 source is not valid in frame-ancestors (Chrome rejects it)
   app.use((req, res, next) => {
     const frameable = req.method === 'GET' && req.path === '/' && req.query.embed === '1';
     res.set({
