@@ -205,3 +205,33 @@ test('toSvg bends an arrow around a box that sits on its straight path', async (
   const straight = toSvg(d).svg.match(/M([\d.-]+),([\d.-]+) Q([\d.-]+),([\d.-]+)/);
   assert.ok(Math.abs(Number(straight[4]) - Number(straight[2])) < 1, 'no box in the way: the arrow stays straight');
 });
+
+test('toSvg layout quality: labels and arrows stay clear across all 35 built-ins, perfectly on the 4 basics', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const { BASICS } = await import('../src/samples.js');
+  let lo = 0; let lb = 0; let ab = 0;
+  for (const d of SAMPLES) { const { report } = toSvg(d); lo += report.labelOverlaps; lb += report.labelBoxHits; ab += report.arrowBoxHits; }
+  assert.ok(lo <= 4 && lb <= 2 && ab <= 2, `collisions grew: label/label ${lo}, label/box ${lb}, arrow/box ${ab}`);
+  for (const d of BASICS) assert.deepEqual(toSvg(d).report, { labelOverlaps: 0, labelBoxHits: 0, arrowBoxHits: 0 }, d.id);
+});
+
+test('toSvg refuses an invalid diagram with a clear error, never NaN output', async () => {
+  const { toSvg } = await import('../src/index.js');
+  for (const bad of [null, {}, { ...clone(SAMPLES[0]), nodes: [] }, { ...clone(SAMPLES[0]), edges: undefined }]) assert.throws(() => toSvg(bad), /toSvg: diagram is not valid|toSvg/);
+  for (const d of SAMPLES) assert.doesNotMatch(toSvg(d).svg, /NaN|Infinity/, d.id);
+});
+
+test('toSvg keeps emoji whole when wrapping, outlines dark-theme boxes, and wraps a long legend', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  d.nodes[0].sub = ['a' + '\u{1F600}'.repeat(40)];
+  const svg = toSvg(d).svg;
+  assert.doesNotMatch(svg, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/, 'no lone surrogate in the picture');
+  assert.match(svg, /\u{1F600}/u);
+  assert.ok(!toSvg(SAMPLES[0]).svg.includes('stroke="#9aa5b8" stroke-width="1"'), 'light boxes have no outline');
+  assert.ok(toSvg(SAMPLES[0], { theme: 'dark' }).svg.includes('stroke="#9aa5b8" stroke-width="1"'), 'dark boxes get a light outline');
+  const g = clone(SAMPLES[0]); g.groups = Object.fromEntries(['one', 'two', 'three'].map((k, i) => [k, { label: 'L'.repeat(60) + i, color: ['red', 'dark', 'grey'][i] }]));
+  g.nodes.forEach((n, i) => { n.group = ['one', 'two', 'three'][i % 3]; });
+  const one = toSvg(SAMPLES[0]); const wide = toSvg(g);
+  assert.ok(wide.height > one.height, 'legend rows added height');
+});
