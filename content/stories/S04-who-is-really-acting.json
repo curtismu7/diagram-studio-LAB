@@ -1,0 +1,29 @@
+{
+  "id": "S04",
+  "title": "Who is really acting",
+  "goal": "A user delegates to an agent, which delegates again.",
+  "obstacle": "A flat token hides which agent in the chain did what.",
+  "control": "Each hop keeps the user as subject and nests an actor claim.",
+  "modes": [
+    "studio"
+  ],
+  "demos": [
+    "E3"
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "title": "First hop",
+      "tell": "The agent exchanges for a token naming it as actor.",
+      "say": "The token says: user is the subject, the agent is acting.",
+      "why": "The data API can tell the user from the agent."
+    },
+    {
+      "n": 2,
+      "title": "Second hop",
+      "tell": "The sub-agent exchanges again; the act claim nests.",
+      "say": "Every hop adds itself; none can remove another.",
+      "why": "The whole chain stays visible to the resource."
+    }
+  ]
+}

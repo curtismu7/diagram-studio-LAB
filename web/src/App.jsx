@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPEEDS, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
+import StepLinks from "./StepLinks.jsx";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
@@ -231,6 +232,7 @@ export default function App() {
                 <h4>{i + 1}. {s.title}</h4>
                 <p>{s.what}</p>
                 {s.why && <p className="muted"><strong>Why it matters:</strong> {s.why}</p>}
+                <StepLinks step={s} testId={`step-${i + 1}-links`} />
               </li>
             ))}
           </ol>

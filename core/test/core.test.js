@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
+import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
 
 const clone = (x) => structuredClone(x);
 
@@ -106,4 +106,30 @@ test('library: 31 imported diagrams, valid, unique ids, readable layout, every s
     assert.equal(pos.size, d.nodes.length, `${d.id}: two boxes share a position`);
     assert.doesNotMatch(JSON.stringify(d), /https?:\/\/|[A-Za-z0-9_-]{32,}/, `${d.id}: no URLs or long token-like strings`);
   }
+});
+
+test('stories are valid and every linked step resolves to a story step on the right diagram', () => {
+  for (const st of STORIES) { assert.deepEqual(validateStory(st), [], st.id); assert.ok(SAMPLES.some((d) => d.id === st.diagram), `${st.id} names a real diagram`); }
+  assert.equal(new Set(STORIES.map((s) => s.id)).size, STORIES.length);
+  let links = 0;
+  for (const d of SAMPLES) for (const stp of d.steps || []) if (stp.story) {
+    links++;
+    assert.ok(findStoryStep(stp.story), `${d.id}: ${stp.story.id} step ${stp.story.step} resolves`);
+    assert.equal(STORIES.find((s) => s.id === stp.story.id).diagram, d.id, 'a story step is linked from its own diagram');
+  }
+  assert.equal(links, 9);
+  assert.ok(SAMPLES.slice(0, 4).every((d) => d.steps.every((x) => x.hop)), 'every basic step names its trace hop');
+});
+
+test('validator checks step story and hop shapes', () => {
+  const bad = (mut, re) => { const d = clone(SAMPLES[0]); mut(d); assert.match(validateDiagram(d).join('|'), re); };
+  bad((d) => { d.steps[0].story = { id: 'X1', step: 1 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = { id: 'S01', step: 0 }; }, /story must be/);
+  bad((d) => { d.steps[0].story = 'S01'; }, /story must be/);
+  bad((d) => { d.steps[0].hop = 'has space'; }, /hop must be/);
+  bad((d) => { d.steps[0].hop = 'x'.repeat(65); }, /hop must be/);
+  bad((d) => { d.steps[0].hop = '<img>'; }, /hop must be/);
+  assert.ok(STORY_ID.test('S05') && !STORY_ID.test('S5'));
+  const d = clone(SAMPLES[0]); d.steps[0].story = { id: 'S99', step: 3 };
+  assert.deepEqual(validateDiagram(d), [], 'a story id from another demo is allowed; the UI shows it as a plain chip');
 });

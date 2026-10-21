@@ -170,6 +170,24 @@ describe("App", () => {
     });
   });
 
+  it("step cards link to the story step and the trace hop; an unknown story id is a plain chip", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const links = await screen.findByTestId("step-1-links");
+    expect(links).toHaveTextContent("Trace hop authorize");
+    await user.click(within(links).getByText(/Story S01 · step 1: Commit/));
+    expect(within(links).getByText(/We send the fingerprint, not the secret\./)).toBeVisible();
+    expect(screen.getByTestId("step-3-links")).toHaveTextContent("redirect");
+    expect(screen.getByTestId("step-3-links")).not.toHaveTextContent("Story");
+  });
+
+  it("an unknown story id renders as a plain label, text only", async () => {
+    const d = { ...SAMPLES[0], steps: SAMPLES[0].steps.map((s, i) => (i ? s : { ...s, story: { id: "S99", step: 3 }, hop: "x" })) };
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
+    render(<App />);
+    expect(await screen.findByText(/Story S99, step 3 \(not in this studio\)/)).toBeInTheDocument();
+  });
+
   it("renders label text inertly (no HTML interpretation)", async () => {
     const evil = { ...SAMPLES[0], nodes: SAMPLES[0].nodes.map((n, i) => (i ? n : { ...n, label: "<img src=x onerror=alert(1)>" })) };
     globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));
