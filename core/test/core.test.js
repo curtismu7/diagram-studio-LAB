@@ -94,3 +94,16 @@ test('goto pauses; addNode and addEdge respect the caps', () => {
   while (d.edges.length < LIMITS.edges) d = addEdge(d, 'user', 'api');
   assert.equal(addEdge(d, 'user', 'api').edges.length, LIMITS.edges);
 });
+
+test('library: 31 imported diagrams, valid, unique ids, readable layout, every step maps to arrows', async () => {
+  const { LIBRARY } = await import('../src/library.js');
+  const { BASICS } = await import('../src/samples.js');
+  assert.equal(LIBRARY.length, 31);
+  assert.equal(new Set([...BASICS, ...LIBRARY].map((d) => d.id)).size, BASICS.length + LIBRARY.length);
+  for (const d of LIBRARY) {
+    assert.deepEqual(validateDiagram(d), [], d.id);
+    const pos = new Set(d.nodes.map((n) => `${n.x},${n.y}`));
+    assert.equal(pos.size, d.nodes.length, `${d.id}: two boxes share a position`);
+    assert.doesNotMatch(JSON.stringify(d), /https?:\/\/|[A-Za-z0-9_-]{32,}/, `${d.id}: no URLs or long token-like strings`);
+  }
+});

@@ -64,9 +64,59 @@
   ],
   "diagrams": [
     {
+      "id": "a2aarchitecture-delegation",
+      "label": "A2A architecture: delegation",
+      "href": "/?d=a2aarchitecture-delegation"
+    },
+    {
+      "id": "a2aarchitecture-discovery",
+      "label": "A2A architecture: discovery",
+      "href": "/?d=a2aarchitecture-discovery"
+    },
+    {
+      "id": "aic-exchange",
+      "label": "AIC token exchange",
+      "href": "/?d=aic-exchange"
+    },
+    {
+      "id": "architectureoverview-overview",
+      "label": "Architecture overview",
+      "href": "/?d=architectureoverview-overview"
+    },
+    {
       "id": "auth-code-pkce",
       "label": "Authorization code with PKCE",
       "href": "/?d=auth-code-pkce"
+    },
+    {
+      "id": "ciba-link",
+      "label": "CIBA approval link",
+      "href": "/?d=ciba-link"
+    },
+    {
+      "id": "consent-mock",
+      "label": "Consent on a mock phone",
+      "href": "/?d=consent-mock"
+    },
+    {
+      "id": "davinci-lifecycle",
+      "label": "DaVinci SDK lifecycle",
+      "href": "/?d=davinci-lifecycle"
+    },
+    {
+      "id": "delegated-commerce",
+      "label": "Delegated Commerce",
+      "href": "/?d=delegated-commerce"
+    },
+    {
+      "id": "delegatedaccessproof-exchange",
+      "label": "Delegated access proof: exchange",
+      "href": "/?d=delegatedaccessproof-exchange"
+    },
+    {
+      "id": "delegatedaccessproof-proof",
+      "label": "Delegated access proof: proof",
+      "href": "/?d=delegatedaccessproof-proof"
     },
     {
       "id": "delegation-chain",
@@ -74,9 +124,114 @@
       "href": "/?d=delegation-chain"
     },
     {
+      "id": "delegation-chain-value",
+      "label": "Delegation Chain",
+      "href": "/?d=delegation-chain-value"
+    },
+    {
+      "id": "devicefirstsignin-signin",
+      "label": "Device-first sign-in",
+      "href": "/?d=devicefirstsignin-signin"
+    },
+    {
+      "id": "dot-workbench",
+      "label": "Dot workbench",
+      "href": "/?d=dot-workbench"
+    },
+    {
+      "id": "ext-door",
+      "label": "External door",
+      "href": "/?d=ext-door"
+    },
+    {
+      "id": "ext-seq",
+      "label": "External door: call sequence",
+      "href": "/?d=ext-seq"
+    },
+    {
+      "id": "group-policy",
+      "label": "Group Policy",
+      "href": "/?d=group-policy"
+    },
+    {
+      "id": "hosted-access",
+      "label": "Hosted Access",
+      "href": "/?d=hosted-access"
+    },
+    {
+      "id": "hostile-a2a",
+      "label": "Hostile A2A",
+      "href": "/?d=hostile-a2a"
+    },
+    {
+      "id": "hostilemcp-hostile",
+      "label": "Hostile MCP",
+      "href": "/?d=hostilemcp-hostile"
+    },
+    {
+      "id": "identity-for-ai",
+      "label": "Identity for AI",
+      "href": "/?d=identity-for-ai"
+    },
+    {
+      "id": "investdualauth-invest",
+      "label": "Invest dual authorization",
+      "href": "/?d=investdualauth-invest"
+    },
+    {
+      "id": "jev-gallery",
+      "label": "Demo gallery",
+      "href": "/?d=jev-gallery"
+    },
+    {
+      "id": "mcp-obs",
+      "label": "MCP observability",
+      "href": "/?d=mcp-obs"
+    },
+    {
       "id": "mcp-step-up",
       "label": "MCP tool call held for approval",
       "href": "/?d=mcp-step-up"
+    },
+    {
+      "id": "personal-agent",
+      "label": "Personal Agent",
+      "href": "/?d=personal-agent"
+    },
+    {
+      "id": "pf-cedar",
+      "label": "PingFederate and Cedar",
+      "href": "/?d=pf-cedar"
+    },
+    {
+      "id": "pfidjag-jag",
+      "label": "PingFederate ID-JAG: grant",
+      "href": "/?d=pfidjag-jag"
+    },
+    {
+      "id": "pfidjag-login",
+      "label": "PingFederate ID-JAG: login",
+      "href": "/?d=pfidjag-login"
+    },
+    {
+      "id": "pfidjag-request",
+      "label": "PingFederate ID-JAG: request",
+      "href": "/?d=pfidjag-request"
+    },
+    {
+      "id": "privilegefirstgateway-fork",
+      "label": "Privilege-first gateway: fork",
+      "href": "/?d=privilegefirstgateway-fork"
+    },
+    {
+      "id": "privilegefirstgateway-gateway",
+      "label": "Privilege-first gateway",
+      "href": "/?d=privilegefirstgateway-gateway"
+    },
+    {
+      "id": "sim-push",
+      "label": "Simulated push approval",
+      "href": "/?d=sim-push"
     },
     {
       "id": "token-exchange",
