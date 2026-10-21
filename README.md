@@ -31,8 +31,9 @@ Development: `npm run dev` (API on 6001, Vite on 6002).
 ## Presenter mode
 
 **Present** (or `?present=1`) enlarges the type and canvas, hides the edit and file controls, and shows the current step in a big panel.
-Keys: Space plays or pauses, ← → step (Right starts the walkthrough), R resets, 1 2 3 set slow, normal, fast, Esc exits.
-Keys are ignored while you type in a field, and Space on a focused button presses that button. The choice is remembered in this browser.
+Keys: Space plays or pauses, ← → (or Page Up/Down, handy with a clicker) step (Right starts the walkthrough), R resets, 1 2 3 set slow, normal, fast, Esc exits.
+Keys are ignored while you type in a text field, and Space on a focused button presses that button; Esc works from the diagram picker too. The choice is remembered in this browser; `?present=1` or `?present=0` sets it on load and is then removed from the address bar.
+Page Up/Down are taken over for stepping while presenting, so they do not scroll the page.
 
 ## Diagram format (`diagram-studio/1`)
 

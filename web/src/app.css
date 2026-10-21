@@ -25,7 +25,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 syst
 h1 { margin: 0; font-size: 1.25rem; } h2 { margin: 0.25rem 0; font-size: 1.4rem; } h3 { margin: 0 0 0.5rem; font-size: 1.05rem; } h4 { margin: 0 0 0.25rem; }
 .lede, .muted { color: var(--muted); } .small { font-size: 0.85rem; }
 .top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); background: var(--card); }
-.grow { flex: 1 1 18rem; }
+.grow { flex: 1 1 18rem; min-width: 0; } .grow select { max-width: 100%; }
 button, select, input, .filebtn { min-height: 36px; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.7rem; }
 button { cursor: pointer; } button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
@@ -58,10 +58,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 /* Presenter mode: bigger type, bigger canvas, no editing or file controls. */
 :root[data-present="1"] body { font-size: 20px; }
 :root[data-present="1"] [data-admin-only] { display: none; }
-:root[data-present="1"] .canvas { height: 56vh; min-height: 22rem; }
+:root[data-present="1"] .canvas { height: max(22rem, calc(100vh - 19rem)); }
 :root[data-present="1"] .box { font-size: 1.05rem; }
 :root[data-present="1"] .box-sub { font-size: 0.9rem; }
 :root[data-present="1"] .react-flow__edge-text { font-size: 14px; }
 :root[data-present="1"] .caption { font-size: 1.15rem; }
 .now { border: 1px solid var(--now); border-radius: 8px; background: var(--card); padding: 0.5rem 1rem; margin: 0.5rem 0; }
 .now h3 { margin: 0.25rem 0; font-size: 1.3em; } .now p { margin: 0.25rem 0; }
+
+.react-flow__node:focus-visible, .react-flow__edge:focus-visible, .now:focus-visible { outline: 3px solid var(--now); outline-offset: 2px; }

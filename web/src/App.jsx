@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPEEDS, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
@@ -35,7 +35,8 @@ export default function App() {
     if (!r.ok) return say("error", r.data.message || "Could not open that diagram.");
     setDiagram(r.data.diagram); setSaved(r.data.diagram); setBuiltin(r.data.builtin);
     setSel({}); setEditing(false); setMsg({ kind: "", text: "" }); setFitKey((k) => k + 1);
-  }, []);
+    dispatch({ type: "stop" });
+  }, [dispatch]);
   useEffect(() => {
     refresh().then((l) => {
       let want = new URLSearchParams(window.location.search).get("d");
@@ -57,6 +58,17 @@ export default function App() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+  useEffect(() => { // the saved choice, not the URL, rules after the first load
+    try { const u = new URL(window.location.href); if (u.searchParams.has("present")) { u.searchParams.delete("present"); window.history.replaceState(null, "", u); } } catch { /* no history */ }
+  }, []);
+  const nowRef = useRef(null);
+  const presentBtn = useRef(null);
+  const focusAfter = useRef(false); // set by the Present button: move focus once the new mode has rendered
+  useEffect(() => {
+    if (!focusAfter.current) return;
+    focusAfter.current = false;
+    (present ? nowRef.current : presentBtn.current)?.focus();
+  }, [present]);
   useEffect(() => {
     if (present) document.documentElement.dataset.present = "1"; else delete document.documentElement.dataset.present;
     try { localStorage.setItem("studio-present", present ? "1" : "0"); } catch { /* private mode */ }
@@ -110,7 +122,7 @@ export default function App() {
       const a = keyAction(e, { present });
       if (!a) return;
       e.preventDefault();
-      if (a === "exit") setPresent(false);
+      if (a === "exit") { focusAfter.current = true; setPresent(false); }
       else if (a === "toggle") dispatch({ type: st.step < 0 ? "simulate" : st.paused ? "resume" : "pause", total });
       else if (a === "next") { if (st.step < 0) { dispatch({ type: "simulate", total }); dispatch({ type: "pause" }); } else dispatch({ type: "next" }); }
       else if (a === "prev") dispatch({ type: "prev" });
@@ -133,11 +145,11 @@ export default function App() {
       <header className="top">
         <h1>Diagram Studio</h1>
         <label className="grow">Diagram{" "}
-          <select aria-label="Diagram" value={diagram.id} onChange={(e) => pick(e.target.value)} data-testid="picker">
+          <select aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
             {list.map((d) => <option key={d.id} value={d.id}>{d.title}{d.builtin ? " (sample)" : ""}</option>)}
           </select>
         </label>
-        <button onClick={(e) => { e.currentTarget.blur(); setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">{present ? "Exit presenting" : "Present"}</button>
+        <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
         <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle dark and light">{theme === "dark" ? "Light" : "Dark"}</button>
       </header>
 
@@ -163,10 +175,10 @@ export default function App() {
         <p className="caption" data-testid="caption" aria-live="polite">{st.step >= 0 ? caps[st.step] : "Press Simulate to walk the arrows in order. Drag any box to move it."}</p>
 
         {present && (
-          <section className="now" aria-label="What is happening" data-testid="now">
+          <section className="now" aria-label="What is happening" data-testid="now" tabIndex={-1} ref={nowRef}>
             {activeStep >= 0
               ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}</>)
-              : <p className="muted">Space plays or pauses · ← → step · R reset · 1 2 3 speed · Esc exits.</p>}
+              : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
         <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge}
