@@ -158,3 +158,50 @@ test('findStoryStep honours the step number; validateStory rejects broken storie
   bad((s) => { s.steps[0].say = ''; }, /say is required/);
   assert.ok(validateStory(null).length);
 });
+
+test('toSvg: one rect and one line per box/arrow, labels escaped, deterministic, highlight and themes', async () => {
+  const { toSvg, xmlText } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  const a = toSvg(d); const b = toSvg(d);
+  assert.equal(a.svg, b.svg, 'deterministic');
+  assert.match(a.svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="\d+" height="\d+" viewBox="0 0 \d+ \d+"/);
+  assert.equal((a.svg.match(/<path class="e" /g) || []).length, d.edges.length);
+  assert.ok((a.svg.match(/<rect /g) || []).length >= d.nodes.length + 1, 'background + one rect per box (+ legend swatches)');
+  assert.doesNotMatch(a.svg, /<script|onload|href=|<image|foreignObject/);
+  assert.equal(toSvg(d, { step: 2 }).svg.match(/marker-end="url\(#ahh\)"/g).length, 1, 'exactly one highlighted arrow');
+  assert.match(toSvg(d, { theme: 'dark' }).svg, /fill="#12161d"/);
+  assert.ok(!toSvg(d, { title: false }).svg.includes('font-size="20"'));
+  const evil = clone(d); evil.nodes[0].label = '<img src=x onerror=alert(1)> & "q" \u0000\u0007 \uD800';
+  evil.nodes[0].sub = ["]]></svg><script>alert(1)</script>"]; evil.title = 'A </title><script>x</script>';
+  const e = toSvg(evil).svg;
+  assert.doesNotMatch(e, /<img|<script|\u0000|\u0007|\uD800/);
+  assert.match(e, /&lt;img/);
+  assert.equal(xmlText('a&b<c>"d\'e'), 'a&amp;b&lt;c&gt;&quot;d&#39;e');
+  assert.equal(xmlText('😀'), '😀', 'a valid surrogate pair survives');
+});
+
+test('toSvg handles every built-in diagram and parallel arrows, long text, and negative coordinates', async () => {
+  const { toSvg } = await import('../src/index.js');
+  for (const d of SAMPLES) { const r = toSvg(d); assert.ok(r.width > 0 && r.height > 0, d.id); assert.equal((r.svg.match(/<path class="e" /g) || []).length, d.edges.length, d.id); }
+  const d = clone(SAMPLES[0]);
+  d.edges = [{ source: 'user', target: 'api', label: 'x'.repeat(160) }, { source: 'api', target: 'user' }, { source: 'user', target: 'api' }];
+  d.steps = [];
+  d.nodes[0].x = -500; d.nodes[0].y = -300; d.nodes[1].label = 'L'.repeat(80); d.nodes[1].sub = ['S'.repeat(120)];
+  const r = toSvg(d);
+  assert.deepEqual(validateDiagram(d), []);
+  const lines = [...r.svg.matchAll(/<path class="e" d="M([\d.-]+),([\d.-]+)/g)].map((m) => m[1] + ',' + m[2]);
+  assert.equal(new Set(lines).size, 3, 'parallel arrows do not overlap');
+  for (const m of r.svg.matchAll(/x="(-?[\d.]+)"/g)) assert.ok(Number(m[1]) >= -1 && Number(m[1]) <= r.width + 1, `x ${m[1]} inside the canvas`);
+});
+
+test('toSvg bends an arrow around a box that sits on its straight path', async () => {
+  const { toSvg } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  d.nodes = [{ id: 'a', group: 'people', label: 'A', x: 0, y: 0 }, { id: 'm', group: 'people', label: 'Middle', x: 400, y: 0 }, { id: 'b', group: 'people', label: 'B', x: 800, y: 0 }];
+  d.edges = [{ source: 'a', target: 'b', label: 'over' }]; d.steps = [];
+  const bent = toSvg(d).svg.match(/Q([\d.-]+),([\d.-]+)/);
+  assert.ok(Math.abs(Number(bent[2]) - (40 + 56 + 0)) > 40, 'control point moved off the straight line (y differs from the line)');
+  d.nodes[1].y = 600;
+  const straight = toSvg(d).svg.match(/M([\d.-]+),([\d.-]+) Q([\d.-]+),([\d.-]+)/);
+  assert.ok(Math.abs(Number(straight[4]) - Number(straight[2])) < 1, 'no box in the way: the arrow stays straight');
+});
