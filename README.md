@@ -62,6 +62,22 @@ Say, Tell and Why. A story id the studio does not ship (say, one from another de
 Colors: red, dark, grey, blue, green, amber. Limits: 60 boxes, 120 arrows, 60 steps, 8 groups. Anything else is refused with the reason.
 All text is shown as plain text, never as HTML.
 
+## Hosting the mock
+
+A hosted copy is read-only sample data: `MOCK_ONLY=1` refuses every API write with 403 `mock_only`, hides Save, Save a copy, Import and Delete,
+shows a banner, and keeps its working files in a throwaway temp directory. Defaults stay loopback-only; a cluster copy opts in explicitly:
+
+| Variable | Value | Why |
+| --- | --- | --- |
+| `MOCK_ONLY` | `1` | read-only hosted mock |
+| `STUDIO_BIND` | `0.0.0.0` | listen beyond loopback (the Docker image already sets this) |
+| `STUDIO_ALLOW_HOST` | the exact `Host` header clients send, e.g. `mock.example.com` (include `:port` if non-standard) | the DNS-rebinding guard answers 421 `bad_host` to every other host |
+| `PORT` | `6001` (default) | listen port |
+
+- Readiness probe: `GET /api/health` returns 200 with `"state":"ready"` and `"mode":"mock-only"`.
+- With a read-only root filesystem, mount a writable `/tmp` (an `emptyDir` in Kubernetes); the image runs as the non-root `node` user.
+- Do not bake a `.env` into an image: `.dockerignore` excludes it, and the server would load it at start. Pass settings as container environment.
+
 ## Checks
 
 - `npm test` runs core, server and web unit tests plus the content-pack and compose checks.
