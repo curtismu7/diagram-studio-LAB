@@ -1,0 +1,16 @@
+{
+  "demos": [
+    {
+      "id": "diagram-studio",
+      "name": "Diagram Studio",
+      "catalogId": "E3",
+      "kind": "Tool",
+      "description": "Pick or edit a flow diagram stored as data: move boxes, Simulate the arrows, change the speed, Reset, save and export as JSON.",
+      "url": "http://localhost:6001",
+      "healthPath": "/api/health",
+      "composeFile": "/Users/cmuir/Development/diagram-studio/docker-compose.yml",
+      "composeOverlays": [],
+      "notes": "Host-run: npm start (port 6001). Or: docker compose up --build -d (publishes 127.0.0.1:6001 only). Edit composeFile to this checkout's absolute path."
+    }
+  ]
+}

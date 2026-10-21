@@ -43,6 +43,7 @@ test('stepper: simulate, tick to the end, pause, resume restarts, prev/next clam
   assert.equal(reduce(s, { type: 'speed', speed: 'warp' }).speed, 'fast');
   s = reduce(s, { type: 'stop' }); assert.equal(s.step, -1);
   assert.equal(reduce(initial(0), { type: 'simulate' }).step, -1);
+  assert.equal(reduce(initial(0), { type: 'simulate', total: 4 }).step, 0, 'simulate trusts the caller total when state lags');
   assert.equal(reduce(reduce(initial(3), { type: 'goto', step: 9 }), { type: 'tick' }).step, 2);
   assert.equal(reduce(reduce(s, { type: 'speed', speed: 'slow' }), { type: 'total', total: 5 }).speed, 'slow');
 });
@@ -70,4 +71,24 @@ test('removing a node or edge keeps steps pointing at the right edges', () => {
   assert.deepEqual(e.steps[1].edges, [0]);
   assert.equal(addEdge(d, 'user', 'user').edges.length, d.edges.length, 'no self-loop');
   assert.equal(captions(d)[0], 'Client app → Authorization server: authorize request + code_challenge');
+});
+
+test('inherited and malformed names, infinite and huge numbers, oversize text are refused', () => {
+  const bad = (mut, re) => { const d = clone(SAMPLES[0]); mut(d); assert.match(validateDiagram(d).join('|'), re); };
+  for (const g of ['constructor', '__proto__', 'toString']) bad((d) => { d.nodes[0].group = g; }, /unknown group/);
+  bad((d) => { d.nodes[0].id = 'Bad Id'; }, /bad id/);
+  bad((d) => { d.groups['Bad Key'] = { label: 'x', color: 'red' }; }, /not a valid id/);
+  bad((d) => { d.nodes[0].x = Infinity; }, /x and y/);
+  bad((d) => { d.nodes[0].y = 20001; }, /x and y/);
+  bad((d) => { d.edges[0].target = 'ghost'; }, /unknown target/);
+  assert.ok(parseDiagram(' '.repeat(500_001)).problems[0].match(/500 KB/));
+});
+
+test('goto pauses; addNode and addEdge respect the caps', () => {
+  assert.equal(reduce(initial(3), { type: 'goto', step: 1 }).paused, true);
+  let d = clone(SAMPLES[0]);
+  while (d.nodes.length < LIMITS.nodes) d = addNode(d, { label: 'x' });
+  assert.equal(addNode(d, { label: 'y' }).nodes.length, LIMITS.nodes);
+  while (d.edges.length < LIMITS.edges) d = addEdge(d, 'user', 'api');
+  assert.equal(addEdge(d, 'user', 'api').edges.length, LIMITS.edges);
 });

@@ -5,13 +5,26 @@
   "type": "module",
   "description": "Diagram studio: pick or edit a flow diagram stored as data, move boxes, simulate, reset, change speed, save and export. Offline.",
   "license": "MIT",
-  "workspaces": ["core", "server", "web"],
-  "engines": { "node": ">=20" },
+  "workspaces": [
+    "core",
+    "server",
+    "web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w web",
     "start": "npm start -w server",
-    "test": "npm test -w core && npm test -w server",
+    "test": "npm test -w core && npm test -w server && npm test -w web && node --test scripts/content-pack.test.mjs scripts/compose.test.mjs",
     "doctor": "node scripts/doctor.mjs",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "build": "npm run build -w web",
+    "e2e": "node scripts/e2e.mjs",
+    "content-pack": "node scripts/build-content-pack.mjs && node scripts/validate-content-pack.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "playwright": "^1.64.1"
   }
 }

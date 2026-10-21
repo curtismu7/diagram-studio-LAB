@@ -41,7 +41,7 @@ export function validateDiagram(d) {
       else if (ids.has(n.id)) p.push(`${at}: duplicate id "${n.id}"`);
       else ids.add(n.id);
       if (!str(n.label, 80)) p.push(`${at}: label is required (max 80)`);
-      if (groups && !(n.group in groups)) p.push(`${at}: unknown group "${n.group}"`);
+      if (groups && !Object.hasOwn(groups, n.group)) p.push(`${at}: unknown group "${n.group}"`);
       if (n.sub !== undefined && (!Array.isArray(n.sub) || n.sub.length > LIMITS.sub || !n.sub.every((s) => typeof s === 'string' && s.length <= 120))) p.push(`${at}: sub must be up to ${LIMITS.sub} short text lines`);
       if (!num(n.x) || !num(n.y)) p.push(`${at}: x and y must be numbers`);
     });

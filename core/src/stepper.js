@@ -13,7 +13,7 @@ export const initial = (total) => ({ total, step: -1, paused: false, speed: DEFA
 export function reduce(s, action) {
   const last = s.total - 1;
   switch (action.type) {
-    case 'simulate': return s.total < 1 ? s : { ...s, step: 0, paused: false };
+    case 'simulate': { const total = action.total ?? s.total; return total < 1 ? s : { ...s, total, step: 0, paused: false }; }
     case 'tick':
       if (s.step < 0 || s.paused) return s;
       return s.step >= last ? { ...s, paused: true } : { ...s, step: s.step + 1 };

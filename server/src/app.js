@@ -34,7 +34,9 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
   app.use('/api', (req, res, next) => {
     if (req.method === 'GET' || req.method === 'HEAD') return next();
     const origin = req.headers.origin;
-    if (origin && new URL(origin).host !== req.headers.host) return res.status(403).json({ error: 'cross_origin' });
+    let originHost = null;
+    try { originHost = origin ? new URL(origin).host : null; } catch { /* Origin: null and junk are refused below */ }
+    if (origin && originHost !== req.headers.host) return res.status(403).json({ error: 'cross_origin' });
     next();
   });
   app.use('/api/health', health.router);

@@ -1,0 +1,5 @@
+[
+  { "id": "flow-diagram", "term": "Flow diagram", "definition": "Boxes for the parties and arrows for the calls between them, in order. Each arrow is one message, so walking the arrows tells the story." },
+  { "id": "walkthrough", "term": "Walkthrough", "definition": "Simulate highlights one arrow at a time, with Pause, Prev, Next and a speed control, so a presenter can pace the explanation." },
+  { "id": "diagram-as-data", "term": "Diagram as data", "definition": "A diagram stored as a small JSON document (boxes, arrows, steps) instead of drawn art, so it can be edited, reviewed, exported and imported." }
+]

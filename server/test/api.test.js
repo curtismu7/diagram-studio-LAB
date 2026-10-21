@@ -85,7 +85,8 @@ test('rejects foreign Host and cross-origin writes; sets security headers', asyn
     req.end(method === 'GET' ? undefined : '{}');
   });
   const port = new URL(base).port;
-  assert.equal(await status({ Host: 'evil.example' }), 421);
+  for (const h of ['evil.example', '127.0.0.1.evil.com', 'localhost.evil.com', `127.0.0.1:${port}@evil.com`, `xlocalhost:${port}`]) assert.equal(await status({ Host: h }), 421, h);
+  assert.equal(await status({ Host: `127.0.0.1:${port}`, Origin: 'null', 'Content-Type': 'application/json' }, 'POST'), 403);
   assert.equal(await status({ Host: `127.0.0.1:${port}`, Origin: 'http://evil.example', 'Content-Type': 'application/json' }, 'POST'), 403);
   const r = await fetch(`${base}api/diagrams`);
   assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
@@ -95,6 +96,13 @@ test('rejects foreign Host and cross-origin writes; sets security headers', asyn
 test('makes no outbound connection: the server source has no network client', () => {
   const src = ['app.js', 'store.js', 'doctor.js', 'health.js', 'index.js'].map((f) => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8')).join('\n');
   assert.doesNotMatch(src, /\bfetch\(|node:https?['"]|node:net['"]|XMLHttpRequest|WebSocket/);
+});
+
+test('health state is ready and schema string is exact; infinite coordinates are refused over the API', async () => {
+  const j = await (await fetch(`${base}api/health`)).json();
+  assert.equal(j.schema, 'demo-health/1'); assert.equal(j.demo.id, 'diagram-studio');
+  const d = copy('inf'); d.nodes[0].x = 1e999;
+  assert.equal((await fetch(`${base}api/diagrams`, { method: 'POST', headers: J, body: JSON.stringify(d).replace('null', '1e999') })).status, 422);
 });
 
 test('doctor passes by default and fails on bad bind-free conditions', () => {
