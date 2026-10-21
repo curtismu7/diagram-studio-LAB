@@ -31,7 +31,7 @@ export function buildPack({ commit } = {}) {
     glossary: readJson('content/terms.json').sort(byId),
     sources: [],
     cards: CARDS.map(({ href, ...c }) => ({ ...c, action: { type: 'route', href } })).sort(byId),
-    diagrams: SAMPLES.map((d) => ({ id: d.id, label: d.title, href: '/' })).sort(byId),
+    diagrams: SAMPLES.map((d) => ({ id: d.id, label: d.title, href: `/?d=${d.id}` })).sort(byId),
     stories: [],
   };
   return pack;

@@ -38,7 +38,7 @@ export function toFlow(d, step, selectedEdge) {
 function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEdge, fitKey }) {
   const { nodes, edges } = useMemo(() => toFlow(diagram, step, selectedEdge), [diagram, step, selectedEdge]);
   const rf = useReactFlow();
-  useEffect(() => { const t = setTimeout(() => rf.fitView({ padding: 0.15 }), 30); return () => clearTimeout(t); }, [fitKey, rf]);
+  useEffect(() => { const t = setTimeout(() => rf.fitView({ padding: 0.15 }), 30); return () => clearTimeout(t); }, [fitKey, nodes.length, rf]);
   const onNodesChange = useCallback((changes) => {
     for (const c of changes) if (c.type === "position" && c.position) onMove(c.id, c.position.x, c.position.y, c.dragging === false);
   }, [onMove]);

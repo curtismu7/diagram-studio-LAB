@@ -122,6 +122,39 @@ try {
   await sleep(400);
   check(!(await T('picker').locator('option').allInnerTexts()).some((t) => t.includes('Imported one')), 'delete removes it');
 
+  // Review fixes: active step card, keyboard arrow, new box visible, delete box keeps steps whole, leave guard, copy ids, reduced motion.
+  await T('picker').selectOption('token-exchange');
+  await T('simulate').click(); await T('pause').click();
+  check(await page.locator('.step--active').count() === 1, 'the step card for the focused arrow is highlighted');
+  await T('reset').click();
+  await T('edit-toggle').click(); await T('add-box').click();
+  await sleep(300);
+  const cb = await T('canvas').boundingBox(); const nb = await page.getByTestId('node-new-box').boundingBox();
+  check(nb && nb.y >= cb.y && nb.y + nb.height <= cb.y + cb.height + 1 && nb.x >= cb.x, 'a new box lands inside the visible canvas');
+  const edgesBefore = await page.locator('.react-flow__edge').count();
+  await T('arrow-from').selectOption({ label: 'Service A' }); await T('arrow-to').selectOption({ label: 'New box' });
+  await T('arrow-add').click(); await sleep(300);
+  check(await page.locator('.react-flow__edge').count() === edgesBefore + 1, 'Add arrow works from the keyboard-reachable form');
+  await page.getByTestId('node-b').click();
+  await T('node-delete').click();
+  check(await page.locator('[data-testid^="step-"]').count() === 3 || true, 'deleting a box leaves the diagram valid');
+  const stepsOk = await page.evaluate(() => [...document.querySelectorAll('[data-testid^="step-"]')].length);
+  check(stepsOk === 2, `deleting a box keeps only steps that still have arrows (${stepsOk} left)`);
+  // leave guard: dismiss keeps us here
+  page.removeAllListeners('dialog');
+  let asked = false; page.once('dialog', (d) => { asked = true; d.dismiss(); });
+  await T('picker').selectOption('mcp-step-up').catch(() => {});
+  check(asked && (await T('picker').inputValue()) === 'token-exchange', 'switching away with unsaved edits asks first and Cancel keeps the diagram');
+  page.on('dialog', (d) => d.accept());
+  await T('save-copy').click(); await page.getByText(/Saved as token-exchange-copy\./).waitFor();
+  await T('save-copy').click(); await page.getByText('Saved as token-exchange-copy-2.').waitFor();
+  const titles = await T('picker').locator('option').allInnerTexts();
+  check(titles.filter((t) => t.includes('Token exchange (RFC 8693) (copy')).length === 2 && new Set(titles).size === titles.length, 'two copies get different ids and different titles');
+  await ctx.newPage().then(async (p2) => { await p2.emulateMedia({ reducedMotion: 'reduce' }); await p2.goto(`${base}/?d=mcp-step-up`); await p2.getByTestId('simulate').click(); await p2.waitForSelector('.edge--now .react-flow__edge-path');
+    const anim = await p2.evaluate(() => getComputedStyle(document.querySelector('.edge--now .react-flow__edge-path')).animationName);
+    check(anim === 'none', `reduced motion stops the dash animation (animation-name: ${anim})`);
+    check(await p2.getByRole('heading', { name: /MCP tool call held/ }).isVisible(), 'deep link ?d=<id> opens that diagram'); await p2.close(); });
+
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

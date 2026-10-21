@@ -66,9 +66,11 @@ test('removing a node or edge keeps steps pointing at the right edges', () => {
   assert.equal(noApi.edges.length, 5);
   assert.deepEqual(validateDiagram(noApi), []);
   assert.deepEqual(noApi.steps.at(-1).edges, [4]);
+  assert.ok(noApi.steps.every((st) => st.edges.length), 'no step is left without an arrow');
+  assert.equal(removeNode(d, 'user').steps.length, 4, 'a step whose only arrow went is dropped');
   const e = removeEdge(d, 0);
-  assert.deepEqual(e.steps[0].edges, []);
-  assert.deepEqual(e.steps[1].edges, [0]);
+  assert.equal(e.steps.length, 4);
+  assert.deepEqual(e.steps[0].edges, [0]);
   assert.equal(addEdge(d, 'user', 'user').edges.length, d.edges.length, 'no self-loop');
   assert.equal(captions(d)[0], 'Client app → Authorization server: authorize request + code_challenge');
 });

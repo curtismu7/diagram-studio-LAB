@@ -15,6 +15,7 @@ export default function App() {
   const [sel, setSel] = useState({});
   const [msg, setMsg] = useState({ kind: "", text: "" });
   const [fitKey, setFitKey] = useState(0);
+  const [arrow, setArrow] = useState({ from: "", to: "" });
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem("studio-theme") || ""; } catch { return ""; } });
   const total = diagram ? diagram.edges.length : 0;
   const [st, dispatch] = useStepper(total);
@@ -31,13 +32,27 @@ export default function App() {
     setDiagram(r.data.diagram); setSaved(r.data.diagram); setBuiltin(r.data.builtin);
     setSel({}); setEditing(false); setMsg({ kind: "", text: "" }); setFitKey((k) => k + 1);
   }, []);
-  useEffect(() => { refresh().then((l) => { if (l[0]) open(l[0].id); }); }, [refresh, open]);
+  useEffect(() => {
+    refresh().then((l) => {
+      let want = new URLSearchParams(window.location.search).get("d");
+      try { want = want || localStorage.getItem("studio-last"); } catch { /* private mode */ }
+      const first = l.find((x) => x.id === want) || l[0];
+      if (first) open(first.id);
+    });
+  }, [refresh, open]);
+  useEffect(() => { if (diagram) try { localStorage.setItem("studio-last", diagram.id); } catch { /* private mode */ } }, [diagram?.id]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme || "";
     try { theme ? localStorage.setItem("studio-theme", theme) : localStorage.removeItem("studio-theme"); } catch { /* private mode */ }
   }, [theme]);
 
   const dirty = diagram && saved && !same(diagram, saved);
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const edit = (fn) => setDiagram((d) => fn(d));
   const onMove = useCallback((id, x, y) => setDiagram((d) => moveNode(d, id, x, y)), []);
 
@@ -53,7 +68,8 @@ export default function App() {
     const taken = new Set(list.map((l) => l.id));
     let id = `${base}-copy`; let n = 2;
     while (taken.has(id)) id = `${base}-copy-${n++}`;
-    const copy = { ...diagram, id, title: `${diagram.title.replace(/ \(copy\)$/, "")} (copy)` };
+    const baseTitle = diagram.title.replace(/ \(copy( \d+)?\)$/, "");
+    const copy = { ...diagram, id, title: n > 2 ? `${baseTitle} (copy ${n - 1})` : `${baseTitle} (copy)` };
     const r = await api.createDiagram(copy);
     if (!r.ok) return say("error", `${r.data.message || "Save failed."} ${(r.data.problems || []).join("; ")}`);
     await refresh(); setDiagram(copy); setSaved(copy); setBuiltin(false); say("ok", `Saved as ${id}.`);
@@ -154,7 +170,12 @@ export default function App() {
                 <button onClick={() => { edit((d) => removeEdge(d, sel.edge)); setSel({}); }} data-testid="edge-delete">Delete arrow</button>
               </>
             )}
-            {!selNode && !selEdge && <p className="muted">Click a box or an arrow to change it. Drag from the right dot of one box to the left dot of another to add an arrow.</p>}
+            {!selNode && !selEdge && <p className="muted">Click a box or an arrow to change it. Drag from the right dot of one box to the left dot of another, or use Add arrow below.</p>}
+            <div className="bar">
+              <label>From <select value={arrow.from} onChange={(e) => setArrow({ ...arrow, from: e.target.value })} data-testid="arrow-from"><option value="">Choose…</option>{diagram.nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}</select></label>
+              <label>To <select value={arrow.to} onChange={(e) => setArrow({ ...arrow, to: e.target.value })} data-testid="arrow-to"><option value="">Choose…</option>{diagram.nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}</select></label>
+              <button disabled={!arrow.from || !arrow.to || arrow.from === arrow.to} onClick={() => edit((d) => addEdge(d, arrow.from, arrow.to))} data-testid="arrow-add">Add arrow</button>
+            </div>
           </section>
         )}
 

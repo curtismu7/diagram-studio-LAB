@@ -66,22 +66,22 @@
     {
       "id": "auth-code-pkce",
       "label": "Authorization code with PKCE",
-      "href": "/"
+      "href": "/?d=auth-code-pkce"
     },
     {
       "id": "delegation-chain",
       "label": "Delegation chain",
-      "href": "/"
+      "href": "/?d=delegation-chain"
     },
     {
       "id": "mcp-step-up",
       "label": "MCP tool call held for approval",
-      "href": "/"
+      "href": "/?d=mcp-step-up"
     },
     {
       "id": "token-exchange",
       "label": "Token exchange (RFC 8693)",
-      "href": "/"
+      "href": "/?d=token-exchange"
     }
   ],
   "stories": []
