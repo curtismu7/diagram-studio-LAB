@@ -19,6 +19,18 @@ describe("keyAction", () => {
     expect(keyAction(k("3"), p)).toBe("speed-fast");
     expect(keyAction(k("x"), p)).toBeNull();
   });
+  it("maps clicker keys and capital R, lets Esc out of a select, ignores key repeat for toggle and reset", () => {
+    const p = { present: true };
+    expect(keyAction(k("PageDown"), p)).toBe("next");
+    expect(keyAction(k("PageUp"), p)).toBe("prev");
+    expect(keyAction(k("R"), p)).toBe("reset");
+    expect(keyAction(k("Escape", "SELECT"), p)).toBe("exit");
+    expect(keyAction(k("Escape", "INPUT"), p)).toBeNull();
+    expect(keyAction(k("ArrowRight", "SELECT"), p)).toBeNull();
+    expect(keyAction(k(" ", "BODY", { repeat: true }), p)).toBeNull();
+    expect(keyAction(k("r", "BODY", { repeat: true }), p)).toBeNull();
+    expect(keyAction(k("ArrowRight", "BODY", { repeat: true }), p)).toBe("next");
+  });
   it("leaves typing in fields, Space on a focused button, and modified keys alone", () => {
     const p = { present: true };
     for (const tag of ["INPUT", "SELECT", "TEXTAREA"]) expect(keyAction(k("ArrowRight", tag), p)).toBeNull();

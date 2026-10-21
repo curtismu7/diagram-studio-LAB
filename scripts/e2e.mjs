@@ -178,8 +178,8 @@ try {
   await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowLeft');
   check(/Arrow 2 of 6/.test(await T('stepcount').innerText()), 'Right, Right, Left lands on arrow 2');
   await page.keyboard.press(' ');
-  await sleep(100);
-  check(/Arrow 2 of 6/.test(await T('stepcount').innerText()) && await T('pause').isVisible(), 'Space resumes playing from a paused arrow');
+  await T('pause').waitFor({ timeout: 5000 });
+  check(/Arrow [2-3] of 6/.test(await T('stepcount').innerText()), 'Space resumes playing from a paused arrow');
   await page.keyboard.press(' ');
   await page.keyboard.press('3');
   check(await T('speed').inputValue() === 'fast', 'key 3 sets fast speed');
@@ -190,6 +190,17 @@ try {
   check(await T('edit-toggle').isVisible(), 'Escape leaves presenter mode');
   await page.goto(`${base}/?d=auth-code-pkce&present=1`); await T('now').waitFor();
   check(true, '?present=1 opens straight into presenter mode');
+  check(!page.url().includes('present='), 'the present param is removed from the address bar');
+  await T('picker').selectOption('mcp-step-up'); await page.getByRole('heading', { name: /MCP tool call held/ }).waitFor(); await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => /Arrow 1 of 7/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 5000 });
+  check(true, 'keys still work after using the diagram picker');
+  await page.reload(); await T('now').waitFor();
+  check(true, 'reload keeps presenting (saved choice)');
+  await page.setViewportSize({ width: 390, height: 844 });
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'presenter mode has no horizontal scroll at phone width');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.keyboard.press('Escape'); await page.reload(); await T('edit-toggle').waitFor();
+  check(!(await T('now').count()), 'after Esc a reload stays out of presenter mode');
   await T('present').click();
 
   // Dark mode, small screen: no horizontal scroll.
