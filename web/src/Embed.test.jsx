@@ -14,8 +14,9 @@ function mockApi() {
   });
 }
 const at = (q) => window.history.replaceState(null, "", `/${q}`);
-beforeEach(() => { mockApi(); localStorage.clear(); });
-afterEach(() => { at(""); localStorage.clear(); delete document.documentElement.dataset.theme; vi.useRealTimers(); });
+let setItem;
+beforeEach(() => { mockApi(); localStorage.clear(); setItem = vi.spyOn(localStorage, "setItem"); });
+afterEach(() => { setItem.mockRestore(); at(""); localStorage.clear(); delete document.documentElement.dataset.theme; vi.useRealTimers(); });
 
 describe("Embed", () => {
   it("shows only the canvas and walkthrough controls: no picker, edit, file or present controls", async () => {
@@ -40,7 +41,7 @@ describe("Embed", () => {
     expect(screen.getByTestId("caption")).toHaveTextContent("Authorization server");
     await user.click(screen.getByTestId("reset"));
     expect(screen.getByTestId("caption")).toHaveTextContent("Authorization code with PKCE");
-    expect(localStorage.length).toBe(0);
+    expect(setItem).not.toHaveBeenCalled();
   });
 
   it("theme param sets the theme without storing it; panel=1 shows the active step with its links", async () => {
@@ -55,7 +56,7 @@ describe("Embed", () => {
     const panel = await screen.findByTestId("embed-panel");
     expect(within(panel).getByText(/1\. Start/)).toBeInTheDocument();
     expect(within(screen.getByTestId("embed-links")).getByText(/authorize/)).toBeInTheDocument();
-    expect(localStorage.length).toBe(0);
+    expect(setItem).not.toHaveBeenCalled();
   });
 
   it("an unknown diagram id shows an error, a bad theme or speed value is ignored", async () => {

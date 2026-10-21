@@ -34,9 +34,9 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
   const page = await ctx.newPage();
   const foreign = []; const errors = [];
-  page.on('request', (r) => { if (!r.url().startsWith(base) && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) foreign.push(r.url()); });
+  page.on('request', (r) => { if (!r.url().startsWith(base) && !r.url().startsWith('data:') && !r.url().startsWith('blob:') && !r.url().startsWith('http://localhost:6049/')) foreign.push(r.url()); /* 6049 is this script's own host page for the iframe test */ });
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/status of 422/.test(m.text())) errors.push(m.text()); /* the 422 is the bad import on purpose */ });
+  page.on('console', (m) => { if (m.type() === 'error' && !/status of 422/.test(m.text()) && !/Framing .*frame-ancestors 'none'/.test(m.text())) errors.push(m.text()); /* the 422 is the bad import on purpose */ });
   page.on('dialog', (d) => d.accept());
   const T = (id) => page.getByTestId(id);
   const pos = async (id) => { const b = await T(`node-${id}`).boundingBox(); return b && [Math.round(b.x), Math.round(b.y)]; };
@@ -264,8 +264,12 @@ try {
   check((await T('node-sub').inputValue()) === 'two words\nand a new line', 'the small print box takes spaces and new lines while typing');
   await T('edit-toggle').click();
   // Embed view inside an iframe on another loopback origin; the full studio refuses framing.
+  // The host page is served by a real local server (a route-faked page counts as a public address to Chrome and is blocked from framing a local one).
+  const http = await import('node:http');
+  const hostPage = `<!doctype html><title>host</title><iframe id="emb" title="diagram" width="900" height="560" src="${base}/?embed=1&d=mcp-step-up&speed=slow"></iframe><iframe id="full" title="full" width="400" height="200" src="${base}/"></iframe>`;
+  const hostServer = http.createServer((_q, r) => { r.setHeader('Content-Type', 'text/html'); r.end(hostPage); });
+  await new Promise((res) => hostServer.listen(6049, '127.0.0.1', res));
   const hostOrigin = 'http://localhost:6049';
-  await page.route(`${hostOrigin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>host</title><iframe id="emb" title="diagram" width="900" height="560" src="${base}/?embed=1&d=mcp-step-up&speed=slow"></iframe><iframe id="full" title="full" width="400" height="200" src="${base}/"></iframe>` }));
   await page.goto(`${hostOrigin}/host`);
   const emb = page.frameLocator('#emb');
   await emb.getByTestId('embed').waitFor();
@@ -276,9 +280,9 @@ try {
   await emb.getByTestId('pause').click(); await emb.getByTestId('reset').click();
   check((await emb.getByTestId('caption').innerText()).includes('MCP tool call'), 'Reset works inside the iframe');
   await sleep(600);
-  const fullFrame = page.frames().find((f) => f.name() === '' && f.url().replace(/\/$/, '') === base);
-  check(!fullFrame || !(await fullFrame.getByTestId('picker').count().catch(() => 0)), 'the full studio cannot be framed (frame-ancestors none)');
-  await page.unroute(`${hostOrigin}/**`);
+  check(page.frames().some((f) => f.url().startsWith('chrome-error://')) && page.frames().filter((f) => f.url().startsWith(base)).length === 1, 'the full studio cannot be framed (blocked by frame-ancestors), only the embed view loads');
+  await new Promise((res) => hostServer.close(res));
+  await page.goto(base);
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();
