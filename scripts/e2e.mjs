@@ -293,6 +293,33 @@ try {
   check(page.frames().some((f) => f.url().startsWith('chrome-error://')) && page.frames().filter((f) => f.url().startsWith(base) && !f.url().includes('embed=1')).length === 0, 'the full studio cannot be framed (blocked by frame-ancestors), only the embed view loads');
   await new Promise((res) => hostServer.close(res));
   await page.goto(base);
+  // Undo/redo, Tidy and New diagram in the real canvas.
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('undo').waitFor(); await sleep(500); // let the canvas finish fitting before measuring
+  const p0 = await pos('client');
+  const bx = await T('node-client').boundingBox();
+  await page.mouse.move(bx.x + 20, bx.y + 10); await page.mouse.down(); await page.mouse.move(bx.x + 140, bx.y + 120, { steps: 12 }); await page.mouse.up();
+  const p1 = await pos('client');
+  check(p1[0] !== p0[0] || p1[1] !== p0[1], 'drag moved the box');
+  await T('undo').click(); await sleep(250);
+  const p2 = await pos('client');
+  check(Math.abs(p2[0] - p0[0]) <= 2 && Math.abs(p2[1] - p0[1]) <= 2 && await T('undo').isDisabled(), 'one Undo undoes the whole drag (many small moves = one step)');
+  await T('redo').click(); await sleep(250);
+  const p3 = await pos('client');
+  check(Math.abs(p3[0] - p1[0]) <= 2 && Math.abs(p3[1] - p1[1]) <= 2, 'Redo puts the dragged box back');
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await sleep(250);
+  check(await T('undo').isDisabled(), 'the keyboard shortcut undoes too');
+  await T('tidy').click(); await sleep(400);
+  const rects = await page.locator('[data-testid^="node-"]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.right, r.bottom]; }));
+  let tidyOverlaps = 0; for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const a = rects[i]; const b = rects[j]; if (a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]) tidyOverlaps++; }
+  check(rects.length === 4 && tidyOverlaps === 0, 'Tidy leaves all 4 boxes without overlaps');
+  await T('undo').click(); await sleep(250);
+  check(await T('undo').isDisabled(), 'Tidy is a single undo step');
+  await T('new-open').click(); await T('new-title').fill('Approval from e2e'); await T('new-template').selectOption('approval'); await T('new-create').click();
+  await page.getByRole('heading', { name: /Approval from e2e/ }).waitFor();
+  check(await page.locator('[data-testid^="node-"]').count() === 3 && (await T('msg').innerText()).includes('Created approval-from-e2e'), 'New diagram from a template opens with its 3 boxes');
+  await page.reload(); await T('picker').waitFor();
+  check((await T('picker').locator('option').allInnerTexts()).includes('Approval from e2e'), 'the new diagram is saved and listed after a reload');
+  await page.goto(`${base}/?d=approval-from-e2e`); await T('delete').waitFor(); await T('delete').click(); await sleep(300);
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

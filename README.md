@@ -29,6 +29,15 @@ Development: `npm run dev` (API on 6001, Vite on 6002).
 - **Export JSON** downloads the diagram you see (including unsaved edits). **Import JSON** checks the file and saves it as a new diagram;
   an id that already exists is refused.
 
+## Undo, Tidy and new diagrams
+
+- **Undo / Redo** (buttons, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z, also Ctrl+Y) step through your edits, up to 100. Dragging a box is one step however long the drag is.
+  The shortcuts leave text fields alone (a field keeps its own undo). Opening another diagram starts a fresh history.
+- **Tidy** lays the boxes out left to right in columns by arrow direction, with no overlaps (boxes are sized from their text). Back arrows of a loop are
+  ignored for the layering. It is one undo step, and **Reset** still goes back to the layout you opened or last saved.
+- **New diagram** starts from a template (blank, client and server, request held for approval), a title you type, and an id made from it
+  (a number is added if it is taken). It is saved right away, so it is listed and opens like any other.
+
 ## Export for decks
 
 **Export SVG** and **Export PNG** draw the diagram you see: current box positions, light or dark to match the page, and the focused arrow
