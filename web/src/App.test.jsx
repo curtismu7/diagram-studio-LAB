@@ -282,6 +282,45 @@ describe("App", () => {
     });
   });
 
+  it("the details editor adds a step, links arrows, story and hop, and flags a bad hop", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("edit-toggle"));
+    expect(screen.getByTestId("details-editor")).toBeInTheDocument();
+    expect(screen.getAllByTestId(/^stepedit-\d+$/)).toHaveLength(5);
+    await user.click(screen.getByTestId("add-step"));
+    const t = await screen.findByTestId("stepedit-6-title");
+    await user.clear(t); await user.type(t, "Audit");
+    await user.click(screen.getByTestId("stepedit-6-edge-2"));
+    await user.type(screen.getByTestId("stepedit-6-hop"), "audit.log");
+    await user.type(screen.getByTestId("stepedit-6-story"), "s02");
+    expect(screen.getByTestId("stepedit-6-story")).toHaveValue("S02");
+    expect(screen.getByTestId("stepedit-6-storystep")).toHaveValue(1);
+    expect(screen.queryByTestId("problems")).toBeNull();
+    expect(screen.getByTestId("step-6")).toHaveTextContent("6. Audit");
+    expect(screen.getByTestId("step-6-links")).toHaveTextContent("Story S02 · step 1: Ask");
+    await user.type(screen.getByTestId("stepedit-6-hop"), " bad");
+    expect(await screen.findByTestId("problems")).toHaveTextContent(/hop must be a short id/);
+    await user.click(screen.getByTestId("stepedit-6-delete"));
+    expect(screen.queryByTestId("problems")).toBeNull();
+    expect(screen.queryByTestId("stepedit-6")).toBeNull();
+  });
+
+  it("groups: add, rename, recolour; a group in use cannot be removed", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("edit-toggle"));
+    await user.click(screen.getByTestId("add-group"));
+    const rows = within(screen.getByTestId("groups")).getAllByRole("listitem");
+    expect(rows).toHaveLength(4);
+    expect(within(rows[0]).getByRole("button", { name: "Remove" })).toBeDisabled();
+    expect(within(rows[3]).getByRole("button", { name: "Remove" })).toBeEnabled();
+    await user.click(within(rows[3]).getByRole("button", { name: "Remove" }));
+    expect(within(screen.getByTestId("groups")).getAllByRole("listitem")).toHaveLength(3);
+  });
+
   it("renders label text inertly (no HTML interpretation)", async () => {
     const evil = { ...SAMPLES[0], nodes: SAMPLES[0].nodes.map((n, i) => (i ? n : { ...n, label: "<img src=x onerror=alert(1)>" })) };
     globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));

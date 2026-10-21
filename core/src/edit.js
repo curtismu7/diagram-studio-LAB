@@ -61,3 +61,78 @@ export function captions(d) {
   const name = Object.fromEntries(d.nodes.map((n) => [n.id, n.label]));
   return d.edges.map((e) => `${name[e.source] || e.source} → ${name[e.target] || e.target}${e.label ? `: ${e.label}` : ''}`);
 }
+
+// ---- titles, groups, steps -------------------------------------------------------------------------------------------
+
+export const setText = (d, key, value) => {
+  const { [key]: _drop, ...rest } = d;
+  return key === 'lede' && !value ? rest : { ...rest, [key]: value };
+};
+
+export const setNodeGroup = (d, id, group) => ({ ...d, nodes: d.nodes.map((n) => (n.id === id ? { ...n, group } : n)) });
+
+export function setNodeSub(d, id, text) {
+  const sub = String(text).split('\n').map((l) => l.trim()).filter(Boolean).slice(0, LIMITS.sub);
+  return { ...d, nodes: d.nodes.map((n) => {
+    if (n.id !== id) return n;
+    const { sub: _drop, ...rest } = n;
+    return sub.length ? { ...rest, sub } : rest;
+  }) };
+}
+
+export function addGroup(d, label = 'New group', color = 'grey') {
+  if (Object.keys(d.groups).length >= LIMITS.groups) return d;
+  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'group';
+  let key = base; let i = 2;
+  while (Object.hasOwn(d.groups, key)) key = `${base}-${i++}`;
+  return { ...d, groups: { ...d.groups, [key]: { label, color } } };
+}
+
+export const setGroup = (d, key, patch) => (Object.hasOwn(d.groups, key) ? { ...d, groups: { ...d.groups, [key]: { ...d.groups[key], ...patch } } } : d);
+
+/** Removes a group only when no box uses it and it is not the last one. */
+export function removeGroup(d, key) {
+  if (Object.keys(d.groups).length <= 1 || d.nodes.some((n) => n.group === key)) return d;
+  const { [key]: _drop, ...groups } = d.groups;
+  return { ...d, groups };
+}
+
+export function addStep(d, title = 'New step', edges = []) {
+  const steps = d.steps || [];
+  if (steps.length >= LIMITS.steps) return d;
+  return { ...d, steps: [...steps, { title, what: '', edges }] };
+}
+
+/** patch keys: title, what, why, hop, story ({id, step} or null to clear), edges. Empty why/hop clear the field. */
+export function updateStep(d, index, patch) {
+  if (!d.steps || !d.steps[index]) return d;
+  const next = { ...d.steps[index] };
+  for (const [k, v] of Object.entries(patch)) {
+    if (!['title', 'what', 'why', 'hop', 'story', 'edges'].includes(k)) continue;
+    if ((k === 'why' || k === 'hop') && !v) delete next[k];
+    else if (k === 'story' && !v) delete next.story;
+    else next[k] = v;
+  }
+  return { ...d, steps: d.steps.map((s, i) => (i === index ? next : s)) };
+}
+
+export function removeStep(d, index) {
+  if (!d.steps || !d.steps[index]) return d;
+  return { ...d, steps: d.steps.filter((_, i) => i !== index) };
+}
+
+export function moveStep(d, index, delta) {
+  const to = index + delta;
+  if (!d.steps || !d.steps[index] || to < 0 || to >= d.steps.length) return d;
+  const steps = [...d.steps];
+  [steps[index], steps[to]] = [steps[to], steps[index]];
+  return { ...d, steps };
+}
+
+/** Toggles one arrow on a step; keeps the list sorted and unique. */
+export function toggleStepEdge(d, index, edge) {
+  const s = d.steps && d.steps[index];
+  if (!s || !d.edges[edge]) return d;
+  const edges = s.edges.includes(edge) ? s.edges.filter((x) => x !== edge) : [...s.edges, edge].sort((a, b) => a - b);
+  return updateStep(d, index, { edges });
+}
