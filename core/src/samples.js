@@ -92,4 +92,7 @@ const chain = {
   ],
 };
 
-export const SAMPLES = [authCode, exchange, mcp, chain];
+import { LIBRARY } from './library.js';
+
+export const BASICS = [authCode, exchange, mcp, chain];
+export const SAMPLES = [...BASICS, ...LIBRARY];

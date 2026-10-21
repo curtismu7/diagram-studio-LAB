@@ -155,6 +155,18 @@ try {
     check(anim === 'none', `reduced motion stops the dash animation (animation-name: ${anim})`);
     check(await p2.getByRole('heading', { name: /MCP tool call held/ }).isVisible(), 'deep link ?d=<id> opens that diagram'); await p2.close(); });
 
+  // Every built-in diagram opens, shows all its boxes, none overlap, and Simulate reaches the last arrow.
+  const all = (await (await fetch(`${base}/api/diagrams`)).json()).diagrams.filter((d) => d.builtin);
+  const badOnes = [];
+  for (const { id } of all) {
+    const dg = (await (await fetch(`${base}/api/diagrams/${id}`)).json()).diagram;
+    await page.goto(`${base}/?d=${id}`); await page.getByTestId('canvas').waitFor(); await sleep(250);
+    const boxes = await page.locator('[data-testid^="node-"]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.right, r.bottom]; }));
+    let overlap = 0;
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) { const a = boxes[i]; const b = boxes[j]; if (a[0] < b[2] - 2 && b[0] < a[2] - 2 && a[1] < b[3] - 2 && b[1] < a[3] - 2) overlap++; }
+    if (boxes.length !== dg.nodes.length || overlap) badOnes.push(`${id} (${boxes.length}/${dg.nodes.length} boxes, ${overlap} overlaps)`);
+  }
+  check(all.length >= 35 && badOnes.length === 0, `all ${all.length} built-in diagrams show every box with no overlap${badOnes.length ? ": " + badOnes.join('; ') : ''}`);
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();

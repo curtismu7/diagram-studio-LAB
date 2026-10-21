@@ -22,7 +22,7 @@ Development: `npm run dev` (API on 6001, Vite on 6002).
 
 ## What you can do
 
-- Samples are read-only. **Save a copy** makes your own, stored as `.data/diagrams/<id>.json` (or `DATA_DIR`).
+- 35 built-in diagrams (4 hand-written basics + 31 converted from a larger demo, see `docs/library.md`) are read-only. **Save a copy** makes your own, stored as `.data/diagrams/<id>.json` (or `DATA_DIR`).
 - **Edit** mode: Add box, click a box or arrow to rename or delete it, drag from a box's right dot to another's left dot to add an arrow.
 - **Reset** stops the walkthrough and puts every box back where it was when you opened or last saved the diagram. It keeps your edits.
 - **Export JSON** downloads the diagram you see (including unsaved edits). **Import JSON** checks the file and saves it as a new diagram;
