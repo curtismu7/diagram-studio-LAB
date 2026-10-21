@@ -208,6 +208,11 @@ try {
   await T('step-1-links').locator('summary').click();
   check(await T('step-1-links').getByText('We send the fingerprint, not the secret.').isVisible(), 'a step card opens its story step (Say line)');
   check((await T('step-1-links').innerText()).includes('authorize'), 'the step card names its trace hop');
+  // Presenter panel carries the story Say line and the hop.
+  await page.goto(`${base}/?d=auth-code-pkce&present=1`); await T('now').waitFor(); await page.keyboard.press('ArrowRight');
+  await T('now-links').waitFor();
+  check((await T('now-links').innerText()).includes('We send the fingerprint, not the secret.') && (await T('now-links').innerText()).includes('authorize'), 'the presenter panel shows the story Say line and the trace hop');
+  await page.keyboard.press('Escape');
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();
@@ -218,6 +223,8 @@ try {
 
   check(foreign.length === 0, `no request left the origin${foreign.length ? ': ' + foreign.join(', ') : ''}`);
   check(errors.length === 0, `no console or page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
+} catch (e) {
+  console.log(`FAIL  script error: ${String(e.message).split('\n')[0]}`); failures++;
 } finally {
   await browser.close();
   if (server) server.kill();
