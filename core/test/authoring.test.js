@@ -232,3 +232,19 @@ test('toHtml: strips U+FFFE/U+FFFF like the picture export, and a worst-case dia
   assert.equal(LARGE_HTML_BYTES, 5_000_000);
   assert.ok(SAMPLES.every((s) => toHtml(s).length < LARGE_HTML_BYTES), 'no built-in diagram trips the large-file note');
 });
+
+test('toHtml survivors: theme palette, & escaping, one visible frame, lede, and the panel data', async () => {
+  const { toHtml } = await import('../src/index.js');
+  const light = toHtml(SAMPLES[0]); const dark = toHtml(SAMPLES[0], { theme: 'dark' });
+  assert.match(light, /body\{margin:0;background:#ffffff;color:#1c2330/); assert.doesNotMatch(light, /#12161d/);
+  assert.match(dark, /body\{margin:0;background:#12161d;color:#e6eaf1/); assert.match(dark, /color-scheme:dark/);
+  assert.match(toHtml(SAMPLES[0], { theme: 'nope' }), /background:#ffffff;color:#1c2330/, 'an unknown theme falls back to light');
+  const d = clone(SAMPLES[0]); d.title = 'A & B &lt;script&gt; "q"'; d.lede = 'x < y & z';
+  const html = toHtml(d);
+  assert.match(html, /<title>A &amp; B &amp;lt;script&amp;gt; &quot;q&quot;<\/title>/); assert.match(html, /<h1>A &amp; B &amp;lt;script&amp;gt; &quot;q&quot;<\/h1>/);
+  assert.match(html, /<p class="muted">x &lt; y &amp; z<\/p>/, 'the intro is shown, escaped');
+  assert.equal((html.match(/<div class="f">/g) || []).length, 1, 'exactly one frame is visible before the script runs');
+  assert.equal((html.match(/<div class="f" hidden>/g) || []).length, d.edges.length, 'every other frame is hidden');
+  const data = JSON.parse(html.match(/id="d">(.*?)<\/script>/s)[1]);
+  assert.equal(data.steps[0].story.tell, 'The client hashes a random verifier and sends only the hash.'); assert.equal(data.steps[0].why, 'An intercepted code cannot be redeemed without the verifier.');
+});

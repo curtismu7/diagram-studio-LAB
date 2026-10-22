@@ -66,7 +66,7 @@ Only this URL may be framed, and only by a page on `http://localhost:*` or `http
 
 **Save as HTML** writes one self-contained file: the overview and one picture per arrow are baked in, with Play, Pause, Prev, Next, Reset, a speed
 control and the current step (with its story line and trace hop). It needs no server, no network and no library, so you can email it or open it
-offline. It is a snapshot (boxes do not move there; open the studio to edit). Its Content-Security-Policy allows nothing but its own inline style and script.
+offline. It is a snapshot (boxes do not move there; open the studio to edit). A wide diagram can be hard to read when fitted to a narrow screen: **Actual size** shows it at its real size and scrolls (on phones it also keeps a minimum width). Printing or saving as PDF prints the picture currently shown, so step to the arrow you want first. A diagram near the size limits makes a very large file (the app says so above 5 MB); Export SVG or PNG for a single picture. Its Content-Security-Policy allows nothing but its own inline style and script.
 
 ## Presenter mode
 

@@ -19,7 +19,7 @@ const SCRIPT = `(function(){
 var D=JSON.parse(document.getElementById('d').textContent);
 var F=Array.prototype.slice.call(document.querySelectorAll('.f'));
 var cap=document.getElementById('cap'),cnt=document.getElementById('cnt'),pan=document.getElementById('pan');
-var play=document.getElementById('play'),sp=document.getElementById('sp');
+var play=document.getElementById('play'),sp=document.getElementById('sp'),zoom=document.getElementById('zoom'),stage=document.getElementById('stage');
 var step=-1,timer=null,MS={slow:2400,normal:1200,fast:500};
 function el(t,txt,cls){var e=document.createElement(t);if(txt!==undefined)e.textContent=txt;if(cls)e.className=cls;return e;}
 function show(){
@@ -43,6 +43,7 @@ document.getElementById('prev').onclick=function(){stop();go(step<0?-1:step-1);}
 document.getElementById('next').onclick=function(){stop();go(step+1);};
 document.getElementById('reset').onclick=function(){stop();go(-1);};
 sp.onchange=function(){if(timer)start();};
+zoom.onclick=function(){var on=stage.classList.toggle('actual');zoom.setAttribute('aria-pressed',on?'true':'false');zoom.textContent=on?'Fit to width':'Actual size';};
 document.addEventListener('keydown',function(e){if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;
   if(e.key==='ArrowRight'){stop();go(step+1);}else if(e.key==='ArrowLeft'){stop();go(step<0?-1:step-1);}else if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();play.click();}});
 show();
@@ -75,16 +76,16 @@ main{max-width:84rem;margin:0 auto;padding:1rem}h1{margin:.25rem 0;font-size:1.4
 .bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:.6rem 0}
 button,select{font:inherit;color:${P.text};background:${P.card};border:1px solid ${P.border};border-radius:6px;padding:.35rem .7rem;min-height:36px;cursor:pointer}
 button#play{background:${P.accent};color:${P.on};border-color:${P.accent}}button:focus-visible,select:focus-visible{outline:3px solid ${P.now};outline-offset:2px}
-#cap{font-weight:600;min-height:1.6em;margin:.25rem 0}.stage{border:1px solid ${P.border};border-radius:8px;overflow:auto;background:${P.bg}}.stage svg{display:block;max-width:100%;height:auto}
+#cap{font-weight:600;min-height:1.6em;margin:.25rem 0}.stage{border:1px solid ${P.border};border-radius:8px;overflow:auto;background:${P.bg}}.stage svg{display:block;max-width:100%;height:auto}.stage.actual svg{max-width:none;width:auto}@media (max-width:700px){.stage:not(.actual) svg{min-width:640px}}
 #pan{border:1px solid ${P.border};border-radius:8px;background:${P.card};padding:.5rem 1rem;margin:.6rem 0;min-height:3rem}.foot{font-size:.85rem;color:${P.muted}}
 </style></head><body><main>
 <h1>${esc(d.title)}</h1>${d.lede ? `\n<p class="muted">${esc(d.lede)}</p>` : ''}
-<div class="bar" role="toolbar" aria-label="Walkthrough controls"><button id="play">Play</button><button id="prev">Prev</button><button id="next">Next</button><button id="reset">Reset</button>
+<div class="bar" role="toolbar" aria-label="Walkthrough controls"><button id="play">Play</button><button id="prev">Prev</button><button id="next">Next</button><button id="reset">Reset</button><button id="zoom" aria-pressed="false" title="Show the picture at its real size and scroll, for diagrams too wide to read when fitted">Actual size</button>
 <label>Speed <select id="sp" aria-label="Speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></label><span id="cnt" class="muted" aria-live="polite"></span></div>
 <p id="cap" aria-live="polite"></p>
-<div class="stage">${frames.map((svg, i) => `<div class="f"${i ? ' hidden' : ''}>${svg}</div>`).join('\n')}</div>
+<div class="stage" id="stage">${frames.map((svg, i) => `<div class="f"${i ? ' hidden' : ''}>${svg}</div>`).join('\n')}</div>
 <div id="pan" aria-label="Current step"></div>
-<p class="foot">A snapshot made by Diagram Studio. Left and right arrow keys step, Space plays or pauses. Open the studio to move boxes or edit.</p>
+<p class="foot">A snapshot made by Diagram Studio. Left and right arrow keys step, Space plays or pauses. Printing or saving as PDF prints the picture currently shown. Open the studio to move boxes or edit.</p>
 </main>
 <script type="application/json" id="d">${safeJson(data)}</script>
 <script>${SCRIPT}</script>
