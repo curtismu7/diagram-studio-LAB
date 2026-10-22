@@ -19,14 +19,14 @@ export const TEMPLATES = [
     steps: [{ title: 'Hold', what: 'The gate holds the request and asks a person.', edges: [0, 1] }, { title: 'Decide', what: 'The approver answers and the gate lets it through.', edges: [2, 3] }] },
 ];
 
-export const slugify = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+export const slugify = (s) => (typeof s === 'string' ? s : '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+/, '').slice(0, 40).replace(/-+$/, ''); // cut first, then trim, so the cut never leaves a trailing dash
 
 /** A new, valid diagram from a template. `taken` is the list of existing ids; the id gets a numeric suffix to stay unique. */
 export function newDiagram(templateId, title, taken = []) {
   const t = TEMPLATES.find((x) => x.id === templateId) || TEMPLATES[0];
-  const name = String(title || '').trim().slice(0, 120) || 'New diagram';
+  const name = (typeof title === 'string' ? title : '').trim().slice(0, 120) || 'New diagram'; // anything but text means no title
   const base = slugify(name) || 'diagram';
-  const used = new Set(taken);
+  const used = new Set(Array.isArray(taken) ? taken : []);
   let id = base; let i = 2;
   while (used.has(id)) id = `${base}-${i++}`;
   return structuredClone({ schema: 'diagram-studio/1', id, title: name, groups: t.groups, nodes: t.nodes, edges: t.edges, ...(t.steps.length ? { steps: t.steps } : {}) });

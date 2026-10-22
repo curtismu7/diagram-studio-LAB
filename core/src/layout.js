@@ -1,9 +1,11 @@
 // Auto-layout ("Tidy"): a layered, left-to-right layout. Pure and deterministic.
 // Layers come from the longest path from the sources (back arrows of a cycle are ignored for layering); boxes in a layer are ordered
 // by the average position of their neighbours over a few sweeps, ties broken by first appearance in the arrow list.
+const FOLD_AFTER = 5; // more columns than this are folded into rows
+const ROW_GAP = 110; // clear space between rows of columns
 export const LAYOUT = { columnGap: 440, rowGap: 170 }; // rowGap - 120 is the clear space between stacked boxes (50)
 
-export function autoLayout(d, { columnGap = LAYOUT.columnGap, rowGap = LAYOUT.rowGap } = {}) {
+export function autoLayout(d, { columnGap = LAYOUT.columnGap, rowGap = LAYOUT.rowGap, sweeps = 4 } = {}) {
   const ids = d.nodes.map((n) => n.id);
   const index = new Map(ids.map((id, i) => [id, i]));
   const out = new Map(ids.map((id) => [id, []]));
@@ -53,7 +55,7 @@ export function autoLayout(d, { columnGap = LAYOUT.columnGap, rowGap = LAYOUT.ro
   const place = () => layers.forEach((col) => col.forEach((id, i) => pos.set(id, i)));
   place();
   const bary = (id, nbrs) => { const p = nbrs.filter((n) => layer.get(n) !== undefined).map((n) => pos.get(n)); return p.length ? p.reduce((a, b) => a + b, 0) / p.length : pos.get(id); };
-  for (let sweep = 0; sweep < 4; sweep++) {
+  for (let sweep = 0; sweep < sweeps; sweep++) {
     const down = sweep % 2 === 0;
     const cols = down ? layers.map((_, i) => i) : layers.map((_, i) => layers.length - 1 - i);
     for (const li of cols) {
@@ -67,13 +69,20 @@ export function autoLayout(d, { columnGap = LAYOUT.columnGap, rowGap = LAYOUT.ro
   const byId = new Map(d.nodes.map((n) => [n.id, n]));
   const height = (id) => { const n = byId.get(id); const subLines = (n.sub || []).reduce((t, s) => t + Math.min(2, Math.ceil(Array.from(s).length / 30)), 0); return 24 + 17 * Math.min(2, Math.ceil(Array.from(n.label).length / 26)) + 15 * subLines; };
   const cols = layers.map((col) => (col || []).filter(Boolean));
-  const gapX = Math.max(280, Math.min(columnGap, Math.floor(19000 / Math.max(1, cols.length - 1)))); // stays inside the +/-20000 coordinate limit
+  // A long run of columns is folded into rows (reading order stays left to right, top to bottom), so a 9-step chain is a readable block, not a thin strip.
+  const perRow = cols.length <= FOLD_AFTER ? Math.max(1, cols.length) : Math.max(3, Math.ceil(Math.sqrt(cols.length * 1.6)));
+  const gapX = Math.max(280, Math.min(columnGap, Math.floor(19000 / Math.max(1, perRow - 1)))); // stays inside the +/-20000 coordinate limit
   const colHeight = cols.map((col) => col.reduce((t, id) => t + height(id), 0) + Math.max(0, col.length - 1) * (rowGap - 120));
-  const tallest = Math.max(...colHeight, 1);
+  const rowTop = []; const rowTall = [];
+  for (let r = 0; r * perRow < cols.length; r++) {
+    rowTall[r] = Math.max(1, ...colHeight.slice(r * perRow, (r + 1) * perRow));
+    rowTop[r] = r === 0 ? 0 : rowTop[r - 1] + rowTall[r - 1] + ROW_GAP;
+  }
   const x = new Map(); const y = new Map();
   cols.forEach((col, li) => {
-    let cursor = (tallest - colHeight[li]) / 2; // short columns are centred against the tallest
-    for (const id of col) { x.set(id, li * gapX); y.set(id, Math.round(cursor)); cursor += height(id) + (rowGap - 120); }
+    const r = Math.floor(li / perRow); const c = li % perRow;
+    let cursor = rowTop[r] + (rowTall[r] - colHeight[li]) / 2; // short columns are centred against the tallest in their row
+    for (const id of col) { x.set(id, c * gapX); y.set(id, Math.round(cursor)); cursor += height(id) + (rowGap - 120); }
   });
   return { ...d, nodes: d.nodes.map((n) => ({ ...n, x: x.get(n.id) ?? 0, y: y.get(n.id) ?? 0 })) };
 }
