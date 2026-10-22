@@ -37,6 +37,35 @@ describe("toFlow", () => {
 });
 
 describe("App", () => {
+  it("shows the hosted-mock banner and hides save and import when health says mock-only", async () => {
+    const base = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("/api/health")
+      ? { ok: true, status: 200, json: async () => ({ mode: "mock-only" }) } : base(url, o));
+    render(<App />);
+    expect(await screen.findByTestId("mock-banner")).toHaveTextContent("Hosted mock: sample data only, nothing leaves this server");
+    expect(screen.queryByTestId("save")).toBeNull();
+    expect(screen.queryByTestId("save-copy")).toBeNull();
+    expect(screen.queryByTestId("import")).toBeNull();
+  });
+
+  it("in the hosted mock, edits show no unsaved label and switching diagrams skips the discard prompt", async () => {
+    const user = userEvent.setup();
+    const base = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("/api/health")
+      ? { ok: true, status: 200, json: async () => ({ mode: "mock-only" }) } : base(url, o));
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<App />);
+    await screen.findByTestId("mock-banner");
+    await user.click(screen.getByTestId("edit-toggle"));
+    await user.click(screen.getByTestId("add-box"));
+    expect(screen.queryByText(/unsaved changes/)).toBeNull();
+    await user.selectOptions(screen.getByTestId("picker"), SAMPLES[1].id);
+    expect(confirm).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId("picker")).toHaveValue(SAMPLES[1].id));
+    confirm.mockRestore();
+    localStorage.removeItem("studio-last"); // the picker remembers its last choice; do not leak it into later tests
+  });
+
   it("loads the first sample, plays arrows in order, pauses and resets", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
