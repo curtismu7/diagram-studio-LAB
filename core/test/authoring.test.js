@@ -181,3 +181,70 @@ test('autoLayout folds a long run of columns into rows, keeps reading order, and
   const short = autoLayout(chain3()); const sy = short.nodes.map((n) => n.y); assert.ok(Math.max(...sy) - Math.min(...sy) < 120, 'a short chain stays in one row (boxes of different heights are centred, not stacked)');
   const ys = t.nodes.map((n) => n.y); assert.ok(ys[0] <= ys[11], 'later boxes are never above earlier rows');
 });
+
+// ---- standalone HTML ----------------------------------------------------------------------------------------------------
+test('toHtml: one frame per arrow plus the overview, two scripts, unique ids, no external references, valid for every built-in', async () => {
+  const { toHtml } = await import('../src/index.js');
+  for (const d of SAMPLES) {
+    const html = toHtml(d);
+    assert.equal((html.match(/class="f"/g) || []).length, d.edges.length + 1, `${d.id}: overview + one per arrow`);
+    assert.equal((html.match(/<script/g) || []).length, 2, `${d.id}: the data block and the fixed script only`);
+    const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+    assert.equal(new Set(ids).size, ids.length, `${d.id}: no duplicate ids (marker ids are per frame)`);
+    assert.doesNotMatch(html.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, ''), /https?:\/\/|<link|<img|src=|href=|@import|url\((?!#)/, `${d.id}: nothing is fetched`);
+    assert.match(html, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"/);
+    assert.ok(html.length < 1_000_000, `${d.id}: ${html.length} bytes`);
+    assert.equal(toHtml(d), html, `${d.id}: deterministic`);
+  }
+});
+
+test('toHtml: hostile text cannot break out of the page, the JSON block or an attribute', async () => {
+  const { toHtml, safeJson } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  const evil = '</script><img src=x onerror=alert(1)><!-- "quoted" & \u2028 \u2029 \u0000';
+  d.title = evil; d.lede = evil; d.nodes[0].label = evil; d.edges[0].label = evil;
+  d.steps[0].title = evil; d.steps[0].what = evil; d.steps[0].why = evil; d.steps[0].hop = 'a.b';
+  const html = toHtml(d);
+  assert.equal((html.match(/<script/g) || []).length, 2); assert.equal((html.match(/<\/script>/g) || []).length, 2);
+  assert.doesNotMatch(html, /<img /); assert.doesNotMatch(html, /onerror=alert\(1\)>(?!&)/);
+  assert.doesNotMatch(html, /\u0000/); // U+2028/9 are harmless in HTML text; the JSON block (below) must not carry them raw
+  const block = html.match(/<script type="application\/json" id="d">(.*?)<\/script>/s)[1];
+  assert.doesNotMatch(block, /[<>&\u2028\u2029]/);
+  assert.equal(JSON.parse(block).title, evil.replace(/\u0000/g, '\u0000'), 'the JSON round-trips the exact text');
+  assert.equal(safeJson({ a: '</script>' }), '{"a":"\\u003c/script\\u003e"}');
+  assert.throws(() => toHtml({ ...d, nodes: [] }), /toHtml: diagram is not valid/);
+});
+
+test('toHtml: dark theme, story steps and hops are carried into the data', async () => {
+  const { toHtml } = await import('../src/index.js');
+  const html = toHtml(SAMPLES[0], { theme: 'dark' });
+  assert.match(html, /color-scheme:dark/); assert.match(html, /fill="#12161d"/);
+  const data = JSON.parse(html.match(/id="d">(.*?)<\/script>/s)[1]);
+  assert.equal(data.captions.length, 6); assert.equal(data.stepOf.length, 6);
+  assert.equal(data.steps[0].hop, 'authorize'); assert.match(data.steps[0].story.say, /fingerprint/);
+  assert.equal(data.stepOf[4], 4); assert.equal(data.stepOf[5], 4, 'two arrows can belong to one step');
+});
+
+test('toHtml: strips U+FFFE/U+FFFF like the picture export, and a worst-case diagram stays within a bounded size', async () => {
+  const { toHtml, LARGE_HTML_BYTES } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]); d.title = 'a\uFFFEb\uFFFFc';
+  assert.match(toHtml(d), /<title>abc<\/title>/); assert.doesNotMatch(toHtml(d), /[\uFFFE\uFFFF]/);
+  assert.equal(LARGE_HTML_BYTES, 5_000_000);
+  assert.ok(SAMPLES.every((s) => toHtml(s).length < LARGE_HTML_BYTES), 'no built-in diagram trips the large-file note');
+});
+
+test('toHtml survivors: theme palette, & escaping, one visible frame, lede, and the panel data', async () => {
+  const { toHtml } = await import('../src/index.js');
+  const light = toHtml(SAMPLES[0]); const dark = toHtml(SAMPLES[0], { theme: 'dark' });
+  assert.match(light, /body\{margin:0;background:#ffffff;color:#1c2330/); assert.doesNotMatch(light, /#12161d/);
+  assert.match(dark, /body\{margin:0;background:#12161d;color:#e6eaf1/); assert.match(dark, /color-scheme:dark/);
+  assert.match(toHtml(SAMPLES[0], { theme: 'nope' }), /background:#ffffff;color:#1c2330/, 'an unknown theme falls back to light');
+  const d = clone(SAMPLES[0]); d.title = 'A & B &lt;script&gt; "q"'; d.lede = 'x < y & z';
+  const html = toHtml(d);
+  assert.match(html, /<title>A &amp; B &amp;lt;script&amp;gt; &quot;q&quot;<\/title>/); assert.match(html, /<h1>A &amp; B &amp;lt;script&amp;gt; &quot;q&quot;<\/h1>/);
+  assert.match(html, /<p class="muted">x &lt; y &amp; z<\/p>/, 'the intro is shown, escaped');
+  assert.equal((html.match(/<div class="f">/g) || []).length, 1, 'exactly one frame is visible before the script runs');
+  assert.equal((html.match(/<div class="f" hidden>/g) || []).length, d.edges.length, 'every other frame is hidden');
+  const data = JSON.parse(html.match(/id="d">(.*?)<\/script>/s)[1]);
+  assert.equal(data.steps[0].story.tell, 'The client hashes a random verifier and sends only the hash.'); assert.equal(data.steps[0].why, 'An intercepted code cannot be redeemed without the verifier.');
+});

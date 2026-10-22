@@ -326,6 +326,34 @@ try {
   await page.reload(); await T('picker').waitFor();
   check((await T('picker').locator('option').allInnerTexts()).includes('Approval from e2e'), 'the new diagram is saved and listed after a reload');
   await page.goto(`${base}/?d=approval-from-e2e`); await T('delete').waitFor(); await T('delete').click(); await sleep(300);
+  // Save as HTML: the downloaded file works from disk with no server and no network.
+  await page.goto(`${base}/?d=token-exchange`); await T('export-html').waitFor();
+  const [htmlDl] = await Promise.all([page.waitForEvent('download'), T('export-html').click()]);
+  const htmlPath = path.join(shots, 'token-exchange.html'); await htmlDl.saveAs(htmlPath);
+  check(htmlDl.suggestedFilename() === 'token-exchange.html', 'Save as HTML downloads <id>.html');
+  const filePage = await ctx.newPage(); const fileReqs = []; const fileErrs = [];
+  filePage.on('request', (r) => { if (!r.url().startsWith('file:') && !r.url().startsWith('data:')) fileReqs.push(r.url()); });
+  filePage.on('pageerror', (e) => fileErrs.push(e.message)); filePage.on('console', (m) => { if (m.type() === 'error') fileErrs.push(m.text()); });
+  await filePage.goto(`file://${htmlPath}`);
+  await filePage.locator('#cnt').waitFor();
+  check((await filePage.locator('#cnt').innerText()) === 'Not playing', 'the saved HTML opens from disk on its overview');
+  await filePage.locator('#next').click(); await filePage.locator('#next').click();
+  check((await filePage.locator('#cnt').innerText()) === 'Arrow 2 of 4' && (await filePage.locator('.f:not([hidden])').count()) === 1, 'Next steps through the baked-in frames, one visible at a time');
+  await filePage.locator('#sp').selectOption('fast'); await filePage.locator('#play').click();
+  await filePage.waitForFunction(() => /Arrow 4 of 4/.test(document.getElementById('cnt').textContent), null, { timeout: 8000 });
+  check(true, 'Play runs to the last arrow at fast speed');
+  await filePage.setViewportSize({ width: 390, height: 800 });
+  const fitW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  check(fitW >= 640 && (await filePage.locator('#stage').evaluate((e) => e.scrollWidth > e.clientWidth)), `on a phone the saved page keeps the picture at least 640px wide and scrolls (${fitW}px)`);
+  await filePage.locator('#zoom').click();
+  const actualW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  const naturalW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Number(e.getAttribute('width')));
+  check(actualW === naturalW && (await filePage.locator('#zoom').innerText()) === 'Fit to width', `Actual size shows the picture at its real width (${actualW}px)`);
+  await filePage.locator('#zoom').click(); await filePage.setViewportSize({ width: 1280, height: 800 });
+  await filePage.locator('#reset').click();
+  check((await filePage.locator('#cnt').innerText()) === 'Not playing', 'Reset returns to the overview');
+  check(fileReqs.length === 0 && fileErrs.length === 0, `the saved page makes no network request and has no errors${fileReqs.concat(fileErrs).length ? ': ' + fileReqs.concat(fileErrs).join(' | ') : ''}`);
+  await filePage.close();
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();
