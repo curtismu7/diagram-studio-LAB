@@ -51,7 +51,7 @@ dragged (in memory; Reset puts them back). Options: `theme=light|dark`, `speed=s
 `panel=1` (show the current step, with its story and hop, under the canvas). Other values are ignored.
 
 Only this URL may be framed, and only by a page on `http://localhost:*` or `http://127.0.0.1:*` (the Content-Security-Policy
-`frame-ancestors` list). The full studio and the API refuse framing. An IPv6 origin cannot be allowed: browsers reject it in that directive.
+`frame-ancestors` list; the browser also lets `https://localhost` and `https://127.0.0.1` match, which is harmless on loopback). The full studio and the API refuse framing, and every other response also sends `X-Frame-Options: DENY`. An IPv6 origin cannot be allowed: browsers reject it in that directive.
 
 ## Presenter mode
 

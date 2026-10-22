@@ -19,12 +19,6 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
   const app = express();
   app.disable('x-powered-by');
 
-  // DNS-rebinding guard: only loopback host names unless the operator opted in with STUDIO_ALLOW_HOST (container publish is loopback-only).
-  app.use((req, res, next) => {
-    const extra = env.STUDIO_ALLOW_HOST;
-    if (ALLOWED_HOST.test(req.headers.host || '') || (extra && req.headers.host === extra)) return next();
-    res.status(421).json({ error: 'bad_host' });
-  });
   // Only the embed view (/?embed=1) may be framed, and only by a page on a loopback origin; everything else refuses framing.
   const LOOPBACK_FRAMES = 'http://localhost:* http://127.0.0.1:*'; // an IPv6 source is not valid in frame-ancestors (Chrome rejects it)
   app.use((req, res, next) => {
@@ -32,9 +26,16 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     res.set({
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
+      ...(frameable ? {} : { 'X-Frame-Options': 'DENY' }), // also covers Express's own 404 page, which replaces the CSP
       'Content-Security-Policy': `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors ${frameable ? LOOPBACK_FRAMES : "'none'"}; base-uri 'none'; form-action 'self'`,
     });
     next();
+  });
+  // DNS-rebinding guard: only loopback host names unless the operator opted in with STUDIO_ALLOW_HOST (container publish is loopback-only).
+  app.use((req, res, next) => {
+    const extra = env.STUDIO_ALLOW_HOST;
+    if (ALLOWED_HOST.test(req.headers.host || '') || (extra && req.headers.host === extra)) return next();
+    res.status(421).json({ error: 'bad_host' });
   });
   // Writes must come from our own page (blocks cross-site form posts); non-browser clients send no Origin.
   app.use('/api', (req, res, next) => {
@@ -98,8 +99,8 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
   return { app, store, health, host: bindHost(env), mockOnly, dataDir };
 }
 
-export async function startHttpServer({ port = Number(process.env.PORT) || 6001, env = process.env, dataDir = env.DATA_DIR || path.resolve(here, '../../.data') } = {}) {
-  const { app, health, host, mockOnly, dataDir: usedDir } = createApp({ dataDir, env });
+export async function startHttpServer({ port = Number(process.env.PORT) || 6001, env = process.env, dataDir = env.DATA_DIR || path.resolve(here, '../../.data'), webDir } = {}) {
+  const { app, health, host, mockOnly, dataDir: usedDir } = createApp({ dataDir, env, ...(webDir ? { webDir } : {}) });
   const server = await new Promise((resolve, reject) => {
     const s = app.listen(port, host, () => resolve(s));
     s.once('error', reject);
