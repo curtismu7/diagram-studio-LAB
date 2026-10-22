@@ -140,7 +140,7 @@ try {
   await T('node-delete').click();
   check(await true, 'deleting a box leaves the diagram valid');
   const stepsOk = await page.evaluate(() => [...document.querySelectorAll('li[data-testid^="step-"]')].length);
-  check(stepsOk === 2, `deleting a box keeps only steps that still have arrows (${stepsOk} left)`);
+  check(stepsOk === 3 && (await T('stepedit-3-noarrows').count()) === 1, `deleting a box keeps every step (${stepsOk} left) and flags the one with no arrows`);
   // leave guard: dismiss keeps us here
   page.removeAllListeners('dialog');
   let asked = false; page.once('dialog', (d) => { asked = true; d.dismiss(); });
@@ -238,6 +238,31 @@ try {
   await page.getByRole('button', { name: /Toggle dark|Light/ }).click(); await T('reset').click();
   await page.screenshot({ path: path.join(shots, '5-exports-page.png') });
   fs.writeFileSync(path.join(shots, 'mcp-step-up.png'), png); fs.writeFileSync(path.join(shots, 'mcp-step-up.svg'), svgText);
+  // Step and story editor: edit a copy's steps, save, reload, and see them (with story link) on the step cards.
+  await page.goto(`${base}/?d=token-exchange`); await T('edit-toggle').waitFor(); await T('edit-toggle').click();
+  await T('add-step').click();
+  await T('stepedit-4-title').fill('Audit the call');
+  await T('stepedit-4-what').fill('The token service logs who exchanged what.');
+  await T('stepedit-4-edge-2').check();
+  await T('stepedit-4-hop').fill('audit-log');
+  await T('stepedit-4-story').fill('S02');
+  await T('stepedit-4-hop').fill('bad hop');
+  check(await T('problems').isVisible() && await T('save-copy').isEnabled(), 'a bad hop shows the problem in the editor');
+  await T('stepedit-4-hop').fill('audit-log');
+  check(!(await T('problems').count()), 'fixing it clears the problem');
+  await T('save-copy').click(); await page.getByText(/Saved as token-exchange-copy-3\./).waitFor().catch(() => {});
+  const savedId = (await T('picker').inputValue());
+  await page.goto(`${base}/?d=${savedId}`); await page.getByTestId('step-4').waitFor();
+  check((await T('step-4').innerText()).includes('Audit the call') && (await T('step-4-links').innerText()).includes('audit-log'), 'edited steps and hop survive save and reload');
+  await T('simulate').click(); await T('pause').click(); await T('next').click(); await T('next').click(); await T('next').click().catch(() => {});
+  check(await page.locator('.step--active').count() >= 1, 'a new step highlights when its arrow plays');
+  // Small print accepts spaces and new lines in a real browser.
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('edit-toggle').waitFor(); await T('edit-toggle').click();
+  await T('node-user').click(); await T('node-sub').waitFor();
+  await T('node-sub').fill(''); await T('node-sub').pressSequentially('two words');
+  await page.keyboard.press('Enter'); await T('node-sub').pressSequentially('and a new line');
+  check((await T('node-sub').inputValue()) === 'two words\nand a new line', 'the small print box takes spaces and new lines while typing');
+  await T('edit-toggle').click();
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByRole('button', { name: /Toggle dark/ }).click();
