@@ -18,6 +18,38 @@ let setItem;
 beforeEach(() => { mockApi(); localStorage.clear(); setItem = vi.spyOn(localStorage, "setItem"); });
 afterEach(() => { setItem.mockRestore(); at(""); localStorage.clear(); delete document.documentElement.dataset.theme; vi.useRealTimers(); });
 
+describe("Embed loading problems say what went wrong and offer a way out", () => {
+  const down = (fn) => { globalThis.fetch = vi.fn(fn); };
+  const json = (status, data, ok = status < 400) => ({ ok, status, json: async () => data });
+  it("a network failure is not reported as a missing diagram", async () => {
+    at("?embed=1&d=auth-code-pkce");
+    down(async () => { throw new TypeError("network"); });
+    render(<Embed />);
+    expect(await screen.findByTestId("embed-error")).toHaveTextContent("Cannot reach the studio server.");
+    expect(screen.getByTestId("open-studio")).toHaveAttribute("href", "/");
+  });
+  it("a server error, an empty list and an unexpected body each get their own message", async () => {
+    at("?embed=1");
+    down(async () => json(500, {}));
+    const a = render(<Embed />);
+    expect(await screen.findByTestId("embed-error")).toHaveTextContent("Could not load the diagram list (500).");
+    a.unmount();
+    down(async () => json(200, { diagrams: [] }));
+    const b = render(<Embed />);
+    expect(await screen.findByTestId("embed-error")).toHaveTextContent("There are no diagrams to show.");
+    b.unmount();
+    at("?embed=1&d=x");
+    down(async () => json(200, "not what we expect"));
+    const c = render(<Embed />);
+    expect(await screen.findByTestId("embed-error")).toHaveTextContent("The studio returned something unexpected.");
+    c.unmount();
+    at("?embed=1&d=x");
+    down(async () => json(502, {}));
+    render(<Embed />);
+    expect(await screen.findByTestId("embed-error")).toHaveTextContent("Could not load the diagram (502).");
+  });
+});
+
 describe("Embed", () => {
   it("shows only the canvas and walkthrough controls: no picker, edit, file or present controls", async () => {
     at("?embed=1&d=mcp-step-up");

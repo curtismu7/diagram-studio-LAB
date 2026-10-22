@@ -26,11 +26,19 @@ export default function Embed() {
   useEffect(() => {
     let live = true;
     (async () => {
+      const why = (r, what) => (r.status === 0 ? "Cannot reach the studio server." : r.status === 404 ? "Diagram not found." : `Could not load ${what} (${r.status}).`);
       let id = q.get("d");
-      if (!id) { const l = await api.listDiagrams(); id = l.ok && l.data.diagrams[0]?.id; }
-      const r = id ? await api.getDiagram(id) : { ok: false, data: {} };
+      if (!id) {
+        const l = await api.listDiagrams();
+        if (!live) return;
+        if (!l.ok || !Array.isArray(l.data.diagrams)) return setError(l.ok ? "The studio returned something unexpected." : why(l, "the diagram list"));
+        id = l.data.diagrams[0]?.id;
+        if (!id) return setError("There are no diagrams to show.");
+      }
+      const r = await api.getDiagram(id);
       if (!live) return;
-      if (!r.ok) return setError("Diagram not found.");
+      if (!r.ok) return setError(why(r, "the diagram"));
+      if (!r.data.diagram || !Array.isArray(r.data.diagram.nodes)) return setError("The studio returned something unexpected.");
       setDiagram(r.data.diagram); setSaved(r.data.diagram);
       const speed = q.get("speed");
       if (SPEEDS.some((s) => s.id === speed)) dispatch({ type: "speed", speed });
@@ -46,7 +54,7 @@ export default function Embed() {
 
   const onMove = useCallback((id, x, y) => setDiagram((d) => moveNode(d, id, x, y)), []);
   const caps = useMemo(() => (diagram ? captions(diagram) : []), [diagram]);
-  if (error) return <p role="alert" className="msg msg--error">{error}</p>;
+  if (error) return <div className="embed"><p role="alert" className="msg msg--error" data-testid="embed-error">{error}</p><a className="small" href="/" target="_blank" rel="noopener noreferrer" data-testid="open-studio">Open the studio</a></div>;
   if (!diagram) return <p role="status" className="muted">Loading…</p>;
 
   const playing = st.step >= 0 && !st.paused;

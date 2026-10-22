@@ -266,7 +266,7 @@ try {
   // Embed view inside an iframe on another loopback origin; the full studio refuses framing.
   // The host page is served by a real local server (a route-faked page counts as a public address to Chrome and is blocked from framing a local one).
   const http = await import('node:http');
-  const hostPage = `<!doctype html><title>host</title><iframe id="emb" title="diagram" width="900" height="560" src="${base}/?embed=1&d=mcp-step-up&speed=slow"></iframe><iframe id="full" title="full" width="400" height="200" src="${base}/"></iframe>`;
+  const hostPage = `<!doctype html><title>host</title><iframe id="emb" title="diagram" width="900" height="560" src="${base}/?embed=1&d=mcp-step-up&speed=slow"></iframe><iframe id="full" title="full" width="400" height="200" src="${base}/"></iframe><iframe id="small" title="small" width="300" height="200" src="${base}/?embed=1&d=ciba-link"></iframe><iframe id="pan" title="pan" width="600" height="400" src="${base}/?embed=1&d=ciba-link&panel=1&autoplay=1&speed=slow"></iframe>`;
   const hostServer = http.createServer((_q, r) => { r.setHeader('Content-Type', 'text/html'); r.end(hostPage); });
   await new Promise((res) => hostServer.listen(6049, '127.0.0.1', res));
   const hostOrigin = 'http://localhost:6049';
@@ -280,7 +280,17 @@ try {
   await emb.getByTestId('pause').click(); await emb.getByTestId('reset').click();
   check((await emb.getByTestId('caption').innerText()).includes('MCP tool call'), 'Reset works inside the iframe');
   await sleep(600);
-  check(page.frames().some((f) => f.url().startsWith('chrome-error://')) && page.frames().filter((f) => f.url().startsWith(base)).length === 1, 'the full studio cannot be framed (blocked by frame-ancestors), only the embed view loads');
+  // Small frames stay usable: no page scroll, the diagram keeps visible space, the toolbar is reachable.
+  const fit = async (frame) => frame.evaluate(() => { const c = document.querySelector('[data-testid=canvas]').getBoundingClientRect(); return { scrolls: document.scrollingElement.scrollHeight > window.innerHeight + 1, canvasH: Math.round(c.height), canvasBottom: Math.round(c.bottom), inner: window.innerHeight }; });
+  const smallFrame = page.frames().find((f) => f.url().includes('embed=1') && f.url().includes('d=ciba-link') && !f.url().includes('panel=1'));
+  await smallFrame.getByTestId('canvas').waitFor();
+  const sm = await fit(smallFrame);
+  check(!sm.scrolls && sm.canvasH >= 60 && sm.canvasBottom <= sm.inner + 1, `a 300x200 frame does not scroll and keeps the diagram visible (canvas ${sm.canvasH}px of ${sm.inner}px)`);
+  const panFrame = page.frames().find((f) => f.url().includes('panel=1'));
+  await panFrame.getByTestId('embed-panel').waitFor({ timeout: 15000 });
+  const pn = await fit(panFrame);
+  check(!pn.scrolls && pn.canvasH >= 100 && pn.canvasBottom <= pn.inner + 1, `panel=1 in a 600x400 frame fits without scrolling (canvas ${pn.canvasH}px of ${pn.inner}px)`);
+  check(page.frames().some((f) => f.url().startsWith('chrome-error://')) && page.frames().filter((f) => f.url().startsWith(base) && !f.url().includes('embed=1')).length === 0, 'the full studio cannot be framed (blocked by frame-ancestors), only the embed view loads');
   await new Promise((res) => hostServer.close(res));
   await page.goto(base);
   // Dark mode, small screen: no horizontal scroll.
