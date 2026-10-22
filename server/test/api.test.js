@@ -133,3 +133,17 @@ test('framing headers: X-Frame-Options DENY everywhere except the embed view; th
   const bad = await new Promise((resolve) => { const u = new URL(base); http.get({ host: u.hostname, port: u.port, path: '/', headers: { Host: 'evil.example' } }, (r) => { r.resume(); resolve({ status: r.statusCode, xfo: r.headers['x-frame-options'], csp: r.headers['content-security-policy'] }); }); });
   assert.equal(bad.status, 421); assert.equal(bad.xfo, 'DENY'); assert.match(bad.csp, /frame-ancestors 'none'/);
 });
+
+test('only a plain GET of /?embed=1 is frameable: HEAD, OPTIONS and writes to it get frame-ancestors none and X-Frame-Options DENY', async () => {
+  const head = await fetch(`${base}?embed=1`, { method: 'HEAD' });
+  assert.match(head.headers.get('content-security-policy'), /frame-ancestors 'none'/); assert.equal(head.headers.get('x-frame-options'), 'DENY');
+  const get = await fetch(`${base}?embed=1`);
+  assert.equal(get.status, 200, 'served from the stand-in web directory, so the real CSP middleware ran');
+  assert.match(get.headers.get('content-security-policy'), /frame-ancestors http:\/\/localhost:\* http:\/\/127\.0\.0\.1:\*;/);
+  assert.equal(get.headers.get('x-frame-options'), null);
+  for (const method of ['OPTIONS', 'POST', 'PUT', 'DELETE', 'PATCH']) {
+    const r = await fetch(`${base}?embed=1`, { method, headers: { Origin: base.replace(/\/$/, '') } });
+    assert.equal(r.headers.get('x-frame-options'), 'DENY', method);
+    assert.doesNotMatch(r.headers.get('content-security-policy') || '', /frame-ancestors http/, method);
+  }
+});

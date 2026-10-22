@@ -102,4 +102,43 @@ describe("Embed", () => {
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(screen.getByTestId("speed")).toHaveValue("normal");
   });
+
+  it("speed: only slow, normal and fast apply; the default is normal", async () => {
+    at("?embed=1&d=auth-code-pkce&speed=warp");
+    const a = render(<Embed />);
+    await screen.findByTestId("embed");
+    expect(screen.getByTestId("speed")).toHaveValue("normal");
+    a.unmount();
+    for (const sp of ["fast", "slow"]) {
+      at(`?embed=1&d=auth-code-pkce&speed=${sp}`);
+      const r = render(<Embed />);
+      await screen.findByTestId("embed");
+      expect(screen.getByTestId("speed")).toHaveValue(sp);
+      r.unmount();
+    }
+  });
+
+  it("the step panel appears only for panel=1", async () => {
+    const user = userEvent.setup();
+    for (const q of ["", "&panel=0", "&panel=true", "&panel=2"]) {
+      at(`?embed=1&d=auth-code-pkce${q}`);
+      const r = render(<Embed />);
+      await screen.findByTestId("embed");
+      await user.click(screen.getByTestId("simulate"));
+      expect(screen.queryByTestId("embed-panel"), q || "(none)").toBeNull();
+      r.unmount();
+    }
+  });
+
+  it("Open in studio opens a new tab, encodes the id in the link, and cleans up the embed flag on unmount", async () => {
+    globalThis.fetch = vi.fn(async (url) => ({ ok: true, status: 200, json: async () => (String(url).includes("/api/diagrams/") ? { diagram: { ...SAMPLES[0], id: "a b&c" }, builtin: false } : { diagrams: [] }) }));
+    at("?embed=1&d=a%20b%26c");
+    const r = render(<Embed />);
+    const link = await screen.findByTestId("open-studio");
+    expect(link).toHaveAttribute("href", "/?d=a%20b%26c");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(document.documentElement.dataset.embed).toBe("1");
+    r.unmount();
+    expect(document.documentElement.dataset.embed).toBeUndefined();
+  });
 });
