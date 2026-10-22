@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SPEEDS, TEMPLATES, history as H, autoLayout, newDiagram, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
+import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
@@ -157,6 +157,15 @@ export default function App() {
     download(new Blob([r.svg], { type: "image/svg+xml" }), `${diagram.id}.svg`);
     say("ok", "SVG exported.");
   }
+  function exportHtml() {
+    const problems = validateDiagram(diagram);
+    if (problems.length) return say("error", `Not exported: ${problems.join("; ")}`);
+    const dark = theme ? theme === "dark" : window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const html = toHtml(diagram, { theme: dark ? "dark" : "light" });
+    download(new Blob([html], { type: "text/html" }), `${diagram.id}.html`);
+    const mb = (html.length / 1e6).toFixed(1);
+    say("ok", html.length > LARGE_HTML_BYTES ? `HTML saved (${mb} MB). It holds one picture per arrow, so it is large: too big to email comfortably; Export SVG or PNG for a single picture.` : "HTML saved. It is one file you can email or open offline.");
+  }
   async function exportPng() {
     const r = picture(); if (!r) return;
     try { download(await svgToPng(r.svg, r.width, r.height), `${diagram.id}.png`); say("ok", "PNG exported."); }
@@ -256,6 +265,7 @@ export default function App() {
           <button onClick={exportFile} data-testid="export">Export JSON</button>
           <button onClick={exportSvg} data-testid="export-svg">Export SVG</button>
           <button onClick={exportPng} data-testid="export-png">Export PNG</button>
+          <button onClick={exportHtml} data-testid="export-html" title="One self-contained file with the walkthrough, for email or offline">Save as HTML</button>
           {!mockOnly && <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>}
           {!mockOnly && !builtin && <button onClick={remove} data-testid="delete">Delete</button>}
         </div>
