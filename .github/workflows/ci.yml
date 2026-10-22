@@ -12,8 +12,8 @@ jobs:
         # Node 22 on pull requests; 20 and 22 on push to main.
         node: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[20,22]') }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -23,7 +23,21 @@ jobs:
   secrets:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '["self-hosted","macOS"]') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - run: PATH="/opt/homebrew/bin:$PATH" gitleaks detect --source . --redact -v
+  forbidden-strings:
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '["self-hosted","macOS"]') }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # The list lives on the runner and is never printed. Any hit in history or in the tree fails the job.
+      - run: |
+          list="$HOME/.config/demo-kit/forbidden-strings.txt"
+          test -s "$list" || { echo "forbidden-strings list missing on runner"; exit 1; }
+          hits=$(git log -p --all | grep -cF -f "$list" || true)
+          files=$(grep -rlF -f "$list" --exclude-dir=node_modules --exclude-dir=.git . | wc -l | tr -d ' ')
+          echo "history hits: $hits, tree files: $files"
+          test "$hits" = "0" && test "$files" = "0"
