@@ -81,7 +81,23 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 .msg ul { margin: 0.25rem 0 0; padding-left: 1.2rem; }
 
 /* Embed view (iframe): no page chrome, canvas fills the frame. */
-.embed { padding: 0.5rem; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-.embed .canvas { flex: 1; height: auto; min-height: 14rem; }
-.embed .caption { margin: 0.25rem 0; }
+.embed { padding: 0.5rem; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
+.embed .canvas { flex: 1 1 0; height: auto; min-height: 0; }
+.embed .caption { margin: 0.25rem 0; min-height: 0; }
+.embed .now { flex: none; max-height: min(35vh, 14rem); overflow: auto; }
+@media (max-height: 520px) { .embed .now { max-height: 22vh; padding: 0.25rem 0.5rem; font-size: 0.85rem; } .embed .now h3 { font-size: 1rem; } .embed .now p { margin: 0.1rem 0; } }
+@media (min-height: 420px) { .embed .canvas { min-height: 14rem; } }
+/* Small frames: one scrolling toolbar row and tighter controls, so the diagram keeps the space. */
+@media (max-width: 520px), (max-height: 360px) {
+  .embed { padding: 0.25rem; }
+  .embed .bar { flex-wrap: nowrap; overflow-x: auto; margin: 0.2rem 0; }
+  .embed .bar > * { flex: none; }
+  .embed button, .embed select { min-height: 30px; padding: 0.15rem 0.5rem; font-size: 0.85rem; }
+}
 :root[data-embed="1"] body { background: transparent; }
+
+/* Zoom controls and links follow the theme (the library defaults are white boxes and browser blue). */
+.react-flow__controls-button { background: var(--card); color: var(--text); border-bottom-color: var(--border); }
+.react-flow__controls-button:hover { background: var(--bg); }
+.react-flow__controls-button svg { fill: currentColor; max-width: 14px; max-height: 14px; }
+a { color: var(--now); }
