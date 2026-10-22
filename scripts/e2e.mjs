@@ -342,6 +342,14 @@ try {
   await filePage.locator('#sp').selectOption('fast'); await filePage.locator('#play').click();
   await filePage.waitForFunction(() => /Arrow 4 of 4/.test(document.getElementById('cnt').textContent), null, { timeout: 8000 });
   check(true, 'Play runs to the last arrow at fast speed');
+  await filePage.setViewportSize({ width: 390, height: 800 });
+  const fitW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  check(fitW >= 640 && (await filePage.locator('#stage').evaluate((e) => e.scrollWidth > e.clientWidth)), `on a phone the saved page keeps the picture at least 640px wide and scrolls (${fitW}px)`);
+  await filePage.locator('#zoom').click();
+  const actualW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  const naturalW = await filePage.locator('.f:not([hidden]) svg').evaluate((e) => Number(e.getAttribute('width')));
+  check(actualW === naturalW && (await filePage.locator('#zoom').innerText()) === 'Fit to width', `Actual size shows the picture at its real width (${actualW}px)`);
+  await filePage.locator('#zoom').click(); await filePage.setViewportSize({ width: 1280, height: 800 });
   await filePage.locator('#reset').click();
   check((await filePage.locator('#cnt').innerText()) === 'Not playing', 'Reset returns to the overview');
   check(fileReqs.length === 0 && fileErrs.length === 0, `the saved page makes no network request and has no errors${fileReqs.concat(fileErrs).length ? ': ' + fileReqs.concat(fileErrs).join(' | ') : ''}`);
