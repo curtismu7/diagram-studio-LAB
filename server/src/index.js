@@ -9,4 +9,5 @@ if (!allPassed(checks)) {
   process.exit(1);
 }
 const { url } = await startHttpServer();
+if (process.env.MODE && process.env.MODE !== 'mock') console.warn(`[diagram-studio] MODE=${process.env.MODE} is not a known mode (only MODE=mock changes anything)`);
 console.log(`[diagram-studio] ${url} (loopback unless STUDIO_BIND is set)`);
