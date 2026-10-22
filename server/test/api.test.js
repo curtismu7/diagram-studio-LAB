@@ -7,16 +7,18 @@ import { SAMPLES } from '@diagram-studio/core';
 import { startHttpServer } from '../src/app.js';
 import { runChecks, allPassed } from '../src/doctor.js';
 
-let srv; let base; let dir;
+let srv; let base; let dir; let webDir;
 const J = { 'Content-Type': 'application/json' };
 const copy = (id) => ({ ...structuredClone(SAMPLES[0]), id });
 
 before(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-'));
-  srv = await startHttpServer({ port: 0, env: {}, dataDir: dir });
+  webDir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-web-')); // a stand-in for web/dist, so these tests never depend on a prior build
+  fs.writeFileSync(path.join(webDir, 'index.html'), '<!doctype html><title>studio</title><div id="root"></div>');
+  srv = await startHttpServer({ port: 0, env: {}, dataDir: dir, webDir });
   base = srv.url;
 });
-after(async () => { await srv.close(); fs.rmSync(dir, { recursive: true, force: true }); });
+after(async () => { await srv.close(); fs.rmSync(dir, { recursive: true, force: true }); fs.rmSync(webDir, { recursive: true, force: true }); });
 
 test('health follows demo-health/1 and exposes nothing else', async () => {
   const r = await fetch(`${base}api/health`);
@@ -120,4 +122,14 @@ test('only /?embed=1 may be framed, and only by loopback origins; every other re
     assert.match(await csp(p), /frame-ancestors 'none'/, p || '/');
   }
   assert.doesNotMatch((await csp('?embed=1', { method: 'POST' })) || '', /frame-ancestors http/, 'a write request never gets the loopback framing allowance');
+});
+
+test('framing headers: X-Frame-Options DENY everywhere except the embed view; the 421 and 404 pages carry them too', async () => {
+  const xfo = async (p, opts) => (await fetch(`${base}${p}`, opts)).headers.get('x-frame-options');
+  assert.equal(await xfo('?embed=1'), null, 'the embed view is the one frameable response');
+  for (const p of ['', '?embed=0', 'api/diagrams', 'api/health', 'nope?embed=1', '?embed=1&embed=1']) assert.equal(await xfo(p), 'DENY', p || '/');
+  assert.equal(await xfo('?embed=1', { method: 'POST' }), 'DENY', "Express's own 404 for a POST replaces the CSP, so X-Frame-Options must hold");
+  const http = await import('node:http');
+  const bad = await new Promise((resolve) => { const u = new URL(base); http.get({ host: u.hostname, port: u.port, path: '/', headers: { Host: 'evil.example' } }, (r) => { r.resume(); resolve({ status: r.statusCode, xfo: r.headers['x-frame-options'], csp: r.headers['content-security-policy'] }); }); });
+  assert.equal(bad.status, 421); assert.equal(bad.xfo, 'DENY'); assert.match(bad.csp, /frame-ancestors 'none'/);
 });
