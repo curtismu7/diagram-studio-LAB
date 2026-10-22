@@ -1,0 +1,140 @@
+# SE k8s mock-only deployment of diagram-studio. Tokens (__IMAGE__, __SE_HOST__, __NAMESPACE__) are rendered by
+# scripts/deploy-k8s.sh with sed; no namespace is set here, the script passes -n. See docs/k8s-mock.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diagram-studio-mock
+  labels: &labels
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: diagram-studio-mock
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: diagram-studio
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 6001
+          env:
+            - { name: MOCK_ONLY, value: "1" }
+            - { name: PORT, value: "6001" }
+            - { name: STUDIO_BIND, value: "0.0.0.0" }
+            - { name: STUDIO_ALLOW_HOST, value: "__SE_HOST__" }
+            - { name: DATA_DIR, value: /tmp/studio }
+          # The host guard answers 421 to any Host it does not know, including the kubelet's pod-IP Host, so probes send the real one.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - { name: Host, value: "__SE_HOST__" }
+            initialDelaySeconds: 3
+            periodSeconds: 15
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - { name: Host, value: "__SE_HOST__" }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 3
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diagram-studio-mock
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: diagram-studio-mock
+  ports:
+    - { name: http, port: 6001, targetPort: http }
+---
+# The app lives at a path on the main host so the existing SE sign-in wall applies. The wall annotations (auth-url, auth-signin,
+# ssl-redirect) are copied from ingress ai-demo-grafana-authed-ingress, with only the namespace and host tokenised.
+# The prefix is stripped here, so the app sees plain paths.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio-mock
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: http://frontend.__NAMESPACE__.svc.cluster.local:4000/api/auth/hosted-access/check
+    nginx.ingress.kubernetes.io/auth-signin: https://__SE_HOST__/api/auth/hosted-access/login?return_to=$escaped_request_uri
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx-public
+  rules:
+    - host: __SE_HOST__
+      http:
+        paths:
+          - path: /mock/diagram-studio(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: diagram-studio-mock
+                port: { name: http }
+---
+# The bare path has no trailing slash, which would break relative asset URLs, so it is redirected to the slash form.
+# Exact match (regex-free path), so it takes precedence over the rewrite ingress above for that one URL.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio-mock-slash
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+  annotations:
+    nginx.ingress.kubernetes.io/permanent-redirect: https://__SE_HOST__/mock/diagram-studio/
+    nginx.ingress.kubernetes.io/permanent-redirect-code: "308"
+spec:
+  ingressClassName: nginx-public
+  rules:
+    - host: __SE_HOST__
+      http:
+        paths:
+          - path: /mock/diagram-studio
+            pathType: Exact
+            backend:
+              service:
+                name: diagram-studio-mock
+                port: { name: http }
