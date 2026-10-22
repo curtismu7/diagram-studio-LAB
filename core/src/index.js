@@ -7,4 +7,4 @@ export { toSvg, xmlText } from './svg.js';
 export * as history from './history.js';
 export { autoLayout, LAYOUT } from './layout.js';
 export { TEMPLATES, newDiagram, slugify } from './templates.js';
-export { toHtml, safeJson } from './html.js';
+export { toHtml, safeJson, LARGE_HTML_BYTES } from './html.js';

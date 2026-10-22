@@ -87,4 +87,16 @@ describe("Save as HTML in the app", () => {
     expect(exportImage.download).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("msg")).toHaveTextContent(/Not exported: .*title is required/);
   });
+
+  it("a very large page gets a size note; a normal one does not", async () => {
+    const user = userEvent.setup();
+    const big = structuredClone(SAMPLES[0]);
+    big.nodes = Array.from({ length: 60 }, (_, i) => ({ id: `n${i}`, group: "people", label: "L".repeat(80), sub: Array.from({ length: 6 }, () => "S".repeat(120)), x: (i % 10) * 450, y: Math.floor(i / 10) * 400 }));
+    big.edges = Array.from({ length: 120 }, (_, i) => ({ source: `n${i % 60}`, target: `n${(i + 1) % 60}`, label: "e".repeat(160) })); big.steps = [];
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: big.id, title: "Big", builtin: true }] } : { diagram: big, builtin: true }) }));
+    render(<App />);
+    await screen.findByTestId("picker");
+    await user.click(screen.getByTestId("export-html"));
+    expect(screen.getByTestId("msg")).toHaveTextContent(/MB\)\. It holds one picture per arrow/);
+  });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SPEEDS, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
+import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
@@ -161,8 +161,10 @@ export default function App() {
     const problems = validateDiagram(diagram);
     if (problems.length) return say("error", `Not exported: ${problems.join("; ")}`);
     const dark = theme ? theme === "dark" : window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    download(new Blob([toHtml(diagram, { theme: dark ? "dark" : "light" })], { type: "text/html" }), `${diagram.id}.html`);
-    say("ok", "HTML saved. It is one file you can email or open offline.");
+    const html = toHtml(diagram, { theme: dark ? "dark" : "light" });
+    download(new Blob([html], { type: "text/html" }), `${diagram.id}.html`);
+    const mb = (html.length / 1e6).toFixed(1);
+    say("ok", html.length > LARGE_HTML_BYTES ? `HTML saved (${mb} MB). It holds one picture per arrow, so it is large: too big to email comfortably; Export SVG or PNG for a single picture.` : "HTML saved. It is one file you can email or open offline.");
   }
   async function exportPng() {
     const r = picture(); if (!r) return;
