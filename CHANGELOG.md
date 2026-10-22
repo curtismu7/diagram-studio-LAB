@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Undo/redo (drag = one step), Tidy auto-layout, and New diagram from templates.
 - Export SVG and Export PNG for decks (pure `toSvg` in core, collision-aware label placement, canvas PNG capped at 8192 px).
 
 ## 0.1.0

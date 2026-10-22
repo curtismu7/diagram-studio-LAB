@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SPEEDS, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
+import { SPEEDS, TEMPLATES, history as H, autoLayout, newDiagram, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
@@ -12,7 +12,10 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 export default function App() {
   const [list, setList] = useState([]);
-  const [diagram, setDiagram] = useState(null);
+  const [hist, setHist] = useState(null); // the diagram and its undo/redo history
+  const diagram = hist ? hist.present : null;
+  // A function edits the open diagram (one undo step); an object replaces it and starts a fresh history.
+  const setDiagram = useCallback((next) => setHist((h) => (typeof next === "function" ? H.edit(h, next(h.present)) : H.createHistory(next))), []);
   const [saved, setSaved] = useState(null); // last loaded or saved copy: Reset restores its layout, dirty compares to it
   const [builtin, setBuiltin] = useState(true);
   const [mockOnly, setMockOnly] = useState(false); // hosted mock: sample data only, saving and importing are refused by the server
@@ -80,7 +83,37 @@ export default function App() {
     return () => { delete document.documentElement.dataset.present; };
   }, [present]);
   const edit = (fn) => setDiagram((d) => fn(d));
-  const onMove = useCallback((id, x, y) => setDiagram((d) => moveNode(d, id, x, y)), []);
+  // A drag is many tiny moves: they apply live and become one undo step when the drag ends.
+  const onMove = useCallback((id, x, y, end) => setHist((h) => { const l = H.live(h, moveNode(h.present, id, x, y)); return end ? H.settle(l) : l; }), []);
+  const clearSaved = () => setMsg((m) => (m.text === "Saved." ? { kind: "", text: "" } : m)); // a stale "Saved." must not stay after undoing past a save
+  const undo = useCallback(() => { setHist((h) => (h ? H.undo(h) : h)); clearSaved(); }, []);
+  const redo = useCallback(() => { setHist((h) => (h ? H.redo(h) : h)); clearSaved(); }, []);
+  // Typing in a text field is one undo step per field visit, not one per keystroke: it applies live and settles when the field loses focus.
+  const type = useCallback((fn) => setHist((h) => H.live(h, fn(h.present))), []);
+  const done = useCallback(() => setHist((h) => (h ? H.settle(h) : h)), []);
+  const [creating, setCreating] = useState(false);
+  const [fresh, setFresh] = useState({ title: "", template: TEMPLATES[0].id });
+  useEffect(() => {
+    const onKey = (e) => {
+      if (present || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const tag = e.target?.tagName || "";
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.target?.isContentEditable) return; // text fields keep their own undo
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [present, undo, redo]);
+  async function createNew() {
+    if (!guardLeave()) return;
+    const d = newDiagram(fresh.template, fresh.title, list.map((x) => x.id));
+    const r = await api.createDiagram(d);
+    if (!r.ok) return say("error", `${r.data.message || "Could not create it."} ${(r.data.problems || []).join("; ")}`);
+    setCreating(false); setFresh({ title: "", template: TEMPLATES[0].id });
+    await refresh(); await open(d.id); say("ok", `Created ${d.id}.`);
+  }
+
 
   const guardLeave = () => !dirty || window.confirm("Discard unsaved changes?");
   const pick = (id) => { if (id !== diagram?.id && guardLeave()) open(id); };
@@ -169,7 +202,7 @@ export default function App() {
         <h1>Diagram Studio</h1>
         <label className="grow">Diagram{" "}
           <select aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
-            {list.map((d) => <option key={d.id} value={d.id}>{d.title}{d.builtin ? " (sample)" : ""}</option>)}
+            {list.map((d) => <option key={d.id} value={d.id}>{d.title}{list.filter((x) => x.title === d.title).length > 1 ? ` [${d.id}]` : ""}{d.builtin ? " (sample)" : ""}</option>)}
           </select>
         </label>
         <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
@@ -213,6 +246,10 @@ export default function App() {
 
         <div className="bar" role="toolbar" aria-label="Edit and file" data-admin-only>
           <button onClick={() => setEditing(!editing)} aria-pressed={editing} data-testid="edit-toggle">{editing ? "Done editing" : "Edit"}</button>
+          <button onClick={undo} disabled={!H.canUndo(hist)} data-testid="undo" title="Undo (Ctrl or Cmd + Z)">Undo</button>
+          <button onClick={redo} disabled={!H.canRedo(hist)} data-testid="redo" title="Redo (Shift + Ctrl or Cmd + Z)">Redo</button>
+          <button onClick={() => { edit((d) => autoLayout(d)); setFitKey((k) => k + 1); }} data-testid="tidy" title="Lay the boxes out left to right with no overlaps">Tidy</button>
+          <button onClick={() => setCreating(!creating)} aria-expanded={creating} data-testid="new-open">New diagram</button>
           {editing && <button onClick={() => edit((d) => addNode(d, { label: "New box" }))} data-testid="add-box">Add box</button>}
           {!mockOnly && <button className="primary" onClick={save} disabled={builtin || !dirty || problems.length > 0} title={builtin ? "Samples are read-only: use Save a copy" : ""} data-testid="save">Save</button>}
           {!mockOnly && <button onClick={saveCopy} data-testid="save-copy">Save a copy</button>}
@@ -222,6 +259,17 @@ export default function App() {
           {!mockOnly && <label className="filebtn">Import JSON<input type="file" accept="application/json,.json" onChange={importFile} data-testid="import" /></label>}
           {!mockOnly && !builtin && <button onClick={remove} data-testid="delete">Delete</button>}
         </div>
+        {creating && (
+          <section className="panel" aria-label="New diagram" data-testid="new-panel" data-admin-only onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setCreating(false); } }}>
+            <h3>New diagram</h3>
+            <label>Title <input value={fresh.title} maxLength={120} placeholder="New diagram" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createNew(); } }} onChange={(e) => setFresh({ ...fresh, title: e.target.value })} data-testid="new-title" /></label>
+            <label>Start from <select value={fresh.template} onChange={(e) => setFresh({ ...fresh, template: e.target.value })} data-testid="new-template">
+              {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select></label>
+            <button className="primary" onClick={createNew} data-testid="new-create">Create</button>
+            <button onClick={() => setCreating(false)}>Cancel</button>
+          </section>
+        )}
         {msg.text && !present && <p role={msg.kind === "error" ? "alert" : "status"} className={`msg msg--${msg.kind}`} data-testid="msg">{msg.text}</p>}
 
         {editing && !present && (
@@ -229,14 +277,14 @@ export default function App() {
             {selNode && (
               <>
                 <h3>Box</h3>
-                <label>Name <input value={selNode.label} maxLength={80} onChange={(e) => edit((d) => renameNode(d, selNode.id, e.target.value))} data-testid="node-name" /></label>
+                <label>Name <input value={selNode.label} maxLength={80} onBlur={done} onChange={(e) => type((d) => renameNode(d, selNode.id, e.target.value))} data-testid="node-name" /></label>
                 <button onClick={() => { edit((d) => removeNode(d, selNode.id)); setSel({}); }} data-testid="node-delete">Delete box</button>
               </>
             )}
             {selEdge && (
               <>
                 <h3>Arrow {sel.edge + 1}</h3>
-                <label>Label <input value={selEdge.label || ""} maxLength={160} onChange={(e) => edit((d) => setEdgeLabel(d, sel.edge, e.target.value))} data-testid="edge-label" /></label>
+                <label>Label <input value={selEdge.label || ""} maxLength={160} onBlur={done} onChange={(e) => type((d) => setEdgeLabel(d, sel.edge, e.target.value))} data-testid="edge-label" /></label>
                 <button onClick={() => { edit((d) => removeEdge(d, sel.edge)); setSel({}); }} data-testid="edge-delete">Delete arrow</button>
               </>
             )}
@@ -249,7 +297,7 @@ export default function App() {
           </section>
         )}
 
-        {editing && <DetailsEditor diagram={diagram} edit={edit} problems={problems} selectedNode={sel.node} />}
+        {editing && <DetailsEditor diagram={diagram} edit={edit} type={type} done={done} problems={problems} selectedNode={sel.node} />}
 
         {diagram.steps?.length > 0 && (
           <ol className="steps" aria-label="Step by step">
