@@ -224,3 +224,11 @@ test('toHtml: dark theme, story steps and hops are carried into the data', async
   assert.equal(data.steps[0].hop, 'authorize'); assert.match(data.steps[0].story.say, /fingerprint/);
   assert.equal(data.stepOf[4], 4); assert.equal(data.stepOf[5], 4, 'two arrows can belong to one step');
 });
+
+test('toHtml: strips U+FFFE/U+FFFF like the picture export, and a worst-case diagram stays within a bounded size', async () => {
+  const { toHtml, LARGE_HTML_BYTES } = await import('../src/index.js');
+  const d = clone(SAMPLES[0]); d.title = 'a\uFFFEb\uFFFFc';
+  assert.match(toHtml(d), /<title>abc<\/title>/); assert.doesNotMatch(toHtml(d), /[\uFFFE\uFFFF]/);
+  assert.equal(LARGE_HTML_BYTES, 5_000_000);
+  assert.ok(SAMPLES.every((s) => toHtml(s).length < LARGE_HTML_BYTES), 'no built-in diagram trips the large-file note');
+});

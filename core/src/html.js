@@ -12,8 +12,8 @@ const PALETTE = {
 };
 
 // JSON that is safe inside <script type="application/json">: no </script>, no <!--, no line separators.
-export const safeJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-const esc = (s) => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const safeJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029').replace(/[\uFFFE\uFFFF]/g, (c) => `\\u${c.charCodeAt(0).toString(16)}`);
+const esc = (s) => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const SCRIPT = `(function(){
 var D=JSON.parse(document.getElementById('d').textContent);
@@ -47,6 +47,9 @@ document.addEventListener('keydown',function(e){if(e.target&&/^(INPUT|SELECT|TEX
   if(e.key==='ArrowRight'){stop();go(step+1);}else if(e.key==='ArrowLeft'){stop();go(step<0?-1:step-1);}else if(e.key===' '&&e.target.tagName!=='BUTTON'){e.preventDefault();play.click();}});
 show();
 })();`;
+
+/** Above this the file is too big to email comfortably (one picture per arrow is baked in). */
+export const LARGE_HTML_BYTES = 5_000_000;
 
 export function toHtml(d, { theme = 'light' } = {}) {
   const problems = validateDiagram(d);
