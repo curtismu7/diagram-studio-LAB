@@ -312,9 +312,15 @@ try {
   const rects = await page.locator('[data-testid^="node-"]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.right, r.bottom]; }));
   let tidyOverlaps = 0; for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const a = rects[i]; const b = rects[j]; if (a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]) tidyOverlaps++; }
   check(rects.length === 4 && tidyOverlaps === 0, 'Tidy leaves all 4 boxes without overlaps');
+  const cvs = await T('canvas').boundingBox();
+  check(rects.every((r) => r[0] >= cvs.x - 4 && r[1] >= cvs.y - 4 && r[2] <= cvs.x + cvs.width + 4 && r[3] <= cvs.y + cvs.height + 4), 'Tidy refits the view: every box is inside the canvas');
   await T('undo').click(); await sleep(250);
   check(await T('undo').isDisabled(), 'Tidy is a single undo step');
-  await T('new-open').click(); await T('new-title').fill('Approval from e2e'); await T('new-template').selectOption('approval'); await T('new-create').click();
+  await T('new-open').click();
+  check(await T('new-title').evaluate((el) => el === document.activeElement), 'the New diagram panel focuses the title field');
+  await page.keyboard.press('Escape');
+  check((await T('new-panel').count()) === 0, 'Escape closes the New diagram panel');
+  await T('new-open').click(); await T('new-title').fill('Approval from e2e'); await T('new-template').selectOption('approval'); await T('new-title').press('Enter');
   await page.getByRole('heading', { name: /Approval from e2e/ }).waitFor();
   check(await page.locator('[data-testid^="node-"]').count() === 3 && (await T('msg').innerText()).includes('Created approval-from-e2e'), 'New diagram from a template opens with its 3 boxes');
   await page.reload(); await T('picker').waitFor();
