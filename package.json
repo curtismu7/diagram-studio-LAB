@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w web",
     "start": "npm start -w server",
-    "test": "npm test -w core && npm test -w server && npm test -w web && node --test scripts/content-pack.test.mjs scripts/compose.test.mjs scripts/k8s.test.mjs",
+    "test": "npm test -w core && npm test -w server && npm test -w web && node --test scripts/content-pack.test.mjs scripts/compose.test.mjs scripts/k8s.test.mjs scripts/shelf-entry.test.mjs",
     "doctor": "node scripts/doctor.mjs",
     "prepare": "git config core.hooksPath .githooks || true",
     "build": "npm run build -w web",
