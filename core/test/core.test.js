@@ -66,11 +66,14 @@ test('removing a node or edge keeps steps pointing at the right edges', () => {
   assert.equal(noApi.edges.length, 5);
   assert.deepEqual(validateDiagram(noApi), []);
   assert.deepEqual(noApi.steps.at(-1).edges, [4]);
-  assert.ok(noApi.steps.every((st) => st.edges.length), 'no step is left without an arrow');
-  assert.equal(removeNode(d, 'user').steps.length, 4, 'a step whose only arrow went is dropped');
+  const noUser = removeNode(d, 'user');
+  assert.equal(noUser.steps.length, 5, 'a step whose only arrow went is kept, never silently deleted');
+  assert.deepEqual(noUser.steps[1].edges, [], 'and it now has no arrows');
+  assert.deepEqual(validateDiagram(noUser), []);
   const e = removeEdge(d, 0);
-  assert.equal(e.steps.length, 4);
-  assert.deepEqual(e.steps[0].edges, [0]);
+  assert.equal(e.steps.length, 5);
+  assert.deepEqual(e.steps[0].edges, [], 'the step that owned arrow 1 keeps its text and loses the arrow');
+  assert.deepEqual(e.steps[1].edges, [0], 'later steps are renumbered');
   assert.equal(addEdge(d, 'user', 'user').edges.length, d.edges.length, 'no self-loop');
   assert.equal(captions(d)[0], 'Client app → Authorization server: authorize request + code_challenge');
 });
@@ -288,4 +291,47 @@ test('toSvg arrows start and end on the borders of their own boxes (single arrow
       assert.ok(dist(x2, y2, b) < 1.5 && !inside(x2, y2, b), `${d.id} arrow ${i + 1} ends on its target box`);
     });
   }
+});
+
+test('step, group and text edits are immutable, stay valid, and clear optional fields', async () => {
+  const E = await import('../src/index.js');
+  const base = clone(SAMPLES[0]); const frozen = JSON.stringify(base);
+  let d = E.addStep(base, 'Extra'); assert.equal(d.steps.length, 6);
+  d = E.updateStep(d, 5, { what: 'text', why: 'because', hop: 'x-1', story: { id: 'S01', step: 2 } });
+  d = E.toggleStepEdge(d, 5, 3); d = E.toggleStepEdge(d, 5, 1);
+  assert.deepEqual(d.steps[5].edges, [1, 3]);
+  assert.deepEqual(E.validateDiagram(d), []);
+  d = E.toggleStepEdge(d, 5, 1); assert.deepEqual(d.steps[5].edges, [3]);
+  assert.equal(E.toggleStepEdge(d, 5, 99), d, 'unknown arrow ignored');
+  d = E.updateStep(d, 5, { why: '', hop: '', story: null }); assert.deepEqual(Object.keys(d.steps[5]).sort(), ['edges', 'title', 'what']);
+  assert.equal(E.updateStep(d, 5, { evil: 1, __proto__: { x: 1 } }).steps[5].evil, undefined, 'unknown keys ignored');
+  assert.equal(E.moveStep(d, 0, -1), d); assert.equal(E.moveStep(d, 0, 1).steps[1].title, base.steps[0].title);
+  assert.equal(E.removeStep(d, 5).steps.length, 5);
+  assert.equal(JSON.stringify(base), frozen, 'input never mutated');
+  while ((d.steps || []).length < LIMITS.steps) d = E.addStep(d); assert.equal(E.addStep(d).steps.length, LIMITS.steps);
+
+  let g = E.addGroup(base, 'Audit trail', 'green'); assert.ok(Object.hasOwn(g.groups, 'audit-trail'));
+  g = E.addGroup(g, 'Audit trail', 'blue'); assert.ok(Object.hasOwn(g.groups, 'audit-trail-2'));
+  g = E.setGroup(g, 'audit-trail', { label: 'Audit', color: 'amber' }); assert.equal(g.groups['audit-trail'].color, 'amber');
+  assert.equal(E.setGroup(g, '__proto__', { label: 'x' }), g);
+  assert.equal(E.removeGroup(g, 'people'), g, 'a group in use stays');
+  assert.ok(!Object.hasOwn(E.removeGroup(g, 'audit-trail').groups, 'audit-trail'));
+  assert.equal(E.removeGroup({ ...base, nodes: [], groups: { only: base.groups.people } }, 'only').groups.only.label, base.groups.people.label, 'the last group stays');
+  assert.deepEqual(E.validateDiagram(E.setNodeGroup(g, 'user', 'audit-trail')), []);
+
+  const n = E.setNodeSub(base, 'user', ' one \n\n two \n'); assert.deepEqual(n.nodes[0].sub, ['one', 'two']);
+  assert.equal('sub' in E.setNodeSub(base, 'user', '  \n ').nodes[0], false);
+  assert.equal(E.setNodeSub(base, 'user', 'a\nb\nc\nd\ne\nf\ng\nh').nodes[0].sub.length, LIMITS.sub);
+  assert.equal('lede' in E.setText(base, 'lede', ''), false); assert.equal(E.setText(base, 'title', 'T').title, 'T');
+});
+
+test('edit guards: moveStep needs whole numbers, setText only touches title and lede', async () => {
+  const E = await import('../src/index.js');
+  const d = clone(SAMPLES[0]);
+  for (const [i, dl] of [[0.5, 1], [1, 0.5], [NaN, 1], [1, NaN], [Infinity, 1], ['1', 1], [undefined, 1], [1, '1']]) assert.equal(E.moveStep(d, i, dl), d, `${i},${dl}`);
+  assert.equal(E.moveStep(d, 1, 1).steps[2].title, d.steps[1].title);
+  for (const k of ['nodes', 'edges', 'schema', 'id', 'groups', '__proto__', 'constructor', 'steps']) assert.equal(E.setText(d, k, 'x'), d, `setText ${k}`);
+  assert.equal(E.setText(d, 'title', 42).title, '42'); assert.equal(E.setText(d, 'title', null).title, '');
+  assert.equal('lede' in E.setText(d, 'lede', ''), false); assert.equal(E.setText(d, 'lede', 'hi').lede, 'hi');
+  assert.equal(Object.keys({}).length, 0, 'no prototype pollution');
 });
