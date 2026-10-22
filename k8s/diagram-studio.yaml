@@ -1,0 +1,110 @@
+# Mock-only Diagram Studio for the SE cluster. Placeholders (rendered by deploy.sh with sed): __IMAGE__, __SE_HOST__.
+# No namespace here on purpose: deploy.sh takes NAMESPACE from the environment (which namespace is an owner decision).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diagram-studio
+  labels:
+    app: diagram-studio
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: diagram-studio
+  template:
+    metadata:
+      labels:
+        app: diagram-studio
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: diagram-studio
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6001
+          env:
+            - name: MODE
+              value: mock
+            - name: PORT
+              value: "6001"
+            - name: STUDIO_BIND
+              value: 0.0.0.0
+            - name: STUDIO_ALLOW_HOST
+              value: __SE_HOST__
+          # The Host guard answers 421 to a pod-IP Host, so the probes send the one Host the server always accepts.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 6001
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 6001
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diagram-studio
+  labels:
+    app: diagram-studio
+spec:
+  selector:
+    app: diagram-studio
+  ports:
+    - port: 80
+      targetPort: 6001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio
+  labels:
+    app: diagram-studio
+spec:
+  rules:
+    - host: __SE_HOST__
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: diagram-studio
+                port:
+                  number: 80

@@ -108,6 +108,21 @@ shows a banner, and keeps its working files in a throwaway temp directory. Defau
 - With a read-only root filesystem, mount a writable `/tmp` (an `emptyDir` in Kubernetes); the image runs as the non-root `node` user.
 - Do not bake a `.env` into an image: `.dockerignore` excludes it, and the server would load it at start. Pass settings as container environment.
 
+## SE cluster mock build
+
+The hosted mock is the same image with `MODE=mock` (or `MOCK_ONLY=1`, see above): read-only, nothing stored. `k8s/diagram-studio.yaml` is a hardened Deployment
+(non-root, read-only root filesystem, dropped capabilities, resource limits, a `/tmp` emptyDir, `/api/health` probes that send `Host: localhost` because the Host guard
+answers 421 to a pod IP), plus a Service and an Ingress. `k8s/deploy.sh` renders the `__IMAGE__` and `__SE_HOST__` placeholders with sed and fails if any token is left;
+it needs `IMAGE`, `SE_HOST` (a plain host name, no port) and `NAMESPACE` (no default: that is an owner decision) and is a dry run unless you pass exactly `--apply` (any other argument is refused). Run it with bash.
+
+```
+IMAGE=<registry>/diagram-studio:<tag> SE_HOST=<host> NAMESPACE=<ns> k8s/deploy.sh          # prints what it would apply
+IMAGE=... SE_HOST=... NAMESPACE=... k8s/deploy.sh --apply                                  # owner-approved first deploy
+```
+
+Not deployed yet: the first deploy to the SE cluster needs the owner's approval, and the image has not been pushed. After a deploy, verify by content (the health response says
+`"mode":"mock-only"`, a write returns 403), then add the SE URL to the shelf entry.
+
 ## Checks
 
 - `npm test` runs core, server and web unit tests plus the content-pack and compose checks.
