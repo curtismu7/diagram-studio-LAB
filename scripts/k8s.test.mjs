@@ -37,11 +37,16 @@ test('deploy.sh dry-runs by default: renders both tokens, names the namespace, a
 
 test('deploy.sh refuses a missing or invalid setting and a template with an unreplaced token', () => {
   for (const drop of ['IMAGE', 'SE_HOST', 'NAMESPACE']) { const env = { ...GOOD }; delete env[drop]; const r = run(env); assert.notEqual(r.status, 0, `${drop} is required`); assert.match(r.stderr, new RegExp(drop)); }
-  for (const [k, v] of [['NAMESPACE', 'Bad_NS'], ['NAMESPACE', '-x'], ['SE_HOST', 'a/b'], ['SE_HOST', 'a b'], ['SE_HOST', 'x|y'], ['IMAGE', 'img;rm'], ['IMAGE', 'a&b']]) assert.notEqual(run({ ...GOOD, [k]: v }).status, 0, `${k}=${v}`);
+  for (const [k, v] of [['NAMESPACE', 'Bad_NS'], ['NAMESPACE', '-x'], ['SE_HOST', 'a/b'], ['SE_HOST', 'a b'], ['SE_HOST', 'x|y'], ['SE_HOST', 'studio.example.invalid:8443'], ['SE_HOST', 'é.com'], ['IMAGE', 'img;rm'], ['IMAGE', 'a&b'], ['IMAGE', '-x'], ['IMAGE', 'a:__SE_HOST__'], ['IMAGE', 'x\ny'], ['IMAGE', '$(id)']]) assert.notEqual(run({ ...GOOD, [k]: v }).status, 0, `${k}=${v}`);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'k8s-')); const f = path.join(tmp, 'm.yaml');
   fs.writeFileSync(f, `${manifest}\n# extra: __OTHER_TOKEN__\n`);
   const r = run({ ...GOOD, MANIFEST: f }); assert.notEqual(r.status, 0); assert.match(r.stderr, /unreplaced placeholders left: __OTHER_TOKEN__/);
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('deploy.sh accepts only no argument or exactly --apply, and refuses a typo instead of dry-running quietly', () => {
+  for (const args of [['--aply'], ['--', '--apply'], ['--apply', 'x'], ['apply'], ['-a']]) { const r = run(GOOD, args); assert.equal(r.status, 2, args.join(' ')); assert.match(r.stderr, /usage/); assert.doesNotMatch(r.stdout, /DRY RUN/); }
+  assert.equal(run(GOOD, []).status, 0);
 });
 
 test('deploy.sh has no default namespace and never calls kubectl without --apply', () => {
