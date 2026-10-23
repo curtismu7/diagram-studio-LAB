@@ -138,3 +138,27 @@ spec:
               service:
                 name: diagram-studio-mock
                 port: { name: http }
+---
+# Health only, so the shelf can poll it without the sign-in wall. Exact match on one path; the page and the API stay behind the wall.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio-mock-health
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /api/health
+spec:
+  ingressClassName: nginx-public
+  rules:
+    - host: __SE_HOST__
+      http:
+        paths:
+          - path: /mock/diagram-studio/api/health
+            pathType: Exact
+            backend:
+              service:
+                name: diagram-studio-mock
+                port: { name: http }
