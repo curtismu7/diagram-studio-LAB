@@ -51,7 +51,7 @@ if grep -nE '__[A-Z_]+__' "$RENDERED"; then fail "unreplaced __TOKEN__ in render
 
 # 3. Build (linux/amd64: the SE nodes are amd64).
 if [ "$DRY" = 1 ]; then
-  say "-- would run: docker buildx build --platform linux/amd64 -t $IMAGE --push .   (dry run: building locally with --load, no push)"
+  say "-- would run: docker buildx build --platform linux/amd64,linux/arm64 -t $IMAGE --push .   (dry run: building locally with --load, no push)"
   docker buildx build --platform linux/amd64 -t "$IMAGE" --load .
   say "-- would run: docker buildx imagetools inspect $IMAGE   (verify pushed manifest)"
   say "-- would run: kubectl apply -n $NAMESPACE -f <rendered>   (dry run: --dry-run=server)"
@@ -65,7 +65,7 @@ if [ "$DRY" = 1 ]; then
 fi
 
 META="$(mktemp -t diagram-studio-meta.XXXXXX)"; trap 'rm -f "$RENDERED" "$META"' EXIT
-docker buildx build --platform linux/amd64 -t "$IMAGE" --push --metadata-file "$META" .
+docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE" --push --metadata-file "$META" .
 DIGEST="$(sed -n 's/.*"containerimage.digest": *"\(sha256:[0-9a-f]*\)".*/\1/p' "$META" | head -1)"
 [ -n "$DIGEST" ] || fail "could not read the pushed digest from build metadata"
 
