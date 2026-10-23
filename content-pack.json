@@ -195,6 +195,16 @@
       "href": "/?d=mcp-step-up"
     },
     {
+      "id": "mock-authorize-flow",
+      "label": "Mock Authorize: how a client gets a decision",
+      "href": "/?d=mock-authorize-flow"
+    },
+    {
+      "id": "p1az-inspector-flow",
+      "label": "P1AZ Inspector: where a decision goes",
+      "href": "/?d=p1az-inspector-flow"
+    },
+    {
       "id": "personal-agent",
       "label": "Personal Agent",
       "href": "/?d=personal-agent"
