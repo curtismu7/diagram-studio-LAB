@@ -104,4 +104,6 @@ const LINKS = {
 const linked = (d) => ({ ...d, steps: d.steps.map((st, i) => { const [sid, n, hop] = LINKS[d.id][i]; return { ...st, ...(sid ? { story: { id: sid, step: n } } : {}), hop }; }) });
 
 export const BASICS = [authCode, exchange, mcp, chain].map(linked);
-export const SAMPLES = [...BASICS, ...LIBRARY];
+import { APP_DIAGRAMS } from './apps.js';
+
+export const SAMPLES = [...BASICS, ...LIBRARY, ...APP_DIAGRAMS];
