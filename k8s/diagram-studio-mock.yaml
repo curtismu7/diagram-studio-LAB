@@ -162,3 +162,56 @@ spec:
               service:
                 name: diagram-studio-mock
                 port: { name: http }
+---
+# Own hostname behind a shared password (basic auth). The secret is created by the owner, not by this manifest:
+#   kubectl -n __NAMESPACE__ create secret generic diagram-studio-mock-auth --from-file=auth=<htpasswd file>
+# upstream-vhost passes the app's allowed Host, so its host guard accepts the request.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio-mock-subdomain
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: diagram-studio-mock-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Diagram Studio mock (SE)"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/upstream-vhost: __SE_HOST__
+spec:
+  ingressClassName: nginx-public
+  rules:
+    - host: __MOCK_HOST__
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: diagram-studio-mock
+                port: { name: http }
+---
+# Health only on the subdomain, with no password, so the shelf can poll it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagram-studio-mock-subdomain-health
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/upstream-vhost: __SE_HOST__
+spec:
+  ingressClassName: nginx-public
+  rules:
+    - host: __MOCK_HOST__
+      http:
+        paths:
+          - path: /api/health
+            pathType: Exact
+            backend:
+              service:
+                name: diagram-studio-mock
+                port: { name: http }
