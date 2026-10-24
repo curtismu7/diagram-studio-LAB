@@ -181,6 +181,9 @@ metadata:
     nginx.ingress.kubernetes.io/upstream-vhost: __SE_HOST__
 spec:
   ingressClassName: nginx-public
+  tls:
+    - hosts: [__MOCK_HOST__]
+      secretName: diagram-studio-mock-subdomain-tls
   rules:
     - host: __MOCK_HOST__
       http:
@@ -205,6 +208,9 @@ metadata:
     nginx.ingress.kubernetes.io/upstream-vhost: __SE_HOST__
 spec:
   ingressClassName: nginx-public
+  tls:
+    - hosts: [__MOCK_HOST__]
+      secretName: diagram-studio-mock-subdomain-tls
   rules:
     - host: __MOCK_HOST__
       http:
@@ -215,3 +221,19 @@ spec:
               service:
                 name: diagram-studio-mock
                 port: { name: http }
+---
+# TLS for the subdomain. The wildcard certificate does not cover a name two levels under ai-demo, so it gets its own.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: diagram-studio-mock-subdomain
+  labels:
+    app.kubernetes.io/name: diagram-studio-mock
+    app.kubernetes.io/part-of: standalone-mock
+spec:
+  secretName: diagram-studio-mock-subdomain-tls
+  dnsNames:
+    - __MOCK_HOST__
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-pdo
