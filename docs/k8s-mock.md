@@ -1,10 +1,13 @@
 # SE k8s mock deployment (rule 18b)
 
+> **Two kits live in this repo.** This one (`k8s/diagram-studio-mock.yaml` and `scripts/deploy-k8s-mock.sh`) deploys the hosted *mock*, a deployment named `diagram-studio-mock` on its own hostname. The other (`k8s/diagram-studio.yaml` and `k8s/deploy.sh`) deploys a deployment named `diagram-studio` for the shared diagrams host. They use different object names and do not collide, but they are separate things to deploy.
+
+
 The mock-only build of diagram-studio runs on the US SE cluster behind the existing sign-in wall, at a path on the main host:
 
     https://ai-demo.ping-devops.com/mock/diagram-studio/
 
-This page is the reusable pattern. Sibling apps (learning-hub, mcp-tools, hostile-mcp, attack-gallery) copy `k8s/`, `scripts/deploy-k8s.sh` and this page, and change only the items in "What changes per app".
+This page is the reusable pattern. Sibling apps (learning-hub, mcp-tools, hostile-mcp, attack-gallery) copy `k8s/`, `scripts/deploy-k8s-mock.sh` and this page, and change only the items in "What changes per app".
 
 ## Pattern
 
@@ -42,7 +45,7 @@ The manifest uses literal tokens, replaced by `sed` in the deploy script; any to
 
 From a clean checkout whose HEAD is pushed (the script refuses otherwise):
 
-    NAMESPACE=ping-devops-cmuir scripts/deploy-k8s.sh
+    NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh
 
 Steps: buildx `linux/amd64` build and push of the sha tag, check the GHCR manifest digest equals the pushed digest, render and `kubectl apply`, wait for rollout, then verify by content inside the pod:
 
@@ -53,7 +56,7 @@ Steps: buildx `linux/amd64` build and push of the sha tag, check the GHCR manife
 
 The public URL is behind the wall, so a 200 there proves nothing; open it in a signed-in browser as the final check.
 
-Rehearse without touching anything: `NAMESPACE=ping-devops-cmuir scripts/deploy-k8s.sh --dry-run` builds locally (no push), runs `kubectl apply --dry-run=server`, prints the rendered manifest and what each real step would do. Failed preconditions print `WOULD REFUSE`.
+Rehearse without touching anything: `NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh --dry-run` builds locally (no push), runs `kubectl apply --dry-run=server`, prints the rendered manifest and what each real step would do. Failed preconditions print `WOULD REFUSE`.
 
 ## Rollback
 
