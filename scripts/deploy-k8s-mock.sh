@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build, push and deploy the diagram-studio MOCK-ONLY image to the SE k8s cluster. See docs/k8s-mock.md.
 #
-#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s.sh             real deploy (owner-approved first deploy)
-#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s.sh --dry-run   local build only, no push, kubectl apply --dry-run=server
+#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh             real deploy (owner-approved first deploy)
+#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh --dry-run   local build only, no push, kubectl apply --dry-run=server
 #
 # Env: NAMESPACE (required, no default), SE_HOST (default ai-demo.ping-devops.com), REGISTRY (default ghcr.io/cmuir_pingcorp),
 #      KUBE_CONTEXT (optional), IMAGE_NAME (default diagram-studio-mock).

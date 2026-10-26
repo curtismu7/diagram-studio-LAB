@@ -23,7 +23,7 @@ export const LIBRARY = [
    {
     "id": "u",
     "group": "app",
-    "label": "Browser (demo_api_ui)",
+    "label": "Browser (demo UI)",
     "sub": [
      "holds only the session cookie"
     ],
@@ -547,7 +547,7 @@ export const LIBRARY = [
     "group": "external",
     "label": "BFF",
     "sub": [
-     "demo_api_server :3001",
+     "demo API server :3001",
      "sole token custodian",
      "cookie to access token"
     ],
@@ -2120,7 +2120,7 @@ export const LIBRARY = [
     "label": "Passkey in the browser",
     "sub": [
      "navigator.credentials.get",
-     "rpId ping-devops.com"
+     "rpId login.example.invalid"
     ],
     "x": 0,
     "y": 480
@@ -2288,7 +2288,7 @@ export const LIBRARY = [
    },
    {
     "title": "Or a passkey",
-    "what": "Picking the passkey returns WebAuthn options (rpId ping-devops.com). The browser signs the challenge and the BFF posts the assertion to PF as checkAssertion, the same body PingOne takes as assertion.check.",
+    "what": "Picking the passkey returns WebAuthn options (rpId login.example.invalid). The browser signs the challenge and the BFF posts the assertion to PF as checkAssertion, the same body PingOne takes as assertion.check.",
     "why": "One touch and phishing-resistant; proven live on PingFederate 2026-10-18.",
     "edges": [
      6,
@@ -2553,7 +2553,7 @@ export const LIBRARY = [
     "color": "dark"
    },
    "infra": {
-    "label": "Ingress (cmuir-mcp.ping-devops.com)",
+    "label": "Ingress (mcp.example.invalid)",
     "color": "grey"
    },
    "ping": {
@@ -2614,7 +2614,7 @@ export const LIBRARY = [
     "sub": [
      "same REST API browser sessions use",
      "reached here over Bearer",
-     "aud = enduser.ping.demo"
+     "aud = enduser.example.invalid"
     ],
     "x": 1900,
     "y": -200
@@ -2635,7 +2635,7 @@ export const LIBRARY = [
     "group": "ping",
     "label": "PingOne",
     "sub": [
-     "auth.pingone.com/{envId}/as",
+     "auth.example.invalid/{envId}/as",
      "real IdP: the actual login"
     ],
     "x": 1340,
@@ -2746,7 +2746,7 @@ export const LIBRARY = [
    {
     "title": "oauth-mcp calls the Banking API over Bearer",
     "what": "The same REST API a browser session uses, reached with a real federated PingOne token, or the self-issued JWT as the fallback.",
-    "why": "The token must carry aud enduser.ping.demo or the call 401s even though every earlier step worked.",
+    "why": "The token must carry aud enduser.example.invalid or the call 401s even though every earlier step worked.",
     "edges": [
      7
     ]
@@ -2801,7 +2801,7 @@ export const LIBRARY = [
     "group": "ping",
     "label": "PingOne AS",
     "sub": [
-     "auth.pingone.com/{envId}/as",
+     "auth.example.invalid/{envId}/as",
      "real login, real access token"
     ],
     "x": 880,
@@ -2813,7 +2813,7 @@ export const LIBRARY = [
     "label": "Banking API",
     "sub": [
      "audience-gated",
-     "aud = enduser.ping.demo"
+     "aud = enduser.example.invalid"
     ],
     "x": 440,
     "y": 220
@@ -2890,7 +2890,7 @@ export const LIBRARY = [
    {
     "source": "om",
     "target": "api",
-    "label": "TokenResolver: jti found; Bearer real PingOne token (aud enduser.ping.demo), returns account data"
+    "label": "TokenResolver: jti found; Bearer real PingOne token (aud enduser.example.invalid), returns account data"
    },
    {
     "source": "om",
@@ -3288,7 +3288,7 @@ export const LIBRARY = [
     "group": "person",
     "label": "Requester",
     "sub": [
-     "@pingidentity.com email,",
+     "company-domain email,",
      "name, cell phone"
     ],
     "x": 0,
@@ -3434,7 +3434,7 @@ export const LIBRARY = [
   "steps": [
    {
     "title": "A requester verifies their email",
-    "what": "Only @pingidentity.com addresses are accepted. The request creates a record in otp_pending and emails a one-time code; a correct code moves it to pending_approval and alerts the admin.",
+    "what": "Only addresses on the allowed company domain are accepted. The request creates a record in otp_pending and emails a one-time code; a correct code moves it to pending_approval and alerts the admin.",
     "why": "The hosted-access wall only admits approved users, so a verified email alone grants nothing.",
     "edges": [
      0,
@@ -4388,7 +4388,7 @@ export const LIBRARY = [
     "label": "PingOne AS",
     "sub": [
      "RFC 8693 token exchange",
-     "audience = mcp-invest.ping.demo"
+     "audience = mcp-invest.example.invalid"
     ],
     "x": 880,
     "y": 0
@@ -5739,7 +5739,7 @@ export const LIBRARY = [
     "label": "PingFederate · token endpoint",
     "sub": [
      "back-channel endpoint",
-     "/as/token.oauth2 · client ai-demo-pf-user",
+     "/as/token.oauth2 · client demo-user-client",
      "code exchange + standard token exchange"
     ],
     "x": 1150,
@@ -6362,28 +6362,28 @@ export const LIBRARY = [
    },
    {
     "title": "Agent Gateway to mcp-server (banking)",
-    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.ping.demo and forwards the tool call. PingOne Authorize permits the read scope for this user.",
+    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.example.invalid and forwards the tool call. PingOne Authorize permits the read scope for this user.",
     "edges": [
      7
     ]
    },
    {
     "title": "Agent Gateway to resource-srv (invest)",
-    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcp-invest.ping.demo and forwards the tool call. PingOne Authorize decides per tool before the call is forwarded.",
+    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcp-invest.example.invalid and forwards the tool call. PingOne Authorize decides per tool before the call is forwarded.",
     "edges": [
      8
     ]
    },
    {
     "title": "Agent Gateway to mcp-weather",
-    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.ping.demo and forwards the tool call. No user data comes back, but the call still carries the user's token: the bridge refuses a tools/call with no subject. The audience shown is the default MCP server resource.",
+    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.example.invalid and forwards the tool call. No user data comes back, but the call still carries the user's token: the bridge refuses a tools/call with no subject. The audience shown is the default MCP server resource.",
     "edges": [
      9
     ]
    },
    {
     "title": "Agent Gateway to mcp-brave",
-    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.ping.demo and forwards the tool call. No user data comes back, but the call still carries the user's token: the bridge refuses a tools/call with no subject. The audience shown is the default MCP server resource.",
+    "what": "The Agent Gateway exchanges the caller's token for one scoped to mcpserver.example.invalid and forwards the tool call. No user data comes back, but the call still carries the user's token: the bridge refuses a tools/call with no subject. The audience shown is the default MCP server resource.",
     "edges": [
      10
     ]

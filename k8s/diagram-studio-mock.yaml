@@ -1,5 +1,5 @@
 # SE k8s mock-only deployment of diagram-studio. Tokens (__IMAGE__, __SE_HOST__, __NAMESPACE__) are rendered by
-# scripts/deploy-k8s.sh with sed; no namespace is set here, the script passes -n. See docs/k8s-mock.md.
+# scripts/deploy-k8s-mock.sh with sed; no namespace is set here, the script passes -n. See docs/k8s-mock.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

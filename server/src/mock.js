@@ -1,9 +1,9 @@
-// MOCK_ONLY=1 (or true): hosted-mock mode. The server never writes visitor data and refuses every API write in one place.
+// MOCK_ONLY=1 (or true), or MODE=mock: hosted-mock mode. The server never writes visitor data and refuses every API write in one place.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-export const isMockOnly = (env = process.env) => ['1', 'true'].includes(String(env.MOCK_ONLY || '').trim().toLowerCase());
+export const isMockOnly = (env = process.env) => ['1', 'true'].includes(String(env.MOCK_ONLY || '').trim().toLowerCase()) || String(env.MODE || '').trim().toLowerCase() === 'mock';
 export const MOCK_REFUSAL = { error: 'mock_only', message: 'Disabled in the hosted mock.' };
 
 // Every non-read /api request (save, copy, delete, import) is refused before any body is parsed or any file is touched.
