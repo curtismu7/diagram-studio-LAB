@@ -55,4 +55,320 @@ export const MOCK_AUTHORIZE_FLOW = {
   ],
 };
 
-export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW];
+// Agent Meets the MCP Door (agent-mcp-door-demo), airline wording; the app has its own copy with {{cast}} tokens for three verticals.
+export const AGENT_DOOR_FLOW = {
+  schema: "diagram-studio/1",
+  id: "agent-door-flow",
+  title: "A member's agent meets Northwind Air's MCP door",
+  lede: "How a Northwind Miles member's own AI agent reaches Northwind Air: discover, register, consent, per-call token exchange, gateway, policy decision, human approval, audit. The agent is never trusted.",
+  groups: {
+    member: {
+      label: "Member",
+      color: "blue"
+    },
+    outside: {
+      label: "Outside the boundary",
+      color: "grey"
+    },
+    brand: {
+      label: "Northwind Air's boundary",
+      color: "dark"
+    },
+    ping: {
+      label: "PingOne",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "m",
+      group: "member",
+      label: "Member",
+      sub: [
+        "Northwind Miles member"
+      ],
+      x: 0,
+      y: 0
+    },
+    {
+      id: "k",
+      group: "outside",
+      label: "AI assistant catalog",
+      sub: [
+        "e.g. ChatGPT's app directory"
+      ],
+      x: 0,
+      y: 440
+    },
+    {
+      id: "a",
+      group: "outside",
+      label: "Member's own agent",
+      sub: [
+        "ChatGPT, mobile assistant, CLI"
+      ],
+      x: 0,
+      y: 220
+    },
+    {
+      id: "g",
+      group: "brand",
+      label: "Northwind Air MCP door",
+      sub: [
+        "PingGateway • public URL"
+      ],
+      x: 420,
+      y: 220
+    },
+    {
+      id: "p",
+      group: "ping",
+      label: "PingOne",
+      sub: [
+        "auth server • token service • Agreement"
+      ],
+      x: 420,
+      y: 0
+    },
+    {
+      id: "z",
+      group: "ping",
+      label: "PingOne Authorize + Protect",
+      sub: [
+        "permit • deny • step-up"
+      ],
+      x: 420,
+      y: 440
+    },
+    {
+      id: "u",
+      group: "brand",
+      label: "Northwind Air app",
+      sub: [
+        "member's phone or web"
+      ],
+      x: 840,
+      y: 0
+    },
+    {
+      id: "l",
+      group: "brand",
+      label: "Rewards MCP + Facade",
+      sub: [
+        "holds the legacy credentials"
+      ],
+      x: 840,
+      y: 220
+    },
+    {
+      id: "s",
+      group: "brand",
+      label: "Audit + SIEM",
+      sub: [
+        "the agent has no write path"
+      ],
+      x: 840,
+      y: 560
+    }
+  ],
+  edges: [
+    {
+      source: "g",
+      target: "k",
+      label: "1 Publish connector"
+    },
+    {
+      source: "k",
+      target: "g",
+      label: "2 List it",
+      dashed: true
+    },
+    {
+      source: "m",
+      target: "k",
+      label: "3 Add it, free"
+    },
+    {
+      source: "k",
+      target: "a",
+      label: "4 Appears in agent",
+      dashed: true
+    },
+    {
+      source: "a",
+      target: "g",
+      label: "5 Call, no token"
+    },
+    {
+      source: "g",
+      target: "a",
+      label: "6 Metadata (RFC 9728)",
+      dashed: true
+    },
+    {
+      source: "a",
+      target: "p",
+      label: "7 Self-register"
+    },
+    {
+      source: "a",
+      target: "m",
+      label: "8 Open browser"
+    },
+    {
+      source: "m",
+      target: "p",
+      label: "9 Sign in + consent"
+    },
+    {
+      source: "p",
+      target: "a",
+      label: "10 Authorization code",
+      dashed: true
+    },
+    {
+      source: "a",
+      target: "p",
+      label: "11 Token exchange"
+    },
+    {
+      source: "p",
+      target: "a",
+      label: "12 Per-call token",
+      dashed: true
+    },
+    {
+      source: "a",
+      target: "g",
+      label: "13 Tool call + bearer"
+    },
+    {
+      source: "g",
+      target: "z",
+      label: "14 Ask for verdict"
+    },
+    {
+      source: "z",
+      target: "g",
+      label: "15 Verdict",
+      dashed: true
+    },
+    {
+      source: "g",
+      target: "u",
+      label: "16 Pending approval"
+    },
+    {
+      source: "m",
+      target: "u",
+      label: "17 Member approves"
+    },
+    {
+      source: "u",
+      target: "g",
+      label: "18 Approval receipt",
+      dashed: true
+    },
+    {
+      source: "g",
+      target: "l",
+      label: "19 Permitted call"
+    },
+    {
+      source: "l",
+      target: "a",
+      label: "20 Result",
+      dashed: true
+    },
+    {
+      source: "g",
+      target: "s",
+      label: "21 Audit record"
+    },
+    {
+      source: "p",
+      target: "s",
+      label: "22 Audit record (AS)"
+    }
+  ],
+  steps: [
+    {
+      title: "Publish once, get it free",
+      what: "Northwind Air lists its connector in the assistant's catalog once. After that a member adds it from the catalog for free: nothing to install, no account to create. Sign-in and consent come on first use.",
+      edges: [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      title: "Discover",
+      what: "The agent knocks with no token and gets a 401 that points at the metadata. The door advertises itself; nobody at Northwind Air is involved.",
+      edges: [
+        4,
+        5
+      ]
+    },
+    {
+      title: "Register",
+      what: "The agent registers itself with a client document. Now Northwind Air has an identity to name in consent, scope, and switch off.",
+      edges: [
+        6
+      ]
+    },
+    {
+      title: "Consent",
+      what: "The member signs in at PingOne with a passkey. The consent screen names this agent and what it may do. The member session never enters the agent.",
+      edges: [
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      title: "Exchange, per call",
+      what: "Every tool call gets its own token: subject is the member, actor is the agent, one audience, minutes to live. The agent holds nothing standing.",
+      edges: [
+        10,
+        11
+      ]
+    },
+    {
+      title: "Call + decide",
+      what: "The call reaches only the gateway. It checks audience and scope, then asks Authorize for a verdict. Because redeeming miles is spending, the answer is approval required.",
+      edges: [
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      title: "Approve",
+      what: "The approval happens in Northwind Air's own app, naming the exact redemption. One approval, one action, and a timeout means no.",
+      edges: [
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      title: "Permit",
+      what: "Only permitted calls reach the rewards service, which accepts only its own audience. The credentials for the legacy system never leave the Facade.",
+      edges: [
+        18,
+        19
+      ]
+    },
+    {
+      title: "Log and revoke",
+      what: "Gateway and authorization server write the same record, in storage the agent cannot touch. Turn off the agent client and its access ends within one token lifetime.",
+      edges: [
+        20,
+        21
+      ]
+    }
+  ]
+};
+
+export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW];

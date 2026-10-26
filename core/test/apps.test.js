@@ -12,3 +12,10 @@ test('the standalone app diagrams are valid diagram-studio/1 data and are in the
 test('every app diagram step points only at real edges', () => {
   for (const d of APP_DIAGRAMS) for (const st of d.steps) for (const i of st.edges) assert.ok(i < d.edges.length, `${d.id}: edge ${i}`);
 });
+
+test('the agent-door diagram walks all 22 arrows once, in order, in 9 steps', () => {
+  const d = APP_DIAGRAMS.find((x) => x.id === 'agent-door-flow');
+  assert.equal(d.edges.length, 22);
+  assert.equal(d.steps.length, 9);
+  assert.deepEqual(d.steps.flatMap((s) => s.edges), Array.from({ length: 22 }, (_, i) => i));
+});
