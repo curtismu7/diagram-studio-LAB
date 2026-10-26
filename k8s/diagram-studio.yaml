@@ -97,6 +97,7 @@ metadata:
   labels:
     app: diagram-studio
 spec:
+  ingressClassName: nginx-public
   # TLS for the shared diagrams host: the certificate is issued by demo-shelf k8s/shared-certificates.yaml.
   tls:
     - hosts: [__SE_HOST__]
