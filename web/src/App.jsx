@@ -311,6 +311,40 @@ export default function App() {
           </section>
         )}
 
+        {!editing && (
+          <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
+            {!selNode && !selEdge && <p className="muted">Click a box or an arrow to see what it is and which steps it is part of.</p>}
+            {selNode && (
+              <>
+                <h3>{selNode.label}</h3>
+                {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
+                {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+              </>
+            )}
+            {selEdge && (
+              <>
+                <h3>Arrow {sel.edge + 1}: {diagram.nodes.find((n) => n.id === selEdge.source)?.label} to {diagram.nodes.find((n) => n.id === selEdge.target)?.label}</h3>
+                {selEdge.label && <p data-testid="detail-edge-label">{selEdge.label}</p>}
+              </>
+            )}
+            {(selNode || selEdge) && (() => {
+              const touches = (s) => (s.edges || []).some((ei) => {
+                const e = diagram.edges[ei];
+                return selEdge ? ei === sel.edge : e && (e.source === selNode.id || e.target === selNode.id);
+              });
+              const parts = (diagram.steps || []).map((s, i) => ({ s, i })).filter(({ s }) => touches(s));
+              if (parts.length === 0) return <p className="muted" data-testid="detail-nosteps">It is not part of a numbered step.</p>;
+              return (
+                <ul className="detail-steps" data-testid="detail-steps">
+                  {parts.map(({ s, i }) => (
+                    <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}</li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </section>
+        )}
+
         {editing && <DetailsEditor diagram={diagram} edit={edit} type={type} done={done} problems={problems} selectedNode={sel.node} />}
 
         {diagram.steps?.length > 0 && (
