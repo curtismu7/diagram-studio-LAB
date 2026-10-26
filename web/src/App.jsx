@@ -9,6 +9,10 @@ import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// The shared diagrams host serves each diagram at /<diagram-id>; the query form (/?d=<id>) still works.
+const diagramIdFromPath = () => {
+  try { return decodeURIComponent(window.location.pathname.slice(import.meta.env.BASE_URL.length)).replace(/\/$/, "") || null; } catch { return null; }
+};
 
 export default function App() {
   const [list, setList] = useState([]);
@@ -47,7 +51,7 @@ export default function App() {
   }, [dispatch]);
   useEffect(() => {
     refresh().then((l) => {
-      let want = new URLSearchParams(window.location.search).get("d");
+      let want = new URLSearchParams(window.location.search).get("d") || diagramIdFromPath();
       try { want = want || localStorage.getItem("studio-last"); } catch { /* private mode */ }
       const first = l.find((x) => x.id === want) || l[0];
       if (first) open(first.id);

@@ -58,7 +58,7 @@ describe("Embed", () => {
     for (const id of ["simulate", "reset", "speed", "prev", "next"]) expect(screen.getByTestId(id)).toBeInTheDocument();
     for (const id of ["picker", "edit-toggle", "save", "export", "present", "save-copy", "import"]) expect(screen.queryByTestId(id)).toBeNull();
     expect(screen.getByTestId("caption")).toHaveTextContent("MCP tool call held for approval");
-    expect(screen.getByTestId("open-studio")).toHaveAttribute("href", "/?d=mcp-step-up");
+    expect(screen.getByTestId("open-studio")).toHaveAttribute("href", "/mcp-step-up");
     expect(screen.getByTestId("open-studio")).toHaveAttribute("rel", "noopener noreferrer");
   });
 
@@ -135,7 +135,7 @@ describe("Embed", () => {
     at("?embed=1&d=a%20b%26c");
     const r = render(<Embed />);
     const link = await screen.findByTestId("open-studio");
-    expect(link).toHaveAttribute("href", "/?d=a%20b%26c");
+    expect(link).toHaveAttribute("href", "/a%20b%26c");
     expect(link).toHaveAttribute("target", "_blank");
     expect(document.documentElement.dataset.embed).toBe("1");
     r.unmount();

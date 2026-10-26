@@ -97,6 +97,10 @@ metadata:
   labels:
     app: diagram-studio
 spec:
+  # TLS for the shared diagrams host: the certificate is issued by demo-shelf k8s/shared-certificates.yaml.
+  tls:
+    - hosts: [__SE_HOST__]
+      secretName: diagrams-tls
   rules:
     - host: __SE_HOST__
       http:
