@@ -60,3 +60,12 @@ describe("detail panel when reading (not editing)", () => {
     expect(screen.getByTestId("detail-panel")).toHaveTextContent(/Click a box or an arrow/);
   });
 });
+
+describe("diagram picker", () => {
+  it("is labelled so it is noticed, and says how many diagrams there are", async () => {
+    await ready();
+    expect(screen.getByText("Choose a diagram")).toBeInTheDocument();
+    expect(screen.getByTestId("picker")).toHaveClass("picker");
+    expect(screen.getByTestId("picker-count")).toHaveTextContent(`${SAMPLES.length} to explore`);
+  });
+});
