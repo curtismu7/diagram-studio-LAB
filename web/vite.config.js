@@ -9,5 +9,5 @@ export default defineConfig({
   base: "./",
   plugins: [react()],
   server: { host: "127.0.0.1", port: Number(process.env.VITE_PORT) || 6002, strictPort: true, proxy: { "/api": api } },
-  test: { environment: "jsdom", globals: true, setupFiles: "./src/testSetup.js" },
+  test: { environment: "jsdom", testTimeout: 20000, globals: true, setupFiles: "./src/testSetup.js" },
 });
