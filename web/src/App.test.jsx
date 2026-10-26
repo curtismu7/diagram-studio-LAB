@@ -13,8 +13,8 @@ function mockApi() {
   globalThis.fetch = vi.fn(async (url) => {
     const u = String(url);
     const ok = (data) => ({ ok: true, status: 200, json: async () => data });
-    if (u.endsWith("/api/diagrams")) return ok({ diagrams: SAMPLES.map((d) => ({ id: d.id, title: d.title, builtin: true })) });
-    const id = decodeURIComponent(u.split("/api/diagrams/")[1]);
+    if (u.endsWith("api/diagrams")) return ok({ diagrams: SAMPLES.map((d) => ({ id: d.id, title: d.title, builtin: true })) });
+    const id = decodeURIComponent(u.split("api/diagrams/")[1]);
     return ok({ diagram: SAMPLES.find((d) => d.id === id), builtin: true });
   });
 }
@@ -39,7 +39,7 @@ describe("toFlow", () => {
 describe("App", () => {
   it("shows the hosted-mock banner and hides save and import when health says mock-only", async () => {
     const base = globalThis.fetch;
-    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("/api/health")
+    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("api/health")
       ? { ok: true, status: 200, json: async () => ({ mode: "mock-only" }) } : base(url, o));
     render(<App />);
     expect(await screen.findByTestId("mock-banner")).toHaveTextContent("Hosted mock: sample data only, nothing leaves this server");
@@ -51,7 +51,7 @@ describe("App", () => {
   it("in the hosted mock, edits show no unsaved label and switching diagrams skips the discard prompt", async () => {
     const user = userEvent.setup();
     const base = globalThis.fetch;
-    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("/api/health")
+    globalThis.fetch = vi.fn(async (url, o) => String(url).endsWith("api/health")
       ? { ok: true, status: 200, json: async () => ({ mode: "mock-only" }) } : base(url, o));
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<App />);
@@ -191,7 +191,7 @@ describe("App", () => {
     it("switching diagram stops the walkthrough; an arrow with no step shows its caption in the panel", async () => {
       const user = userEvent.setup();
       const d = { ...SAMPLES[0], steps: [SAMPLES[0].steps[0]] };
-      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [d, SAMPLES[1]].map((x) => ({ id: x.id, title: x.title, builtin: true })) } : { diagram: String(u).includes(SAMPLES[1].id) ? SAMPLES[1] : d, builtin: true }) }));
+      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [d, SAMPLES[1]].map((x) => ({ id: x.id, title: x.title, builtin: true })) } : { diagram: String(u).includes(SAMPLES[1].id) ? SAMPLES[1] : d, builtin: true }) }));
       render(<App />);
       await screen.findByTestId("picker");
       await user.click(screen.getByTestId("present"));
@@ -219,14 +219,14 @@ describe("App", () => {
 
   it("an unknown story id renders as a plain label, text only", async () => {
     const d = { ...SAMPLES[0], steps: SAMPLES[0].steps.map((s, i) => (i ? s : { ...s, story: { id: "S99", step: 3 }, hop: "x" })) };
-    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
     render(<App />);
     expect(await screen.findByText(/Story S99, step 3 \(not in this studio\)/)).toBeInTheDocument();
   });
 
   it("a shipped story id with a step that does not exist says so", async () => {
     const d = { ...SAMPLES[0], steps: SAMPLES[0].steps.map((s, i) => (i ? s : { ...s, story: { id: "S01", step: 4 } })) };
-    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [{ id: d.id, title: d.title, builtin: true }] } : { diagram: d, builtin: true }) }));
     render(<App />);
     expect(await screen.findByText(/Story S01, step 4 \(no such step\)/)).toBeInTheDocument();
   });
@@ -265,7 +265,7 @@ describe("App", () => {
 
     it("refuses to export an invalid diagram and says why", async () => {
       const bad = { ...SAMPLES[0], title: "" };
-      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: bad.id, title: "Broken", builtin: true }] } : { diagram: bad, builtin: true }) }));
+      globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [{ id: bad.id, title: "Broken", builtin: true }] } : { diagram: bad, builtin: true }) }));
       const user = userEvent.setup();
       render(<App />);
       await screen.findByTestId("picker");
@@ -352,7 +352,7 @@ describe("App", () => {
 
   it("renders label text inertly (no HTML interpretation)", async () => {
     const evil = { ...SAMPLES[0], nodes: SAMPLES[0].nodes.map((n, i) => (i ? n : { ...n, label: "<img src=x onerror=alert(1)>" })) };
-    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("/api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));
+    globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [{ id: evil.id, title: evil.title, builtin: true }] } : { diagram: evil, builtin: true }) }));
     const { container } = render(<App />);
     await screen.findByText("<img src=x onerror=alert(1)>");
     expect(container.querySelector("img")).toBeNull();
