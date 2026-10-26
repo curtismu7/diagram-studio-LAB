@@ -14,9 +14,9 @@ function fakeApi() {
   globalThis.fetch = vi.fn(async (url, opts = {}) => {
     const u = String(url); const ok = (data, status = 200) => ({ ok: true, status, json: async () => data });
     calls.push([opts.method || "GET", u]);
-    if (u.endsWith("/api/diagrams") && opts.method === "POST") { const d = JSON.parse(opts.body); made.set(d.id, d); return ok({ ok: true, id: d.id }, 201); }
-    if (u.endsWith("/api/diagrams")) return ok({ diagrams: all() });
-    const id = decodeURIComponent(u.split("/api/diagrams/")[1]);
+    if (u.endsWith("api/diagrams") && opts.method === "POST") { const d = JSON.parse(opts.body); made.set(d.id, d); return ok({ ok: true, id: d.id }, 201); }
+    if (u.endsWith("api/diagrams")) return ok({ diagrams: all() });
+    const id = decodeURIComponent(u.split("api/diagrams/")[1]);
     if (opts.method === "PUT") { made.set(id, JSON.parse(opts.body)); return ok({ ok: true }); }
     const d = made.get(id) || SAMPLES.find((x) => x.id === id);
     return d ? ok({ diagram: d, builtin: !made.has(id) }) : { ok: false, status: 404, json: async () => ({}) };

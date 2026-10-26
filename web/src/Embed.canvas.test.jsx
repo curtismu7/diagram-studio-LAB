@@ -12,8 +12,8 @@ const at = (q) => window.history.replaceState(null, "", `/${q}`);
 function mockApi() {
   globalThis.fetch = vi.fn(async (url) => {
     const u = String(url); const ok = (data) => ({ ok: true, status: 200, json: async () => data });
-    if (u.endsWith("/api/diagrams")) return ok({ diagrams: SAMPLES.map((d) => ({ id: d.id, title: d.title, builtin: true })) });
-    const d = SAMPLES.find((x) => x.id === decodeURIComponent(u.split("/api/diagrams/")[1]));
+    if (u.endsWith("api/diagrams")) return ok({ diagrams: SAMPLES.map((d) => ({ id: d.id, title: d.title, builtin: true })) });
+    const d = SAMPLES.find((x) => x.id === decodeURIComponent(u.split("api/diagrams/")[1]));
     return d ? ok({ diagram: d, builtin: true }) : { ok: false, status: 404, json: async () => ({}) };
   });
 }
