@@ -2,7 +2,7 @@ export * from './validate.js';
 export * from './stepper.js';
 export * from './edit.js';
 export { SAMPLES } from './samples.js';
-export { APP_DIAGRAMS, P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW } from './apps.js';
+export { APP_DIAGRAMS, AGENT_DOOR_FLOW, P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW } from './apps.js';
 export * from './stories.js';
 export { toSvg, xmlText } from './svg.js';
 export * as history from './history.js';

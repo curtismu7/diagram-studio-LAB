@@ -75,6 +75,11 @@
       "href": "/?d=a2aarchitecture-discovery"
     },
     {
+      "id": "agent-door-flow",
+      "label": "A member's agent meets Northwind Air's MCP door",
+      "href": "/?d=agent-door-flow"
+    },
+    {
       "id": "aic-exchange",
       "label": "AIC token exchange",
       "href": "/?d=aic-exchange"
