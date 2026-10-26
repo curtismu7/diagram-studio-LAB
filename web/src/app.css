@@ -101,3 +101,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 .react-flow__controls-button:hover { background: var(--bg); }
 .react-flow__controls-button svg { fill: currentColor; max-width: 14px; max-height: 14px; }
 a { color: var(--now); }
+
+/* The diagram picker is the main control on the page, so it must not look like every other dropdown. Existing tokens only. */
+.picker-label { font-weight: 700; }
+.picker { border: 2px solid var(--accent); font-weight: 600; }
+.picker-count { color: var(--accent); font-weight: 600; font-size: 0.9rem; }

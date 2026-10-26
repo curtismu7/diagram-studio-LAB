@@ -9,6 +9,10 @@ import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// The shared diagrams host serves each diagram at /<diagram-id>; the query form (/?d=<id>) still works.
+const diagramIdFromPath = () => {
+  try { return decodeURIComponent(window.location.pathname.slice(import.meta.env.BASE_URL.length)).replace(/\/$/, "") || null; } catch { return null; }
+};
 
 export default function App() {
   const [list, setList] = useState([]);
@@ -47,7 +51,7 @@ export default function App() {
   }, [dispatch]);
   useEffect(() => {
     refresh().then((l) => {
-      let want = new URLSearchParams(window.location.search).get("d");
+      let want = new URLSearchParams(window.location.search).get("d") || diagramIdFromPath();
       try { want = want || localStorage.getItem("studio-last"); } catch { /* private mode */ }
       const first = l.find((x) => x.id === want) || l[0];
       if (first) open(first.id);
@@ -209,10 +213,12 @@ export default function App() {
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
-        <label className="grow">Diagram{" "}
-          <select aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
+        <label className="grow">
+          <span className="picker-label">Choose a diagram</span>{" "}
+          <select className="picker" aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
             {list.map((d) => <option key={d.id} value={d.id}>{d.title}{list.filter((x) => x.title === d.title).length > 1 ? ` [${d.id}]` : ""}{d.builtin ? " (sample)" : ""}</option>)}
           </select>
+          {list.length > 1 && <span className="picker-count" data-testid="picker-count"> {list.length} to explore</span>}
         </label>
         <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
         <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle dark and light">{theme === "dark" ? "Light" : "Dark"}</button>
@@ -304,6 +310,40 @@ export default function App() {
               <label>To <select value={arrow.to} onChange={(e) => setArrow({ ...arrow, to: e.target.value })} data-testid="arrow-to"><option value="">Choose…</option>{diagram.nodes.map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}</select></label>
               <button disabled={!arrow.from || !arrow.to || arrow.from === arrow.to} onClick={() => edit((d) => addEdge(d, arrow.from, arrow.to))} data-testid="arrow-add">Add arrow</button>
             </div>
+          </section>
+        )}
+
+        {!editing && (
+          <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
+            {!selNode && !selEdge && <p className="muted">Click a box or an arrow to see what it is and which steps it is part of.</p>}
+            {selNode && (
+              <>
+                <h3>{selNode.label}</h3>
+                {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
+                {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+              </>
+            )}
+            {selEdge && (
+              <>
+                <h3>Arrow {sel.edge + 1}: {diagram.nodes.find((n) => n.id === selEdge.source)?.label} to {diagram.nodes.find((n) => n.id === selEdge.target)?.label}</h3>
+                {selEdge.label && <p data-testid="detail-edge-label">{selEdge.label}</p>}
+              </>
+            )}
+            {(selNode || selEdge) && (() => {
+              const touches = (s) => (s.edges || []).some((ei) => {
+                const e = diagram.edges[ei];
+                return selEdge ? ei === sel.edge : e && (e.source === selNode.id || e.target === selNode.id);
+              });
+              const parts = (diagram.steps || []).map((s, i) => ({ s, i })).filter(({ s }) => touches(s));
+              if (parts.length === 0) return <p className="muted" data-testid="detail-nosteps">It is not part of a numbered step.</p>;
+              return (
+                <ul className="detail-steps" data-testid="detail-steps">
+                  {parts.map(({ s, i }) => (
+                    <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}</li>
+                  ))}
+                </ul>
+              );
+            })()}
           </section>
         )}
 

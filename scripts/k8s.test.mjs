@@ -21,7 +21,11 @@ test('the manifest is a hardened mock-only deployment: tokens, no namespace, non
   assert.equal((manifest.match(/name: Host\n\s+value: localhost/g) || []).length, 2, 'probes send an allowed Host (the guard answers 421 to a pod IP)');
   assert.match(manifest, /limits:\n\s+cpu: \S+\n\s+memory: \S+/); assert.match(manifest, /emptyDir:/); assert.match(manifest, /mountPath: \/tmp/);
   assert.match(manifest, /kind: Deployment/); assert.match(manifest, /kind: Service/); assert.match(manifest, /kind: Ingress/);
-  assert.doesNotMatch(manifest, /\bsecret|password|tenant|hostPath|privileged: true|hostNetwork|hostPID/i, 'no credentials or host access');
+  // The one allowed secret word is the Ingress TLS reference (a secret NAME, issued by demo-shelf; no value here).
+  const tlsRef = /^\s*secretName: diagrams-tls$/m;
+  assert.equal((manifest.match(/secretName:/g) || []).length, 1, 'one secret reference: the TLS secret name');
+  assert.match(manifest, tlsRef, 'the TLS secret name is diagrams-tls');
+  assert.doesNotMatch(manifest.replace(tlsRef, ''), /\bsecret|password|tenant|hostPath|privileged: true|hostNetwork|hostPID/i, 'no credentials or host access');
   assert.doesNotMatch(manifest.replace(/automountServiceAccountToken: false/, ''), /token/i, 'no tokens either');
   const tokens = [...new Set(manifest.match(/__[A-Z0-9_]+__/g))].sort();
   assert.deepEqual(tokens, ['__IMAGE__', '__SE_HOST__']);

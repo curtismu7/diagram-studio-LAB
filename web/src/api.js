@@ -1,7 +1,8 @@
+// Relative URLs on purpose (no leading slash): the app can be served under a path prefix, so "api/x" resolves next to the page.
 // Thin client for the studio API. Every call resolves to { ok, data } so callers show the server's reasons.
 async function call(path, opts) {
   try {
-    const r = await fetch(`/api${path}`, opts);
+    const r = await fetch(`api${path}`, opts);
     const data = await r.json().catch(() => ({}));
     return { ok: r.ok, status: r.status, data };
   } catch {
