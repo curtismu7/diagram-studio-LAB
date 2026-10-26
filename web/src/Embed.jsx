@@ -76,7 +76,7 @@ export default function Embed() {
             {SPEEDS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </label>
-        <a className="small" href={`/?d=${encodeURIComponent(diagram.id)}`} target="_blank" rel="noopener noreferrer" data-testid="open-studio">Open in studio</a>
+        <a className="small" href={`${import.meta.env.BASE_URL}${encodeURIComponent(diagram.id)}`} target="_blank" rel="noopener noreferrer" data-testid="open-studio">Open in studio</a>
       </div>
       <p className="caption" data-testid="caption" aria-live="polite">{st.step >= 0 ? caps[st.step] : diagram.title}</p>
       <Canvas diagram={diagram} step={st.step} editing={false} onMove={onMove} fitKey={fitKey} selectedEdge={undefined} onConnect={() => {}} onSelect={() => {}} />
