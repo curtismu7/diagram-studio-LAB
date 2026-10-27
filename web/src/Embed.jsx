@@ -3,6 +3,7 @@ import { SPEEDS, captions, moveNode, resetLayout } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
+import WirePanel from "./WirePanel.jsx";
 import { useStepper } from "./useStepper.js";
 
 // Embeddable view for a demo page's iframe: /?embed=1&d=<id>[&theme=dark|light][&autoplay=1][&panel=1][&speed=slow|normal|fast].
@@ -85,6 +86,7 @@ export default function Embed() {
           <h3>{active + 1}. {diagram.steps[active].title}</h3>
           <p>{diagram.steps[active].what}</p>
           <StepLinks step={diagram.steps[active]} testId="embed-links" />
+          {diagram.steps[active].wire && <WirePanel wire={diagram.steps[active].wire} testId="embed-wire" />}
         </section>
       )}
     </div>

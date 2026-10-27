@@ -191,7 +191,7 @@ test('toHtml: one frame per arrow plus the overview, two scripts, unique ids, no
     assert.equal((html.match(/<script/g) || []).length, 2, `${d.id}: the data block and the fixed script only`);
     const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
     assert.equal(new Set(ids).size, ids.length, `${d.id}: no duplicate ids (marker ids are per frame)`);
-    assert.doesNotMatch(html.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, ''), /https?:\/\/|<link|<img|src=|href=|@import|url\((?!#)/, `${d.id}: nothing is fetched`);
+    assert.doesNotMatch(html.replace(/<script type="application\/json" id="d">[^]*?<\/script>/, '').replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, ''), /https?:\/\/|<link|<img|src=|href=|@import|url\((?!#)/, `${d.id}: nothing is fetched (the inert JSON data block is skipped: it holds example URLs as text)`);
     assert.match(html, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"/);
     assert.ok(html.length < 1_000_000, `${d.id}: ${html.length} bytes`);
     assert.equal(toHtml(d), html, `${d.id}: deterministic`);

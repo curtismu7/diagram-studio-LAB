@@ -1,5 +1,6 @@
 // Diagram document format "diagram-studio/1". A diagram is plain data; this module is the only gate for it.
 // Text is never interpreted (the web app renders it as React text), but sizes and shapes are bounded here.
+import { validateWire } from './wire.js';
 export const SCHEMA = 'diagram-studio/1';
 export const LIMITS = { nodes: 60, edges: 120, steps: 60, groups: 8, text: 300, sub: 6, id: 48 };
 export const COLORS = ['red', 'dark', 'grey', 'blue', 'green', 'amber'];
@@ -71,6 +72,7 @@ export function validateDiagram(d) {
       if (s.why !== undefined && (typeof s.why !== 'string' || s.why.length > 600)) p.push(`${at}: why must be text (max 600)`);
       if (s.story !== undefined && !(isObj(s.story) && STORY_ID.test(s.story.id) && Number.isInteger(s.story.step) && s.story.step >= 1 && s.story.step <= 99)) p.push(`${at}: story must be { id: "S01", step: 1 }: the id is S and two digits, the step a whole number from 1 to 99`);
       if (s.hop !== undefined && !(typeof s.hop === 'string' && HOP.test(s.hop))) p.push(`${at}: hop must be a short id (letters, digits . _ : / -)`);
+      if (s.wire !== undefined) p.push(...validateWire(s.wire, at));
       const n = Array.isArray(d.edges) ? d.edges.length : 0;
       if (!Array.isArray(s.edges) || !s.edges.every((x) => Number.isInteger(x) && x >= 0 && x < n)) p.push(`${at}: edges must list valid edge numbers`);
     });

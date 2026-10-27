@@ -3,6 +3,7 @@ import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagr
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
+import WirePanel from "./WirePanel.jsx";
 import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import { useStepper } from "./useStepper.js";
@@ -248,7 +249,7 @@ export default function App() {
         {present && (
           <section className="now" aria-label="What is happening" data-testid="now" tabIndex={-1} ref={nowRef}>
             {activeStep >= 0
-              ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}<StepLinks step={diagram.steps[activeStep]} testId="now-links" open /></>)
+              ? (<><h3>{activeStep + 1}. {diagram.steps[activeStep].title}</h3><p>{diagram.steps[activeStep].what}</p>{diagram.steps[activeStep].why && <p className="muted"><strong>Why it matters:</strong> {diagram.steps[activeStep].why}</p>}<StepLinks step={diagram.steps[activeStep]} testId="now-links" open />{diagram.steps[activeStep].wire && <WirePanel wire={diagram.steps[activeStep].wire} testId="now-wire" />}</>)
               : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
@@ -339,7 +340,8 @@ export default function App() {
               return (
                 <ul className="detail-steps" data-testid="detail-steps">
                   {parts.map(({ s, i }) => (
-                    <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}</li>
+                    <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}
+                      {s.wire && <details className="wire-step" open={parts.length === 1 || undefined}><summary>Show the example messages and tokens</summary><WirePanel wire={s.wire} testId={`detail-wire-${i + 1}`} /></details>}</li>
                   ))}
                 </ul>
               );
@@ -357,6 +359,7 @@ export default function App() {
                 <p>{s.what}</p>
                 {s.why && <p className="muted"><strong>Why it matters:</strong> {s.why}</p>}
                 <StepLinks step={s} testId={`step-${i + 1}-links`} />
+                {s.wire && <details className="wire-step" open={i === activeStep || undefined}><summary>Show the example messages and tokens</summary><WirePanel wire={s.wire} testId={`step-${i + 1}-wire`} /></details>}
               </li>
             ))}
           </ol>
