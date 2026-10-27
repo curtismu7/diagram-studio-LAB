@@ -106,3 +106,17 @@ a { color: var(--now); }
 .picker-label { font-weight: 700; }
 .picker { border: 2px solid var(--accent); font-weight: 600; }
 .picker-count { color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+
+/* On the wire: example messages and decoded tokens. Existing tokens only. */
+.wire { border-top: 1px solid var(--border); margin-top: 0.6rem; padding-top: 0.4rem; }
+.wire h4 { display: flex; gap: 0.5rem; align-items: center; } .wire h5 { margin: 0.4rem 0 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.wire-cols { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+.wire pre { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; }
+.jwt { margin: 0.25rem 0; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
+.jwt-h { color: var(--accent); } .jwt-p { color: var(--now); } .jwt-s { color: var(--ok); }
+.wire table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .wire th, .wire td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.wire td code { overflow-wrap: anywhere; } .wire-focus td { background: var(--deny-wash); }
+.wire-notice { border-left: 4px solid var(--accent); background: var(--deny-wash); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
+.wire-terms { margin-top: 0.5rem; } .wire-terms summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; } .wire-terms dt { font-weight: 600; } .wire-terms dd { margin: 0 0 0.3rem; color: var(--muted); }
+.wire-step { margin-top: 0.4rem; } .wire-step > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+@media (max-width: 40rem) { .wire table, .wire thead, .wire tbody, .wire tr, .wire td { display: block; } .wire thead { display: none; } .wire tr { border-bottom: 1px solid var(--border); padding: 0.3rem 0; } .wire td { border: 0; padding: 0.1rem 0.25rem; } }

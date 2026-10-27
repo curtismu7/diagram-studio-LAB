@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- On the wire: optional `step.wire` (request, response, tokens decoded claim by claim with plain-language meanings, notice, or a no-traffic note) shown in the step list, detail panel, presenter and embed views and the HTML export. Example data for 10 token and MCP flows (`core/src/wiredata.js`); signatures are always `sig-not-real`.
 - Conformance: `CLAUDE.md`, `docs/safety.md`, a forbidden-strings CI job, `MODE=mock`, and SE-cluster manifests with a dry-run deploy script (not deployed).
 - Save as HTML: one self-contained, offline walkthrough file.
 - Undo/redo (drag = one step), Tidy auto-layout, and New diagram from templates.
