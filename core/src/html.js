@@ -5,6 +5,7 @@ import { validateDiagram } from './validate.js';
 import { toSvg } from './svg.js';
 import { captions } from './edit.js';
 import { findStoryStep } from './stories.js';
+import { wireView } from './wire.js';
 
 const PALETTE = {
   light: { bg: '#ffffff', card: '#f6f7f9', text: '#1c2330', muted: '#566074', border: '#d5d9e0', accent: '#c8102e', on: '#ffffff', now: '#0b66c3' },
@@ -22,6 +23,18 @@ var cap=document.getElementById('cap'),cnt=document.getElementById('cnt'),pan=do
 var play=document.getElementById('play'),sp=document.getElementById('sp'),zoom=document.getElementById('zoom'),stage=document.getElementById('stage');
 var step=-1,timer=null,MS={slow:2400,normal:1200,fast:500};
 function el(t,txt,cls){var e=document.createElement(t);if(txt!==undefined)e.textContent=txt;if(cls)e.className=cls;return e;}
+function msg(box,t,m){box.appendChild(el('h3',t));box.appendChild(el('pre',m.text));if(m.notice)box.appendChild(el('p',m.notice,'muted'));}
+function wire(w){var d=el('section',undefined,'wire');var h=el('h3','On the wire ');h.appendChild(el('span','Example','chip'));d.appendChild(h);
+  if(w.none)d.appendChild(el('p','No network call here. '+w.none));
+  else{d.appendChild(el('p','Example only: made-up hosts, ids and signatures, nothing real.','muted'));
+    if(w.request)msg(d,'Request',w.request);if(w.response)msg(d,'Response',w.response);
+    w.tokens.forEach(function(t){d.appendChild(el('h3','Token: '+t.label));var j=el('p',undefined,'jwt');
+      ['jh','jp','js'].forEach(function(c,i){if(i)j.appendChild(document.createTextNode('.'));j.appendChild(el('span',t.parts[i],c));});d.appendChild(j);
+      var tb=el('table'),hd=el('tr');['Part','Field','Value','What this means'].forEach(function(x){hd.appendChild(el('th',x));});tb.appendChild(hd);
+      t.rows.forEach(function(r){var tr=el('tr',undefined,r.focus?'focus':'');[r.part,r.name,r.value,r.meaning].forEach(function(x){tr.appendChild(el('td',x));});tb.appendChild(tr);});d.appendChild(tb);});}
+  if(w.notice){var n=el('p',undefined,'notice');n.appendChild(el('strong','What to notice. '));n.appendChild(document.createTextNode(w.notice));d.appendChild(n);}
+  if(w.terms.length){var dt=el('details');dt.appendChild(el('summary','Jargon on this step'));w.terms.forEach(function(x){var p=el('p');p.appendChild(el('strong',x[0]+': '));p.appendChild(document.createTextNode(x[1]));dt.appendChild(p);});d.appendChild(dt);}
+  pan.appendChild(d);}
 function show(){
   F.forEach(function(f,i){f.hidden=i!==step+1;});
   cap.textContent=step<0?D.title:D.captions[step];
@@ -31,7 +44,8 @@ function show(){
   if(si>=0){var s=D.steps[si];pan.appendChild(el('h2',(si+1)+'. '+s.title));pan.appendChild(el('p',s.what));
     if(s.why)pan.appendChild(el('p','Why it matters: '+s.why,'muted'));
     if(s.hop)pan.appendChild(el('p','Trace hop: '+s.hop,'muted'));
-    if(s.story){pan.appendChild(el('p','Say: '+s.story.say,'say'));pan.appendChild(el('p',s.story.tell));}}
+    if(s.story){pan.appendChild(el('p','Say: '+s.story.say,'say'));pan.appendChild(el('p',s.story.tell));}
+    if(s.wire)wire(s.wire);}
   play.textContent=timer?'Pause':'Play';
 }
 function stop(){if(timer){clearInterval(timer);timer=null;}}
@@ -62,7 +76,7 @@ export function toHtml(d, { theme = 'light' } = {}) {
     title: d.title, captions: captions(d), stepOf,
     steps: (d.steps || []).map((s) => {
       const ss = s.story ? findStoryStep(s.story) : null;
-      return { title: s.title, what: s.what, ...(s.why ? { why: s.why } : {}), ...(s.hop ? { hop: s.hop } : {}), ...(ss ? { story: { say: ss.say, tell: ss.tell } } : {}) };
+      return { title: s.title, what: s.what, ...(s.why ? { why: s.why } : {}), ...(s.hop ? { hop: s.hop } : {}), ...(s.wire ? { wire: wireView(s.wire) } : {}), ...(ss ? { story: { say: ss.say, tell: ss.tell } } : {}) };
     }),
   };
   return `<!doctype html>
@@ -77,6 +91,9 @@ main{max-width:84rem;margin:0 auto;padding:1rem}h1{margin:.25rem 0;font-size:1.4
 button,select{font:inherit;color:${P.text};background:${P.card};border:1px solid ${P.border};border-radius:6px;padding:.35rem .7rem;min-height:36px;cursor:pointer}
 button#play{background:${P.accent};color:${P.on};border-color:${P.accent}}button:focus-visible,select:focus-visible{outline:3px solid ${P.now};outline-offset:2px}
 #cap{font-weight:600;min-height:1.6em;margin:.25rem 0}.stage{border:1px solid ${P.border};border-radius:8px;overflow:auto;background:${P.bg}}.stage svg{display:block;max-width:100%;height:auto}.stage.actual svg{max-width:none;width:auto}@media (max-width:700px){.stage:not(.actual) svg{min-width:640px}}
+.wire{border-top:1px solid ${P.border};margin-top:.6rem;padding-top:.3rem}.wire h3{margin:.5rem 0 .2rem;font-size:.8rem;text-transform:uppercase;color:${P.muted}}.chip{border:1px solid ${P.border};border-radius:999px;padding:0 .5rem;font-size:.8rem}
+.wire pre,.jwt{margin:0;padding:.5rem .75rem;background:${P.bg};border:1px solid ${P.border};border-radius:6px;font:.8rem/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.jh{color:${P.accent}}.jp{color:${P.now}}.js{color:${P.muted}}
+.wire table{width:100%;border-collapse:collapse;font-size:.85rem}.wire th,.wire td{text-align:left;padding:.3rem .5rem;border-bottom:1px solid ${P.border};vertical-align:top;overflow-wrap:anywhere}.wire .focus td{font-weight:600}.notice{border-left:4px solid ${P.accent};padding:.3rem .75rem}
 #pan{border:1px solid ${P.border};border-radius:8px;background:${P.card};padding:.5rem 1rem;margin:.6rem 0;min-height:3rem}.foot{font-size:.85rem;color:${P.muted}}
 </style></head><body><main>
 <h1>${esc(d.title)}</h1>${d.lede ? `\n<p class="muted">${esc(d.lede)}</p>` : ''}

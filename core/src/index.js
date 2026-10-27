@@ -9,3 +9,5 @@ export * as history from './history.js';
 export { autoLayout, LAYOUT } from './layout.js';
 export { TEMPLATES, newDiagram, slugify } from './templates.js';
 export { toHtml, safeJson, LARGE_HTML_BYTES } from './html.js';
+export { validateWire, wireView, CLAIMS, WIRE_LIMITS } from './wire.js';
+export { WIRE, withWire } from './wiredata.js';
