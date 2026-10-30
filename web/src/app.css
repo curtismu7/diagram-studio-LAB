@@ -45,6 +45,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 .box--hot { border-color: var(--now); box-shadow: 0 0 0 3px var(--now); }
 .box--sel { outline: 3px dashed var(--text); outline-offset: 2px; }
 .react-flow__edge-path { stroke: var(--muted); stroke-width: 2; }
+.handle-back { opacity: 0; pointer-events: none; }
 .edge--now .react-flow__edge-path { stroke: var(--now); stroke-width: 5; stroke-dasharray: 12 8; }
 .edge--future .react-flow__edge-path { opacity: 0.35; }
 .react-flow__edge-text { fill: var(--text); font-size: 11px; } .react-flow__edge-textbg { fill: var(--card); }
