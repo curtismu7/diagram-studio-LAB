@@ -235,6 +235,51 @@
       "href": "/?d=pfidjag-request"
     },
     {
+      "id": "pfl-ciba",
+      "label": "CIBA",
+      "href": "/?d=pfl-ciba"
+    },
+    {
+      "id": "pfl-dcr",
+      "label": "Dynamic client registration",
+      "href": "/?d=pfl-dcr"
+    },
+    {
+      "id": "pfl-dpop",
+      "label": "DPoP sign-in",
+      "href": "/?d=pfl-dpop"
+    },
+    {
+      "id": "pfl-par",
+      "label": "PAR",
+      "href": "/?d=pfl-par"
+    },
+    {
+      "id": "pfl-piflow",
+      "label": "Authentication API: open and read",
+      "href": "/?d=pfl-piflow"
+    },
+    {
+      "id": "pfl-pkce",
+      "label": "PKCE",
+      "href": "/?d=pfl-pkce"
+    },
+    {
+      "id": "pfl-rar",
+      "label": "RAR via PAR",
+      "href": "/?d=pfl-rar"
+    },
+    {
+      "id": "pfl-signin",
+      "label": "Sign in with pi.flow",
+      "href": "/?d=pfl-signin"
+    },
+    {
+      "id": "pfl-token-exchange",
+      "label": "Token exchange, two hops",
+      "href": "/?d=pfl-token-exchange"
+    },
+    {
       "id": "privilegefirstgateway-fork",
       "label": "Privilege-first gateway: fork",
       "href": "/?d=privilegefirstgateway-fork"
