@@ -1370,7 +1370,7 @@ export const PFL_PIFLOW_FLOW = {
         "/pf-ws/authn/flows/{id}"
       ],
       x: 680,
-      y: 0
+      y: 320
     }
   ],
   edges: [

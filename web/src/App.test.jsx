@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { SAMPLES } from "@diagram-studio/core";
 import App from "./App.jsx";
 import * as exportImage from "./exportImage.js";
-import { toFlow } from "./Canvas.jsx";
+import { labelShifts, toFlow } from "./Canvas.jsx";
 
 vi.mock("./exportImage.js", async (orig) => ({ ...(await orig()), download: vi.fn(), svgToPng: vi.fn() }));
 const readBlob = (blob) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsText(blob); });
@@ -33,6 +33,19 @@ describe("toFlow", () => {
     const { nodes, edges } = toFlow(SAMPLES[0], -1, null);
     expect(edges.every((e) => !e.animated && !e.className.includes("future"))).toBe(true);
     expect(nodes.every((n) => !n.data.hot)).toBe(true);
+  });
+  it("spreads the labels of arrows that join the same two boxes, in either direction; a lone arrow keeps its place", () => {
+    const shifts = labelShifts([{ source: "a", target: "b" }, { source: "b", target: "c" }, { source: "b", target: "a" }, { source: "a", target: "b" }]);
+    expect(shifts).toEqual([-24, 0, 0, 24]);
+    const pair = labelShifts([{ source: "a", target: "b" }, { source: "b", target: "a" }]);
+    expect(pair).toEqual([-12, 12]);
+    expect(toFlow({ ...SAMPLES[0], edges: [{ source: "a", target: "b" }, { source: "b", target: "a" }] }, -1, null).edges.map((e) => e.data.labelShift)).toEqual([-12, 12]);
+  });
+  it("an arrow pointing back to the left leaves its box on the left and enters on the right", () => {
+    const d = { ...SAMPLES[0], nodes: [{ id: "a", group: "g", label: "A", x: 0, y: 0 }, { id: "b", group: "g", label: "B", x: 300, y: 0 }], edges: [{ source: "a", target: "b" }, { source: "b", target: "a" }] };
+    const [fwd, back] = toFlow(d, -1, null).edges;
+    expect([fwd.sourceHandle, fwd.targetHandle]).toEqual(["out", "in"]);
+    expect([back.sourceHandle, back.targetHandle]).toEqual(["back-out", "back-in"]);
   });
 });
 
