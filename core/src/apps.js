@@ -371,4 +371,1044 @@ export const AGENT_DOOR_FLOW = {
   ]
 };
 
-export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW];
+// PingFederate Lab: one diagram per card, all against a real PingFederate (the lab has no mock).
+export const PFL_SIGNIN_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-signin",
+  title: "Sign in with pi.flow",
+  lede: "The lab's own form drives PingFederate's Authentication API; no redirect.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    },
+    user: {
+      label: "The person",
+      color: "blue"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "authn",
+      group: "pf",
+      label: "Authentication API",
+      sub: [
+        "/pf-ws/authn/flows/{id}"
+      ],
+      x: 680,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "Redeems codes, issues tokens"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "user",
+      group: "user",
+      label: "The person",
+      sub: [
+        "Types into the lab's own form"
+      ],
+      x: 680,
+      y: 320
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "authz",
+      label: "authorize (PKCE challenge)"
+    },
+    {
+      source: "authz",
+      target: "lab",
+      label: "flow: USERNAME_PASSWORD_REQUIRED"
+    },
+    {
+      source: "user",
+      target: "lab",
+      label: "username, password"
+    },
+    {
+      source: "lab",
+      target: "authn",
+      label: "checkUsernamePassword"
+    },
+    {
+      source: "authn",
+      target: "lab",
+      label: "COMPLETED + code"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "code + code_verifier"
+    }
+  ],
+  steps: [
+    {
+      title: "Open the flow",
+      what: "The lab asks for a sign-in flow as JSON.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "The person types",
+      what: "Username and password go to the lab, then only to PingFederate.",
+      edges: [
+        2,
+        3
+      ]
+    },
+    {
+      title: "Code inline",
+      what: "The completed flow carries the authorization code.",
+      edges: [
+        4
+      ]
+    },
+    {
+      title: "Redeem",
+      what: "The code is redeemed with the PKCE verifier; the ID token is verified.",
+      edges: [
+        5
+      ]
+    }
+  ]
+};
+
+export const PFL_PKCE_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-pkce",
+  title: "PKCE",
+  lede: "The code only works with the verifier the lab kept.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "Redeems codes, issues tokens"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "verifier",
+      group: "lab",
+      label: "code_verifier",
+      sub: [
+        "Random secret, kept in the lab"
+      ],
+      x: 0,
+      y: 360
+    }
+  ],
+  edges: [
+    {
+      source: "verifier",
+      target: "lab",
+      label: "S256 hash = code_challenge"
+    },
+    {
+      source: "lab",
+      target: "authz",
+      label: "code_challenge"
+    },
+    {
+      source: "authz",
+      target: "lab",
+      label: "code"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "code + code_verifier"
+    }
+  ],
+  steps: [
+    {
+      title: "Challenge",
+      what: "The lab sends only the hash.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "Code",
+      what: "PingFederate returns a code.",
+      edges: [
+        2
+      ]
+    },
+    {
+      title: "Verifier",
+      what: "Only the holder of the verifier can redeem it.",
+      edges: [
+        3
+      ]
+    }
+  ]
+};
+
+export const PFL_PAR_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-par",
+  title: "PAR",
+  lede: "The whole request is pushed; the browser-side request carries only a handle.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "par",
+      group: "pf",
+      label: "PAR endpoint",
+      sub: [
+        "Client authenticates here"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 680,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "Redeems codes, issues tokens"
+      ],
+      x: 340,
+      y: 320
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "par",
+      label: "push the request"
+    },
+    {
+      source: "par",
+      target: "lab",
+      label: "request_uri (one-time)"
+    },
+    {
+      source: "lab",
+      target: "authz",
+      label: "client_id + request_uri"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "redeem the code"
+    }
+  ],
+  steps: [
+    {
+      title: "Push",
+      what: "The request goes over the back channel.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "Use the handle",
+      what: "Only client_id and request_uri go to the authorization endpoint.",
+      edges: [
+        2
+      ]
+    },
+    {
+      title: "Redeem",
+      what: "The code is redeemed as usual.",
+      edges: [
+        3
+      ]
+    }
+  ]
+};
+
+export const PFL_RAR_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-rar",
+  title: "RAR via PAR",
+  lede: "The exact transaction is pushed to PingFederate and lands in the token.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "par",
+      group: "pf",
+      label: "PAR endpoint",
+      sub: [
+        "authorization_details pushed here"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 680,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "authorization_details in the token"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "policy",
+      group: "pf",
+      label: "Details check",
+      sub: [
+        "Refuses details outside policy"
+      ],
+      x: 680,
+      y: 320
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "par",
+      label: "authorization_details (the transaction)"
+    },
+    {
+      source: "par",
+      target: "policy",
+      label: "check the details"
+    },
+    {
+      source: "par",
+      target: "lab",
+      label: "request_uri"
+    },
+    {
+      source: "lab",
+      target: "authz",
+      label: "client_id + request_uri"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "code (+ DPoP proof)"
+    }
+  ],
+  steps: [
+    {
+      title: "Push",
+      what: "The details go to PingFederate first.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "Handle",
+      what: "PingFederate returns a one-time request_uri.",
+      edges: [
+        2,
+        3
+      ]
+    },
+    {
+      title: "Token",
+      what: "The token carries the approved details, optionally DPoP-bound.",
+      edges: [
+        4
+      ]
+    }
+  ]
+};
+
+export const PFL_DPOP_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-dpop",
+  title: "DPoP sign-in",
+  lede: "The token is bound to a key the lab holds.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "Redeems codes, issues tokens"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "key",
+      group: "lab",
+      label: "Run key (P-256)",
+      sub: [
+        "Private key never leaves the lab"
+      ],
+      x: 0,
+      y: 360
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "authz",
+      label: "pi.flow sign-in"
+    },
+    {
+      source: "key",
+      target: "lab",
+      label: "sign DPoP proof"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "code + DPoP proof"
+    },
+    {
+      source: "token",
+      target: "lab",
+      label: "token_type DPoP, cnf.jkt"
+    }
+  ],
+  steps: [
+    {
+      title: "Sign in",
+      what: "Same pi.flow sign-in as the other cards.",
+      edges: [
+        0
+      ]
+    },
+    {
+      title: "Proof",
+      what: "The lab signs a proof with this run's key.",
+      edges: [
+        1,
+        2
+      ]
+    },
+    {
+      title: "Bound",
+      what: "The token names the key's thumbprint.",
+      edges: [
+        3
+      ]
+    }
+  ]
+};
+
+export const PFL_CIBA_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-ciba",
+  title: "CIBA",
+  lede: "The user approves on their own device while the lab polls.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    },
+    user: {
+      label: "The person",
+      color: "blue"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "bc",
+      group: "pf",
+      label: "Backchannel endpoint",
+      sub: [
+        "login_hint, binding_message"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "CIBA grant"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "device",
+      group: "user",
+      label: "The user's device",
+      sub: [
+        "Approve or deny"
+      ],
+      x: 700,
+      y: 0
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "bc",
+      label: "start (auth_req_id comes back)"
+    },
+    {
+      source: "bc",
+      target: "device",
+      label: "ask the user"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "poll: authorization_pending",
+      dashed: true
+    },
+    {
+      source: "device",
+      target: "bc",
+      label: "approve"
+    },
+    {
+      source: "lab",
+      target: "token",
+      label: "poll: tokens"
+    }
+  ],
+  steps: [
+    {
+      title: "Start",
+      what: "The lab names the user.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "Wait",
+      what: "Polls answer pending while the user decides.",
+      edges: [
+        2
+      ]
+    },
+    {
+      title: "Decide",
+      what: "The user approves on their device.",
+      edges: [
+        3
+      ]
+    },
+    {
+      title: "Tokens",
+      what: "The next poll returns the tokens.",
+      edges: [
+        4
+      ]
+    }
+  ]
+};
+
+export const PFL_DCR_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-dcr",
+  title: "Dynamic client registration",
+  lede: "An initial access token gates registration; the registration access token deletes the client.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "client_credentials"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "reg",
+      group: "pf",
+      label: "Registration endpoint",
+      sub: [
+        "RFC 7591 / 7592"
+      ],
+      x: 340,
+      y: 320
+    },
+    {
+      id: "client",
+      group: "lab",
+      label: "The new client",
+      sub: [
+        "PingFederate chose its id and secret"
+      ],
+      x: 700,
+      y: 160
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "token",
+      label: "initial access token (dcr:register)"
+    },
+    {
+      source: "lab",
+      target: "reg",
+      label: "register, no token",
+      dashed: true
+    },
+    {
+      source: "lab",
+      target: "reg",
+      label: "register with the token"
+    },
+    {
+      source: "reg",
+      target: "client",
+      label: "client_id, secret, registration token"
+    },
+    {
+      source: "client",
+      target: "token",
+      label: "token as the new client"
+    },
+    {
+      source: "client",
+      target: "reg",
+      label: "delete with registration token"
+    }
+  ],
+  steps: [
+    {
+      title: "Initial access token",
+      what: "The registering client gets a dcr:register token.",
+      edges: [
+        0
+      ]
+    },
+    {
+      title: "Refused, then accepted",
+      what: "No token: refused. With it: a new client.",
+      edges: [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      title: "Use it",
+      what: "The new client gets a token; a forbidden scope is refused.",
+      edges: [
+        4
+      ]
+    },
+    {
+      title: "Delete",
+      what: "The client deletes itself and is gone.",
+      edges: [
+        5
+      ]
+    }
+  ]
+};
+
+export const PFL_TOKEN_EXCHANGE_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-token-exchange",
+  title: "Token exchange, two hops",
+  lede: "The act claim grows into a nested chain.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    },
+    user: {
+      label: "The person",
+      color: "blue"
+    }
+  },
+  nodes: [
+    {
+      id: "user",
+      group: "user",
+      label: "User token",
+      sub: [
+        "From the sign-in"
+      ],
+      x: 0,
+      y: 0
+    },
+    {
+      id: "agent",
+      group: "lab",
+      label: "AI agent actor",
+      sub: [
+        "client_credentials token"
+      ],
+      x: 0,
+      y: 320
+    },
+    {
+      id: "token",
+      group: "pf",
+      label: "Token endpoint",
+      sub: [
+        "RFC 8693"
+      ],
+      x: 360,
+      y: 160
+    },
+    {
+      id: "mid",
+      group: "lab",
+      label: "Agent token",
+      sub: [
+        "act.sub = agent"
+      ],
+      x: 720,
+      y: 0
+    },
+    {
+      id: "svc",
+      group: "lab",
+      label: "Tool-service actor",
+      sub: [
+        "client_credentials token"
+      ],
+      x: 720,
+      y: 320
+    },
+    {
+      id: "final",
+      group: "lab",
+      label: "Final token",
+      sub: [
+        "act = service, act.act = agent"
+      ],
+      x: 1060,
+      y: 160
+    }
+  ],
+  edges: [
+    {
+      source: "user",
+      target: "token",
+      label: "subject_token"
+    },
+    {
+      source: "agent",
+      target: "token",
+      label: "actor_token"
+    },
+    {
+      source: "token",
+      target: "mid",
+      label: "exchange 1"
+    },
+    {
+      source: "mid",
+      target: "token",
+      label: "subject_token"
+    },
+    {
+      source: "svc",
+      target: "token",
+      label: "actor_token"
+    },
+    {
+      source: "token",
+      target: "final",
+      label: "exchange 2"
+    }
+  ],
+  steps: [
+    {
+      title: "Hop 1",
+      what: "User token plus agent actor become an agent token.",
+      edges: [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      title: "Hop 2",
+      what: "The agent token plus the service actor become the final token.",
+      edges: [
+        3,
+        4,
+        5
+      ]
+    }
+  ]
+};
+
+export const PFL_PIFLOW_FLOW = {
+  schema: "diagram-studio/1",
+  id: "pfl-piflow",
+  title: "Authentication API: open and read",
+  lede: "A flow is opened and read back; nothing is posted.",
+  groups: {
+    lab: {
+      label: "This lab",
+      color: "dark"
+    },
+    pf: {
+      label: "Your PingFederate",
+      color: "red"
+    }
+  },
+  nodes: [
+    {
+      id: "lab",
+      group: "lab",
+      label: "This lab (server)",
+      sub: [
+        "Holds PKCE verifier, keys, tokens"
+      ],
+      x: 0,
+      y: 160
+    },
+    {
+      id: "authz",
+      group: "pf",
+      label: "Authorization endpoint",
+      sub: [
+        "response_mode=pi.flow"
+      ],
+      x: 340,
+      y: 0
+    },
+    {
+      id: "authn",
+      group: "pf",
+      label: "Authentication API",
+      sub: [
+        "/pf-ws/authn/flows/{id}"
+      ],
+      x: 680,
+      y: 0
+    }
+  ],
+  edges: [
+    {
+      source: "lab",
+      target: "authz",
+      label: "authorize, response_mode=pi.flow"
+    },
+    {
+      source: "authz",
+      target: "lab",
+      label: "flow JSON: status, actions"
+    },
+    {
+      source: "lab",
+      target: "authn",
+      label: "GET the flow (X-XSRF-Header)"
+    }
+  ],
+  steps: [
+    {
+      title: "Open",
+      what: "PingFederate answers with a JSON flow.",
+      edges: [
+        0,
+        1
+      ]
+    },
+    {
+      title: "Read",
+      what: "The lab reads it back; no credential is sent.",
+      edges: [
+        2
+      ]
+    }
+  ]
+};
+
+export const PINGFEDERATE_LAB_DIAGRAMS = [PFL_SIGNIN_FLOW, PFL_PKCE_FLOW, PFL_PAR_FLOW, PFL_RAR_FLOW, PFL_DPOP_FLOW, PFL_CIBA_FLOW, PFL_DCR_FLOW, PFL_TOKEN_EXCHANGE_FLOW, PFL_PIFLOW_FLOW];
+
+export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS];
