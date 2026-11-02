@@ -1,60 +1,36 @@
-/* Theme tokens. Light by default, dark by system setting, or forced with data-theme. No purple. */
-:root {
-  --bg: #f6f7f9; --card: #ffffff; --border: #d5d9e0; --text: #1c2330; --muted: #566074; --accent: #c8102e; --on-accent: #ffffff;
-  --ok: #1a7f37; --ok-wash: #e6f4ea; --deny: #b00b0d; --deny-wash: #fde8e8; --now: #0b66c3;
-  --c-red: #c8102e; --c-dark: #2b3445; --c-grey: #6b7587; --c-blue: #1f6fb5; --c-green: #1a7f37; --c-amber: #8a5a00;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12161d; --card: #1a202a; --border: #2f3846; --text: #e6eaf1; --muted: #9aa5b8; --accent: #ff6b7d; --on-accent: #12161d;
-    --ok: #4cc26b; --ok-wash: #10301d; --deny: #ff7b7b; --deny-wash: #3a1517; --now: #5aa9f0;
-    --c-red: #b3283f; --c-dark: #3a4559; --c-grey: #5c667a; --c-blue: #2a6fae; --c-green: #1f7a3a; --c-amber: #8a5a00;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #12161d; --card: #1a202a; --border: #2f3846; --text: #e6eaf1; --muted: #9aa5b8; --accent: #ff6b7d; --on-accent: #12161d;
-  --ok: #4cc26b; --ok-wash: #10301d; --deny: #ff7b7b; --deny-wash: #3a1517; --now: #5aa9f0;
-  --c-red: #b3283f; --c-dark: #3a4559; --c-grey: #5c667a; --c-blue: #2a6fae; --c-green: #1f7a3a; --c-amber: #8a5a00;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-.page { max-width: 80rem; margin: 0 auto; padding: 1rem; }
+/* App layout and component rules only. Colours, fonts, controls and dark mode come from standalone-ui.css. */
+.page { max-width: 80rem; margin: 0 auto; padding: 1rem 0; }
+em { font-style: normal; font-weight: 700; }
 h1 { margin: 0; font-size: 1.25rem; } h2 { margin: 0.25rem 0; font-size: 1.4rem; } h3 { margin: 0 0 0.5rem; font-size: 1.05rem; } h4 { margin: 0 0 0.25rem; }
 .lede, .muted { color: var(--muted); } .small { font-size: 0.85rem; }
-.mock-banner { margin: 0; padding: 0.4rem 1rem; text-align: center; font-weight: 600; background: var(--deny-wash); color: var(--deny); border-bottom: 1px solid var(--border); }
-.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); background: var(--card); }
+.mock-banner { margin: 0; padding: 0.4rem 1rem; text-align: center; font-weight: 600; background: var(--accent-soft); color: var(--danger-text); border-bottom: 1px solid var(--border); }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); background: var(--bg-lab); }
 .grow { flex: 1 1 18rem; min-width: 0; } .grow select { max-width: 100%; }
-button, select, input, .filebtn { min-height: 36px; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.7rem; }
-button { cursor: pointer; } button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-within { outline: 3px solid var(--now); outline-offset: 2px; }
-.filebtn { display: inline-block; cursor: pointer; } .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.filebtn { display: inline-block; min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
+.filebtn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.filebtn input { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; opacity: 0; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.6rem 0; }
 .caption { min-height: 1.6em; margin: 0.25rem 0; font-weight: 600; }
-.canvas { height: 28rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+.canvas { height: 28rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; list-style: none; padding: 0; margin: 0.5rem 0; font-size: 0.9rem; }
-.sw { display: inline-block; width: 0.9rem; height: 0.9rem; margin-right: 0.4rem; border-radius: 3px; vertical-align: -2px; }
-.sw--red, .box--red { --c: var(--c-red); } .sw--dark, .box--dark { --c: var(--c-dark); } .sw--grey, .box--grey { --c: var(--c-grey); }
-.sw--blue, .box--blue { --c: var(--c-blue); } .sw--green, .box--green { --c: var(--c-green); } .sw--amber, .box--amber { --c: var(--c-amber); }
+.sw { display: inline-block; border: 1px solid var(--border); width: 0.9rem; height: 0.9rem; margin-right: 0.4rem; border-radius: 3px; vertical-align: -2px; }
+.sw--red, .box--red { --c: var(--box-red); } .sw--dark, .box--dark { --c: var(--box-dark); } .sw--grey, .box--grey { --c: var(--box-grey); }
+.sw--blue, .box--blue { --c: var(--box-blue); } .sw--green, .box--green { --c: var(--box-blue); } .sw--amber, .box--amber { --c: var(--box-grey); }
 .sw { background: var(--c); }
-.box { min-width: 11rem; max-width: 16rem; padding: 0.5rem 0.75rem; border-radius: 8px; background: var(--c); color: #fff; border: 2px solid transparent; cursor: grab; }
+.box { min-width: 11rem; max-width: 16rem; padding: 0.5rem 0.75rem; border-radius: 8px; background: var(--c); color: var(--on-box); border: 2px solid var(--border); cursor: grab; }
 .box-sub { font-size: 0.78rem; opacity: 0.92; }
-.box--hot { border-color: var(--now); box-shadow: 0 0 0 3px var(--now); }
+.box--hot { border-color: var(--status-info); box-shadow: 0 0 0 3px var(--status-info); }
 .box--sel { outline: 3px dashed var(--text); outline-offset: 2px; }
 .react-flow__edge-path { stroke: var(--muted); stroke-width: 2; }
 .handle-back { opacity: 0; pointer-events: none; }
-.edge--now .react-flow__edge-path { stroke: var(--now); stroke-width: 5; stroke-dasharray: 12 8; }
+.edge--status-info .react-flow__edge-path { stroke: var(--status-info); stroke-width: 5; stroke-dasharray: 12 8; }
 .edge--future .react-flow__edge-path { opacity: 0.35; }
-.react-flow__edge-text { fill: var(--text); font-size: 11px; } .react-flow__edge-textbg { fill: var(--card); }
-.panel, .step { border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 0.75rem 1rem; margin: 0.5rem 0; }
+.react-flow__edge-text { fill: var(--text); font-size: 11px; } .react-flow__edge-textbg { fill: var(--surface); }
+.panel, .step { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 0.75rem 1rem; margin: 0.5rem 0; }
 .panel label { margin-right: 0.75rem; }
 .steps { padding: 0; list-style: none; display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
-.step { margin: 0; } .step--active { border-color: var(--now); box-shadow: 0 0 0 2px var(--now); }
-.msg { padding: 0.5rem 0.75rem; border-radius: 6px; } .msg--ok { background: var(--ok-wash); color: var(--ok); } .msg--error { background: var(--deny-wash); color: var(--deny); }
-@media (prefers-reduced-motion: reduce) { .react-flow__edge.animated path, .react-flow__edge .react-flow__edge-path, .edge--now .react-flow__edge-path { animation: none !important; } }
+.step { margin: 0; } .step--active { border-color: var(--status-info); box-shadow: 0 0 0 2px var(--status-info); }
+.msg { padding: 0.5rem 0.75rem; border-radius: 6px; } .msg--ok { background: var(--surface-2); color: var(--status-ok); } .msg--error { background: var(--accent-soft); color: var(--danger-text); }
 @media (max-width: 40rem) { .canvas { height: 22rem; } }
 
 /* Presenter mode: bigger type, bigger canvas, no editing or file controls. */
@@ -65,24 +41,23 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 :root[data-present="1"] .box-sub { font-size: 0.9rem; }
 :root[data-present="1"] .react-flow__edge-text { font-size: 14px; }
 :root[data-present="1"] .caption { font-size: 1.15rem; }
-.now { border: 1px solid var(--now); border-radius: 8px; background: var(--card); padding: 0.5rem 1rem; margin: 0.5rem 0; }
+.now { border: 1px solid var(--status-info); border-radius: 8px; background: var(--surface); padding: 0.5rem 1rem; margin: 0.5rem 0; }
 .now h3 { margin: 0.25rem 0; font-size: 1.3em; } .now p { margin: 0.25rem 0; }
 
-.react-flow__node:focus-visible, .react-flow__edge:focus-visible, .now:focus-visible { outline: 3px solid var(--now); outline-offset: 2px; }
 .links { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.4rem; margin-top: 0.4rem; }
-.chip { max-width: 100%; overflow-wrap: anywhere; display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.85rem; background: var(--bg); }
-.storylink { border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem 0.6rem; background: var(--bg); max-width: 100%; }
+.chip { max-width: 100%; overflow-wrap: anywhere; display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.85rem; background: var(--surface-2); }
+.storylink { border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem 0.6rem; background: var(--surface-2); max-width: 100%; }
 .storylink summary { cursor: pointer; font-size: 0.9rem; } .storylink p { margin: 0.3rem 0; }
 
-.block { display: block; margin: 0.4rem 0; } .block textarea { display: block; width: 100%; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.6rem; }
+.block { display: block; margin: 0.4rem 0; } .block textarea { display: block; width: 100%; }
 .panel fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 0.5rem 0; } .panel legend { padding: 0 0.4rem; font-size: 0.9rem; }
 .rows { list-style: none; padding: 0; margin: 0.25rem 0; } .rows > li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.3rem 0; }
-.stepedit { display: block !important; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; background: var(--bg); }
-.arrows { display: grid; gap: 0.15rem; max-height: 12rem; overflow-y: auto; padding-right: 0.25rem; } .check { display: flex; gap: 0.4rem; align-items: flex-start; font-size: 0.9rem; margin: 0 !important; } .check input { min-height: 0; margin-top: 0.3rem; }
+.rows > .stepedit { display: block; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; background: var(--surface-2); }
+.arrows { display: grid; gap: 0.15rem; max-height: 12rem; overflow-y: auto; padding-right: 0.25rem; } .arrows .check { display: flex; gap: 0.4rem; align-items: flex-start; font-size: 0.9rem; margin: 0; } .check input { min-height: 0; margin-top: 0.3rem; }
 .msg ul { margin: 0.25rem 0 0; padding-left: 1.2rem; }
 
 /* Embed view (iframe): no page chrome, canvas fills the frame. */
-.embed { padding: 0.5rem; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
+.embed { padding: 0.5rem 0; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; overflow: hidden; }
 .embed .canvas { flex: 1 1 0; height: auto; min-height: 0; }
 .embed .caption { margin: 0.25rem 0; min-height: 0; }
 .embed .now { flex: none; max-height: min(35vh, 14rem); overflow: auto; }
@@ -90,7 +65,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 @media (min-height: 420px) { .embed .canvas { min-height: 14rem; } }
 /* Small frames: one scrolling toolbar row and tighter controls, so the diagram keeps the space. */
 @media (max-width: 520px), (max-height: 360px) {
-  .embed { padding: 0.25rem; }
+  .embed { padding: 0.25rem 0; }
   .embed .bar { flex-wrap: nowrap; overflow-x: auto; margin: 0.2rem 0; }
   .embed .bar > * { flex: none; }
   .embed button, .embed select { min-height: 30px; padding: 0.15rem 0.5rem; font-size: 0.85rem; }
@@ -98,26 +73,26 @@ button:focus-visible, select:focus-visible, input:focus-visible, .filebtn:focus-
 :root[data-embed="1"] body { background: transparent; }
 
 /* Zoom controls and links follow the theme (the library defaults are white boxes and browser blue). */
-.react-flow__controls-button { background: var(--card); color: var(--text); border-bottom-color: var(--border); }
-.react-flow__controls-button:hover { background: var(--bg); }
+.react-flow__controls-button { background: var(--surface); color: var(--text); border-bottom-color: var(--border); }
+.react-flow__controls-button:hover { background: var(--surface-2); }
 .react-flow__controls-button svg { fill: currentColor; max-width: 14px; max-height: 14px; }
-a { color: var(--now); }
+a { color: var(--status-info); }
 
 /* The diagram picker is the main control on the page, so it must not look like every other dropdown. Existing tokens only. */
 .picker-label { font-weight: 700; }
 .picker { border: 2px solid var(--accent); font-weight: 600; }
-.picker-count { color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+.picker-count { color: var(--danger-text); font-weight: 600; font-size: 0.9rem; }
 
 /* On the wire: example messages and decoded tokens. Existing tokens only. */
 .wire { border-top: 1px solid var(--border); margin-top: 0.6rem; padding-top: 0.4rem; }
 .wire h4 { display: flex; gap: 0.5rem; align-items: center; } .wire h5 { margin: 0.4rem 0 0.25rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 .wire-cols { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
-.wire pre { margin: 0; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; }
-.jwt { margin: 0.25rem 0; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
-.jwt-h { color: var(--accent); } .jwt-p { color: var(--now); } .jwt-s { color: var(--ok); }
+.wire pre { margin: 0; padding: 0.5rem 0.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; }
+.jwt { margin: 0.25rem 0; padding: 0.5rem 0.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.jwt-h { color: var(--accent); } .jwt-p { color: var(--status-info); } .jwt-s { color: var(--status-ok); }
 .wire table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .wire th, .wire td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-.wire td code { overflow-wrap: anywhere; } .wire-focus td { background: var(--deny-wash); }
-.wire-notice { border-left: 4px solid var(--accent); background: var(--deny-wash); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
+.wire td code { overflow-wrap: anywhere; } .wire-focus td { background: var(--accent-soft); }
+.wire-notice { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
 .wire-terms { margin-top: 0.5rem; } .wire-terms summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; } .wire-terms dt { font-weight: 600; } .wire-terms dd { margin: 0 0 0.3rem; color: var(--muted); }
 .wire-step { margin-top: 0.4rem; } .wire-step > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
 @media (max-width: 40rem) { .wire table, .wire thead, .wire tbody, .wire tr, .wire td { display: block; } .wire thead { display: none; } .wire tr { border-bottom: 1px solid var(--border); padding: 0.3rem 0; } .wire td { border: 0; padding: 0.1rem 0.25rem; } }
