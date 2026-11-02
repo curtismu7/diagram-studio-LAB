@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build, push and deploy the diagram-studio MOCK-ONLY image to the SE k8s cluster. See docs/k8s-mock.md.
 #
-#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh             real deploy (owner-approved first deploy)
-#   NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh --dry-run   local build only, no push, kubectl apply --dry-run=server
+#   NAMESPACE=<ns> SE_HOST=<host> scripts/deploy-k8s-mock.sh             real deploy (owner-approved first deploy)
+#   NAMESPACE=<ns> SE_HOST=<host> scripts/deploy-k8s-mock.sh --dry-run   local build only, no push, kubectl apply --dry-run=server
 #
-# Env: NAMESPACE (required, no default), SE_HOST (default ai-demo.ping-devops.com), REGISTRY (default ghcr.io/cmuir_pingcorp),
+# Env: NAMESPACE (required, no default), SE_HOST (required, no default: the host name clients use), REGISTRY (default ghcr.io/cmuir_pingcorp),
 #      KUBE_CONTEXT (optional), IMAGE_NAME (default diagram-studio-mock).
 # Docker must be OrbStack (context "orbstack"), never Docker Desktop.
 set -euo pipefail
@@ -17,7 +17,7 @@ case "${1:-}" in
 esac
 
 : "${NAMESPACE:?NAMESPACE is required (the SE namespace is an owner decision; no default)}"
-SE_HOST="${SE_HOST:-ai-demo.ping-devops.com}"
+[ -n "${SE_HOST:-}" ] || { echo "usage: NAMESPACE=<ns> SE_HOST=<host clients use> $0 [--dry-run]   (SE_HOST is required, no default)" >&2; exit 2; }
 REGISTRY="${REGISTRY:-ghcr.io/cmuir_pingcorp}"
 IMAGE_NAME="${IMAGE_NAME:-diagram-studio-mock}"
 NAME=diagram-studio-mock

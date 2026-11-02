@@ -71,3 +71,14 @@ test('MODE=mock switches the server to the read-only mock, like MOCK_ONLY', () =
   assert.equal(isMockOnly({ MOCK_ONLY: '1' }), true);
   for (const e of [{}, { MODE: 'live' }, { MODE: '' }, { MOCK_ONLY: '0' }, { MODE: 'mocks' }]) assert.equal(isMockOnly(e), false, JSON.stringify(e));
 });
+
+test('deploy-k8s-mock.sh requires SE_HOST and NAMESPACE (no default host) and says so before doing anything else', () => {
+  const script = path.join(root, 'scripts/deploy-k8s-mock.sh');
+  const go = (env) => spawnSync('bash', [script, '--dry-run'], { env: { PATH: process.env.PATH, ...env }, encoding: 'utf8' });
+  const noHost = go({ NAMESPACE: 'demo-mocks' });
+  assert.notEqual(noHost.status, 0); assert.match(noHost.stderr, /SE_HOST is required/); assert.match(noHost.stderr, /usage/);
+  assert.equal(go({ NAMESPACE: 'demo-mocks', SE_HOST: '' }).status, 2);
+  const noNs = go({ SE_HOST: 'studio.example.invalid' });
+  assert.notEqual(noNs.status, 0); assert.match(noNs.stderr, /NAMESPACE/);
+  assert.doesNotMatch(fs.readFileSync(script, 'utf8'), /SE_HOST:-[^}\s]/); // no default value for the host
+});
