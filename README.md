@@ -1,8 +1,10 @@
-# Diagram Studio
+# Diagram Studio LAB
 
 A small offline studio for flow diagrams stored as data. Pick a built-in sample (or one you saved), drag the boxes, press
 **Simulate** to walk the arrows in order, **Pause / Resume / Prev / Next**, change the **Speed**, **Reset**, edit boxes and
 arrows, **Save a copy**, and **Export** or **Import** the diagram as a JSON file. Diagrams are drawn with React Flow.
+
+Repo: https://github.com/ping-sandbox/diagram-studio-LAB
 
 It needs no tenant and makes no outbound network request. The server listens on `127.0.0.1` only (port 6001).
 
