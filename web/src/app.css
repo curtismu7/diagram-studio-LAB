@@ -23,7 +23,7 @@ h1 { margin: 0; font-size: 1.25rem; } h2 { margin: 0.25rem 0; font-size: 1.4rem;
 .box--sel { outline: 3px dashed var(--text); outline-offset: 2px; }
 .react-flow__edge-path { stroke: var(--muted); stroke-width: 2; }
 .handle-back { opacity: 0; pointer-events: none; }
-.edge--status-info .react-flow__edge-path { stroke: var(--status-info); stroke-width: 5; stroke-dasharray: 12 8; }
+.edge--now .react-flow__edge-path { stroke: var(--status-info); stroke-width: 5; stroke-dasharray: 12 8; }
 .edge--future .react-flow__edge-path { opacity: 0.35; }
 .react-flow__edge-text { fill: var(--text); font-size: 11px; } .react-flow__edge-textbg { fill: var(--surface); }
 .panel, .step { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 0.75rem 1rem; margin: 0.5rem 0; }
@@ -89,7 +89,7 @@ a { color: var(--status-info); }
 .wire-cols { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
 .wire pre { margin: 0; padding: 0.5rem 0.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 20rem; overflow: auto; }
 .jwt { margin: 0.25rem 0; padding: 0.5rem 0.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font: 0.8rem/1.5 var(--font-mono); overflow-wrap: anywhere; }
-.jwt-h { color: var(--accent); } .jwt-p { color: var(--status-info); } .jwt-s { color: var(--status-ok); }
+.jwt-h { color: var(--danger-text); } .jwt-p { color: var(--status-info); } .jwt-s { color: var(--status-ok); }
 .wire table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .wire th, .wire td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 .wire td code { overflow-wrap: anywhere; } .wire-focus td { background: var(--accent-soft); }
 .wire-notice { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
