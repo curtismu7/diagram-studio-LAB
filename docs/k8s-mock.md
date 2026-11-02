@@ -5,7 +5,7 @@
 
 The mock-only build of diagram-studio runs on the US SE cluster behind the existing sign-in wall, at a path on the main host:
 
-    https://ai-demo.ping-devops.com/mock/diagram-studio/
+    https://<SE_HOST>/mock/diagram-studio/
 
 This page is the reusable pattern. Sibling apps (learning-hub, mcp-tools, hostile-mcp, attack-gallery) copy `k8s/`, `scripts/deploy-k8s-mock.sh` and this page, and change only the items in "What changes per app".
 
@@ -14,7 +14,7 @@ This page is the reusable pattern. Sibling apps (learning-hub, mcp-tools, hostil
 | Piece | Value |
 | --- | --- |
 | Namespace | `ping-devops-cmuir` (passed as `NAMESPACE`, no default in the script) |
-| Ingress class | `nginx-public`, host `ai-demo.ping-devops.com`, path `/mock/<app>(/\|$)(.*)` (`ImplementationSpecific`) |
+| Ingress class | `nginx-public`, host `<SE_HOST>`, path `/mock/<app>(/\|$)(.*)` (`ImplementationSpecific`) |
 | Prefix handling | `use-regex: "true"` and `rewrite-target: /$2`, so the app sees plain paths (`/`, `/api/health`) |
 | Bare path | A second Ingress, `Exact` `/mock/<app>`, with `permanent-redirect` (308) to `https://<host>/mock/<app>/` |
 | Sign-in wall | `auth-url`, `auth-signin` and `ssl-redirect` copied from `ai-demo-grafana-authed-ingress` (host and namespace are tokens). No `tls:` stanza, same as that ingress |
@@ -45,7 +45,9 @@ The manifest uses literal tokens, replaced by `sed` in the deploy script; any to
 
 From a clean checkout whose HEAD is pushed (the script refuses otherwise):
 
-    NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh
+    NAMESPACE=ping-devops-cmuir SE_HOST=<SE_HOST> scripts/deploy-k8s-mock.sh
+
+`SE_HOST` is required and has no default: it is the host name clients use (a plain host name, no port). The script prints a usage line and exits non-zero if it is unset. Use the same value wherever this page shows `<SE_HOST>`.
 
 Steps: buildx `linux/amd64` build and push of the sha tag, check the GHCR manifest digest equals the pushed digest, render and `kubectl apply`, wait for rollout, then verify by content inside the pod:
 
@@ -56,7 +58,7 @@ Steps: buildx `linux/amd64` build and push of the sha tag, check the GHCR manife
 
 The public URL is behind the wall, so a 200 there proves nothing; open it in a signed-in browser as the final check.
 
-Rehearse without touching anything: `NAMESPACE=ping-devops-cmuir scripts/deploy-k8s-mock.sh --dry-run` builds locally (no push), runs `kubectl apply --dry-run=server`, prints the rendered manifest and what each real step would do. Failed preconditions print `WOULD REFUSE`.
+Rehearse without touching anything: `NAMESPACE=ping-devops-cmuir SE_HOST=<SE_HOST> scripts/deploy-k8s-mock.sh --dry-run` builds locally (no push), runs `kubectl apply --dry-run=server`, prints the rendered manifest and what each real step would do. Failed preconditions print `WOULD REFUSE`.
 
 ## Rollback
 
