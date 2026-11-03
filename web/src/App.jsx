@@ -6,6 +6,7 @@ import StepLinks from "./StepLinks.jsx";
 import WirePanel from "./WirePanel.jsx";
 import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
+import ModeToggle from "./components/ModeToggle.jsx";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 
@@ -24,6 +25,10 @@ export default function App() {
   const [saved, setSaved] = useState(null); // last loaded or saved copy: Reset restores its layout, dirty compares to it
   const [builtin, setBuiltin] = useState(true);
   const [mockOnly, setMockOnly] = useState(false); // hosted mock: sample data only, saving and importing are refused by the server
+  const [modeInfo, setModeInfo] = useState(null);
+  useEffect(() => { api.getInfo().then((r) => r.ok && setModeInfo(r.data)).catch(() => {}); }, []);
+  // Rule 19: the toggle asks the server; a refusal keeps the current mode on screen.
+  const selectMode = async (source) => { const r = await api.setMode(source); if (r.ok) setModeInfo(r.data); };
   const [editing, setEditing] = useState(false);
   const [sel, setSel] = useState({});
   const [msg, setMsg] = useState({ kind: "", text: "" });
@@ -214,6 +219,7 @@ export default function App() {
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
+        <ModeToggle info={modeInfo} onSelect={selectMode} />
         <label className="grow">
           <span className="picker-label">Choose a diagram</span>{" "}
           <select className="picker" aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">

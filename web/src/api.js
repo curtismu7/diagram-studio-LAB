@@ -18,3 +18,5 @@ export const saveDiagram = (d) => call(`/diagrams/${encodeURIComponent(d.id)}`, 
 export const deleteDiagram = (id) => call(`/diagrams/${encodeURIComponent(id)}`, { method: "DELETE" });
 export const importText = (text) => call("/import", { method: "POST", headers: { "Content-Type": "text/plain" }, body: text });
 export const getHealth = () => call("/health");
+export const getInfo = () => call("/info");
+export const setMode = (source) => call("/mode", json("POST", { source }));
