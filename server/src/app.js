@@ -47,8 +47,20 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     next();
   });
   app.use('/api/health', health.router);
-  if (mockOnly) app.use('/api', mockGuard);
   app.use('/api', express.json({ limit: '600kb', type: ['application/json'] }));
+  // Rule 19: the Mock/Real toggle's API. This studio is a local authoring tool over a local store, so there is no
+  // live side: Real is never available (409). The hosted mock build (MOCK_ONLY) refuses every switch (403).
+  const NO_REAL = 'Real is not available: this studio is a local authoring tool over a local store. Mock is the whole demo.';
+  const modeInfo = () => ({ mode: mockOnly ? 'mock-only' : 'local', hosted: mockOnly, source: 'mock', realAvailable: false });
+  app.get('/api/info', (_req, res) => res.json(modeInfo()));
+  app.post('/api/mode', (req, res) => {
+    const b = req.body;
+    if (b === null || typeof b !== 'object' || Array.isArray(b) || Object.keys(b).length !== 1 || !['mock', 'real'].includes(b.source)) return res.status(400).json({ error: 'bad_request', message: 'body must be exactly {source: "mock" or "real"}' });
+    if (mockOnly) return res.status(403).json({ error: 'mock_only', message: 'The hosted build is Mock only and cannot be switched.' });
+    if (b.source === 'real') return res.status(409).json({ error: 'conflict', message: NO_REAL });
+    return res.json(modeInfo());
+  });
+  if (mockOnly) app.use('/api', mockGuard);
 
   const fail = (res, e) => {
     if (e instanceof StoreError) {
