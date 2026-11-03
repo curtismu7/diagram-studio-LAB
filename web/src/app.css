@@ -96,3 +96,7 @@ a { color: var(--status-info); }
 .wire-terms { margin-top: 0.5rem; } .wire-terms summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; } .wire-terms dt { font-weight: 600; } .wire-terms dd { margin: 0 0 0.3rem; color: var(--muted); }
 .wire-step { margin-top: 0.4rem; } .wire-step > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
 @media (max-width: 40rem) { .wire table, .wire thead, .wire tbody, .wire tr, .wire td { display: block; } .wire thead { display: none; } .wire tr { border-bottom: 1px solid var(--border); padding: 0.3rem 0; } .wire td { border: 0; padding: 0.1rem 0.25rem; } }
+.mode-toggle { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.mode-toggle button { border: 0; border-radius: 0; padding: 3px 12px; background: var(--surface-2); color: var(--text); font-size: 0.85rem; cursor: default; }
+.mode-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.mode-toggle button:disabled { opacity: 0.6; }
