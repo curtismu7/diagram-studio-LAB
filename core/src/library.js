@@ -2,6 +2,382 @@
 export const LIBRARY = [
  {
   "schema": "diagram-studio/1",
+  "id": "poc-scope-to-tool-ciba",
+  "title": "POC: agent token exchange + CIBA approval",
+  "lede": "A proposed customer pattern, for review: a write is denied until a human approves it out of band over CIBA, then the agent replays the call and it is permitted. One login, one consent, one token exchange.",
+  "groups": {
+   "apps": {
+    "label": "Browser, apps and the agent",
+    "color": "dark"
+   },
+   "idp": {
+    "label": "Ping product: IAM core and Authorize",
+    "color": "red"
+   },
+   "gateway": {
+    "label": "MCP gateway",
+    "color": "grey"
+   },
+   "tools": {
+    "label": "MCP and resource server",
+    "color": "grey"
+   }
+  },
+  "nodes": [
+   {
+    "id": "browser",
+    "group": "apps",
+    "label": "Browser",
+    "x": 0,
+    "y": 150
+   },
+   {
+    "id": "app",
+    "group": "apps",
+    "label": "Application",
+    "x": 420,
+    "y": 0
+   },
+   {
+    "id": "iam",
+    "group": "idp",
+    "label": "IAM core",
+    "sub": ["PingFederate or PingOne"],
+    "x": 860,
+    "y": 0
+   },
+   {
+    "id": "agent",
+    "group": "apps",
+    "label": "Agent",
+    "x": 420,
+    "y": 330
+   },
+   {
+    "id": "gw",
+    "group": "gateway",
+    "label": "MCP gateway",
+    "x": 860,
+    "y": 330
+   },
+   {
+    "id": "authz",
+    "group": "idp",
+    "label": "Authorize",
+    "sub": ["policy decision + CIBA"],
+    "x": 1300,
+    "y": 330
+   },
+   {
+    "id": "mcp",
+    "group": "tools",
+    "label": "MCP server",
+    "x": 860,
+    "y": 700
+   },
+   {
+    "id": "res",
+    "group": "tools",
+    "label": "Resource server",
+    "x": 1300,
+    "y": 700
+   }
+  ],
+  "edges": [
+   {
+    "source": "browser",
+    "target": "app",
+    "label": "User initiates login",
+    "dashed": true
+   },
+   {
+    "source": "app",
+    "target": "iam",
+    "label": "Authorize request: agent client, scope api:read api:write api:delete",
+    "dashed": true
+   },
+   {
+    "source": "browser",
+    "target": "iam",
+    "label": "User authenticates",
+    "dashed": true
+   },
+   {
+    "source": "iam",
+    "target": "app",
+    "label": "User token: aud API gateway, sub user, all three scopes",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "iam",
+    "label": "Agent authenticates",
+    "dashed": true
+   },
+   {
+    "source": "iam",
+    "target": "agent",
+    "label": "Agent token: sub agentID, aud AI gateway",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "iam",
+    "label": "Token exchange: actor token + user token",
+    "dashed": true
+   },
+   {
+    "source": "app",
+    "target": "agent",
+    "label": "Write request",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "gw",
+    "label": "Write tool call with the OBO token",
+    "dashed": true
+   },
+   {
+    "source": "gw",
+    "target": "authz",
+    "label": "Policy decision request",
+    "dashed": true
+   },
+   {
+    "source": "authz",
+    "target": "gw",
+    "label": "403 with identifier: write requires HITL, CIBA started",
+    "dashed": true
+   },
+   {
+    "source": "gw",
+    "target": "agent",
+    "label": "JSON-RPC 2.0 error with identifier",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "app",
+    "label": "Prompt for CIBA acceptance",
+    "dashed": true
+   },
+   {
+    "source": "app",
+    "target": "agent",
+    "label": "Accept: yes",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "gw",
+    "label": "Replay tool call, header has identifier",
+    "dashed": true
+   },
+   {
+    "source": "gw",
+    "target": "authz",
+    "label": "Policy decision request with identifier",
+    "dashed": true
+   },
+   {
+    "source": "authz",
+    "target": "gw",
+    "label": "Permit: CIBA check passes",
+    "dashed": true
+   },
+   {
+    "source": "gw",
+    "target": "mcp",
+    "label": "Tool request with the OBO token",
+    "dashed": true
+   },
+   {
+    "source": "mcp",
+    "target": "res",
+    "label": "MCP processing",
+    "dashed": true
+   },
+   {
+    "source": "res",
+    "target": "mcp",
+    "label": "Response",
+    "dashed": true
+   },
+   {
+    "source": "mcp",
+    "target": "authz",
+    "label": "Response via Authorize",
+    "dashed": true
+   },
+   {
+    "source": "authz",
+    "target": "gw",
+    "label": "Response",
+    "dashed": true
+   },
+   {
+    "source": "gw",
+    "target": "agent",
+    "label": "Response",
+    "dashed": true
+   },
+   {
+    "source": "agent",
+    "target": "app",
+    "label": "Response",
+    "dashed": true
+   }
+  ],
+  "steps": [
+   {
+    "title": "User initiates login",
+    "what": "The user opens the application in a browser and starts logging in. Nothing agent-specific has happened yet.",
+    "edges": [0],
+    "why": "Everything after this hangs off one login session. The user logs in once, not once per tool."
+   },
+   {
+    "title": "Authorize request",
+    "what": "The application sends an OIDC authorization request to IAM Core for the client agentClient, asking for all three scopes at once.",
+    "edges": [1],
+    "why": "This is the only scope consent in the flow. It answers the \"does each scope swap need OIDC consent?\" question: the user consents once, up front, not per tool call."
+   },
+   {
+    "title": "User authenticates",
+    "what": "The user authenticates with IAM Core. The arrow is two-way because the browser is redirected to IAM Core and returned afterwards.",
+    "edges": [2],
+    "why": "This proves who the human is. The password, MFA and similar steps are whatever the customer's policy requires."
+   },
+   {
+    "title": "User token",
+    "what": "IAM Core returns a user token to the application.",
+    "edges": [3],
+    "why": "Note the audience is the API gateway, not the AI gateway. The exchange in step 7 changes the audience. The token already carries all three scopes."
+   },
+   {
+    "title": "Agent authenticates",
+    "what": "The agent authenticates to IAM Core as itself, using its own non-human identity.",
+    "edges": [4],
+    "why": "The agent gets an identity separate from the user's. That separation lets the later OBO token say \"this user, acting through this agent\"."
+   },
+   {
+    "title": "Agent token",
+    "what": "IAM Core returns an agent token.",
+    "edges": [5],
+    "why": "It proves who the agent is, but it names no user. It is not used on its own to call tools. It becomes the actor token in step 7."
+   },
+   {
+    "title": "Token exchange: actor + user token",
+    "what": "Token exchange with the actor token (agent) and the user token (subject). The result is the OBO token. The arrow is two-way because the agent sends the request and gets the new token back.",
+    "edges": [6],
+    "why": "This is the only token exchange in the whole flow. It answers \"do we swap scopes on every tool call?\": no. The OBO token carries the full scope set, so the token does not narrow per tool. Authorize does that."
+   },
+   {
+    "title": "Write request",
+    "what": "The application asks the agent to do something that needs a write, for example \"update this record\".",
+    "edges": [7],
+    "why": "The agent, not the application, decides which tool to call."
+   },
+   {
+    "title": "Write tool call",
+    "what": "The agent calls the write tool through the MCP Gateway, carrying the OBO token.",
+    "edges": [8],
+    "why": "The gateway sits in front of the MCP Server and intercepts the call before it reaches the tool."
+   },
+   {
+    "title": "Policy decision request",
+    "what": "The gateway asks Authorize for a decision. The inputs are the user (sub), the agent (act), the tool and the action.",
+    "edges": [9],
+    "why": "The decision is made on who the user and agent are and which tool is called, not on token scopes alone. Authorize can plug into any gateway, which is why the same flow should work on any gateway."
+   },
+   {
+    "title": "403 with identifier",
+    "what": "Policy says write requires HITL. Authorize triggers CIBA and returns DENY with an identifier, as an HTTP 403.",
+    "edges": [10],
+    "why": "The identifier is how the later replay (step 15) is tied to this approval. Because Authorize starts the CIBA request, it also holds the audit record."
+   },
+   {
+    "title": "JSON-RPC 2.0 error with identifier",
+    "what": "The gateway rewrites the 403 into a JSON-RPC 2.0 error that carries the identifier, and returns it to the agent.",
+    "edges": [11],
+    "why": "Some popular agent SDKs treat a raw 403 as fatal and kill the session (per the customer). A JSON-RPC error looks like an ordinary tool error, so the session survives."
+   },
+   {
+    "title": "Prompt for CIBA acceptance",
+    "what": "The agent sees the identifier and asks the application to prompt the user for CIBA acceptance.",
+    "edges": [12],
+    "why": "The agent never calls CIBA endpoints itself. It only relays the request to the application. This is the one custom behaviour the customer's AI team has to write."
+   },
+   {
+    "title": "Accept / Yes",
+    "what": "The user accepts. The application tells the agent \"yes\".",
+    "edges": [13],
+    "why": "This is the human-in-the-loop moment. Approval is recorded against the CIBA request, not trusted from the agent's word."
+   },
+   {
+    "title": "Replay tool call, header has identifier",
+    "what": "The agent replays the same tool call with the same OBO token, adding a header that contains the identifier.",
+    "edges": [14],
+    "why": "This is how the approval context gets back to Authorize across the gateway (the customer's question). The agent only echoes the identifier."
+   },
+   {
+    "title": "Policy decision request",
+    "what": "The gateway sends Authorize a second policy decision request, now including the identifier header.",
+    "edges": [15],
+    "why": "This second decision is what ties the approval to this call. Authorize sees the identifier, checks that the CIBA request it started was accepted, and only then permits. Without the check, the replay would be a way around the denial."
+   },
+   {
+    "title": "Permit",
+    "what": "Authorize detects the header and checks the CIBA call. The human approved it, so Authorize returns PERMIT.",
+    "edges": [16],
+    "why": "The agent is not asked to prove the approval. Authorize verifies it. If the request was denied or expired, Authorize denies again."
+   },
+   {
+    "title": "Tool request with OBO token",
+    "what": "The gateway forwards the tool request to the MCP Server with the OBO token.",
+    "edges": [17],
+    "why": "The MCP Server sees the user in sub and the agent in act, so downstream audit shows both."
+   },
+   {
+    "title": "MCP processing",
+    "what": "The MCP Server calls the Resource Server to do the actual work.",
+    "edges": [18],
+    "why": "The MCP Server does the work with the OBO token's identity, so the resource server and its audit trail see the user in sub and the agent in act, not a shared service account."
+   },
+   {
+    "title": "Response",
+    "what": "The Resource Server returns its result to the MCP Server.",
+    "edges": [19],
+    "why": "Nothing special happens here. It shows the result is produced by the resource server and only travels back up the same chain, so the approval earlier covered the whole call."
+   },
+   {
+    "title": "Response",
+    "what": "As drawn, the MCP Server's response goes to Authorize on its way back, not straight to the gateway.",
+    "edges": [20],
+    "why": "Because the response goes back through Authorize, a policy can inspect or log what is returned, not only what is asked. That is a likely reason for the detour, but the diagram does not say."
+   },
+   {
+    "title": "Response",
+    "what": "Authorize passes the response to the gateway.",
+    "edges": [21],
+    "why": "The gateway stays the single point the agent talks to. Authorize hands the response back to it instead of to the agent, so the agent never calls Authorize directly."
+   },
+   {
+    "title": "Response",
+    "what": "The gateway returns the response to the agent.",
+    "edges": [22],
+    "why": "The agent gets an ordinary tool response on the replayed call. The earlier JSON-RPC error and the approval are invisible to the model's tool loop, which just sees the call succeed."
+   },
+   {
+    "title": "Response",
+    "what": "The agent returns the result to the application, and the user sees it. Done.",
+    "edges": [23],
+    "why": "The user approved once and got the result without signing in again or seeing token details. This is the experience the pattern is meant to deliver for a write."
+   }
+  ]
+ },
+ {
+  "schema": "diagram-studio/1",
   "id": "a2aarchitecture-delegation",
   "title": "A2A architecture: delegation",
   "lede": "Imported flow from the a2a Architecture diagram.",

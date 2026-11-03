@@ -280,6 +280,11 @@
       "href": "/?d=pfl-token-exchange"
     },
     {
+      "id": "poc-scope-to-tool-ciba",
+      "label": "POC: agent token exchange + CIBA approval",
+      "href": "/?d=poc-scope-to-tool-ciba"
+    },
+    {
       "id": "privilegefirstgateway-fork",
       "label": "Privilege-first gateway: fork",
       "href": "/?d=privilegefirstgateway-fork"
