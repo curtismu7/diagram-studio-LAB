@@ -1,6 +1,6 @@
 # Diagram Studio LAB
 
-A small offline studio for flow diagrams stored as data. Pick a built-in sample (or one you saved), drag the boxes, press
+Tier: Tool. A small offline studio for flow diagrams stored as data. Pick a built-in sample (or one you saved), drag the boxes, press
 **Simulate** to walk the arrows in order, **Pause / Resume / Prev / Next**, change the **Speed**, **Reset**, edit boxes and
 arrows, **Save a copy**, and **Export** or **Import** the diagram as a JSON file. Diagrams are drawn with React Flow.
 
