@@ -220,7 +220,7 @@ export default function App() {
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
-        <ShelfLink />
+        <ShelfLink path="api/shelf" />
         <ModeToggle info={modeInfo} onSelect={selectMode} />
         <label className="grow">
           <span className="picker-label">Choose a diagram</span>{" "}
