@@ -7,6 +7,7 @@ import { createStore, StoreError } from './store.js';
 import { createHealth } from './health.js';
 import { bindHost, runChecks } from './doctor.js';
 import { isMockOnly, mockGuard, mockDataDir } from './mock.js';
+import { shelfInfo } from './shelfLink.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ALLOWED_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
@@ -105,6 +106,7 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
 
   if (fs.existsSync(webDir)) {
     app.use(express.static(webDir));
+app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo()); }); // the header "Shelf" button
     app.get('*', (_req, res) => res.sendFile(path.join(webDir, 'index.html')));
   }
   app.use((err, _req, res, _next) => res.status(err.status === 413 ? 413 : 400).json({ error: err.status === 413 ? 'too_large' : 'bad_request' }));

@@ -9,6 +9,7 @@ import { download, svgToPng } from "./exportImage.js";
 import ModeToggle from "./components/ModeToggle.jsx";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
+import ShelfLink from "./components/ShelfLink.jsx";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // The shared diagrams host serves each diagram at /<diagram-id>; the query form (/?d=<id>) still works.
@@ -219,6 +220,7 @@ export default function App() {
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
+        <ShelfLink />
         <ModeToggle info={modeInfo} onSelect={selectMode} />
         <label className="grow">
           <span className="picker-label">Choose a diagram</span>{" "}
