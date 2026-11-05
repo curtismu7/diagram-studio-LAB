@@ -4,7 +4,7 @@ Tier: Tool. A small offline studio for flow diagrams stored as data. Pick a buil
 **Simulate** to walk the arrows in order, **Pause / Resume / Prev / Next**, change the **Speed**, **Reset**, edit boxes and
 arrows, **Save a copy**, and **Export** or **Import** the diagram as a JSON file. Diagrams are drawn with React Flow.
 
-Repo: https://github.com/ping-sandbox/diagram-studio-LAB
+Repo: https://github.com/curtismu7/diagram-studio-LAB
 
 It needs no tenant and makes no outbound network request. The server listens on `127.0.0.1` only (port 6001).
 
