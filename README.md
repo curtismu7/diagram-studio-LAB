@@ -8,6 +8,35 @@ Repo: https://github.com/curtismu7/diagram-studio-LAB
 
 It needs no tenant and makes no outbound network request. The server listens on `127.0.0.1` only (port 6001).
 
+## Run from a clone
+
+Prerequisites: Node 26. Docker (OrbStack) only for the Docker form.
+
+```
+git clone https://github.com/curtismu7/diagram-studio-LAB.git
+cd diagram-studio-LAB
+npm ci
+npm run build
+npm run doctor
+npm start
+```
+
+## Ports, and what to do if the port is taken
+
+```
+Ports: diagram-studio-LAB listens on 6001 (set with PORT, default 6001).
+Port range for this app: 6000-6099.
+
+If the port is taken:
+1. Find what is using it:
+   lsof -iTCP:6001 -sTCP:LISTEN -n -P
+2. If it is an old copy of this app, stop that process: kill <PID>.
+3. If it is something else, stop it, or start this app on another port:
+   PORT=<other port> npm start
+```
+
+Other variable: `HOST_PORT=6001` (Docker host port). Keep both inside 6000-6099.
+
 ## Run
 
 ```
