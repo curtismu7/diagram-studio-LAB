@@ -38,7 +38,7 @@ export default function App() {
     try { const q = new URLSearchParams(window.location.search).get("present"); return q ? q === "1" : localStorage.getItem("studio-present") === "1"; } catch { return false; }
   });
   const [arrow, setArrow] = useState({ from: "", to: "" });
-  const [theme, setTheme] = useState(() => { try { return localStorage.getItem("studio-theme") || ""; } catch { return ""; } });
+  const [theme, setTheme] = useState(() => { try { return ["", "light", "dark"].includes(localStorage.getItem("studio-theme")) ? localStorage.getItem("studio-theme") : ""; } catch { return ""; } });
   const total = diagram ? diagram.edges.length : 0;
   const [st, dispatch] = useStepper(total);
 
@@ -66,7 +66,7 @@ export default function App() {
   }, [refresh, open]);
   useEffect(() => { if (diagram) try { localStorage.setItem("studio-last", diagram.id); } catch { /* private mode */ } }, [diagram?.id]);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme || "";
+    document.documentElement.dataset.theme = theme;
     try { theme ? localStorage.setItem("studio-theme", theme) : localStorage.removeItem("studio-theme"); } catch { /* private mode */ }
   }, [theme]);
 
@@ -230,7 +230,13 @@ export default function App() {
           {list.length > 1 && <span className="picker-count" data-testid="picker-count"> {list.length} to explore</span>}
         </label>
         <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
-        <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle dark and light">{theme === "dark" ? "Light" : "Dark"}</button>
+        <label className="inline">Theme
+          <select value={theme} onChange={(e) => setTheme(e.target.value)} data-testid="theme">
+            <option value="">Auto</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
       </header>
 
       <main className="page">

@@ -298,7 +298,7 @@ describe("App", () => {
       await user.click(screen.getByTestId("export-svg"));
       const text = await readBlob(exportImage.download.mock.calls[0][0]);
       expect(text.match(/marker-end="url\(#ahh\)"/g)).toHaveLength(1);
-      await user.click(screen.getByRole("button", { name: /Toggle dark/ }));
+      await user.selectOptions(screen.getByTestId("theme"), "dark");
       await user.click(screen.getByTestId("export-svg"));
       const dark = await readBlob(exportImage.download.mock.calls[1][0]);
       expect(dark).toContain('fill="#12161d"');

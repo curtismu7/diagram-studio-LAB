@@ -198,11 +198,11 @@ describe("Save as HTML in the app", () => {
     await user.click(screen.getByTestId("export-html"));
     const light = await readBlob(exportImage.download.mock.calls.at(-1)[0]);
     expect(light).toContain("color-scheme:light"); expect(light).toContain("background:#ffffff;color:#1c2330"); expect(light).not.toContain("#12161d");
-    await user.click(screen.getByRole("button", { name: /Toggle dark/ }));
+    await user.selectOptions(screen.getByTestId("theme"), "dark");
     await user.click(screen.getByTestId("export-html"));
     const dark = await readBlob(exportImage.download.mock.calls.at(-1)[0]);
     expect(dark).toContain("color-scheme:dark"); expect(dark).toContain("background:#12161d;color:#e6eaf1");
-    await user.click(screen.getByRole("button", { name: /Toggle dark|Light/ }));
+    await user.selectOptions(screen.getByTestId("theme"), "");
     await user.click(screen.getByTestId("export-html"));
     expect(await readBlob(exportImage.download.mock.calls.at(-1)[0])).toContain("color-scheme:light");
   });
