@@ -180,6 +180,11 @@
       "href": "/?d=identity-for-ai"
     },
     {
+      "id": "idjagrunner-flow",
+      "label": "ID-JAG Runner: the lab's flow, step by step",
+      "href": "/?d=idjagrunner-flow"
+    },
+    {
       "id": "investdualauth-invest",
       "label": "Invest dual authorization",
       "href": "/?d=investdualauth-invest"

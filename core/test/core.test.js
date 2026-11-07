@@ -98,10 +98,10 @@ test('goto pauses; addNode and addEdge respect the caps', () => {
   assert.equal(addEdge(d, 'user', 'api').edges.length, LIMITS.edges);
 });
 
-test('library: 32 imported diagrams, valid, unique ids, readable layout, every step maps to arrows', async () => {
+test('library: 33 imported diagrams, valid, unique ids, readable layout, every step maps to arrows', async () => {
   const { LIBRARY } = await import('../src/library.js');
   const { BASICS } = await import('../src/samples.js');
-  assert.equal(LIBRARY.length, 32);
+  assert.equal(LIBRARY.length, 33);
   assert.equal(new Set([...BASICS, ...LIBRARY].map((d) => d.id)).size, BASICS.length + LIBRARY.length);
   for (const d of LIBRARY) {
     assert.deepEqual(validateDiagram(d), [], d.id);
