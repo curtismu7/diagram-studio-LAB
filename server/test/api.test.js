@@ -147,3 +147,18 @@ test('only a plain GET of /?embed=1 is frameable: HEAD, OPTIONS and writes to it
     assert.doesNotMatch(r.headers.get('content-security-policy') || '', /frame-ancestors http/, method);
   }
 });
+
+test('GET /api/shelf returns the configured SHELF_URL with no web build (trailing slash trimmed), and a POST to it is not 200', async () => {
+  const prev = process.env.SHELF_URL;
+  process.env.SHELF_URL = 'https://shelf.example:8443/';
+  const bare = await startHttpServer({ port: 0, env: {}, dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'studio-shelf-')), webDir: path.join(os.tmpdir(), 'studio-no-such-web-dist') });
+  try {
+    const r = await fetch(`${bare.url}api/shelf`);
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), { shelfUrl: 'https://shelf.example:8443' });
+    assert.notEqual((await fetch(`${bare.url}api/shelf`, { method: 'POST', headers: J, body: '{}' })).status, 200);
+  } finally {
+    await bare.close();
+    if (prev === undefined) delete process.env.SHELF_URL; else process.env.SHELF_URL = prev;
+  }
+});
