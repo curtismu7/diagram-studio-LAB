@@ -12,6 +12,7 @@ services:
       PORT: "6001"
       STUDIO_BIND: 0.0.0.0
       STUDIO_ALLOW_HOST: ""
+      LAB_ALLOWED_HOSTS: ${LAB_ALLOWED_HOSTS:-diagram-studio.local.ping-devops.com}
     volumes:
       - studio-data:/data
     read_only: true
