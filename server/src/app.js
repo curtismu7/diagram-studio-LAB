@@ -12,7 +12,28 @@ import { shelfInfo } from './shelfLink.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ALLOWED_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
+// Behind the family launcher (lab-proxy) the Host is this lab's own name plus its port, e.g. "<name>:6001". LAB_ALLOWED_HOSTS is a
+// comma list of those names (no ports). Loopback always works; unset means loopback only.
+export function parseAllowedHosts(value) {
+  return new Set(String(value ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean));
+}
+// True only for "<allowed name>:<this lab's port>".
+export function isLabProxyHost(hostHeader, allowed, port) {
+  const m = /^([a-z0-9.-]+):(\d{1,5})$/i.exec(String(hostHeader ?? '').trim());
+  return Boolean(m) && allowed.has(m[1].toLowerCase()) && Number(m[2]) === port;
+}
+// A proxied write: Host is an allowed lab-proxy name (loopback does not count), and the browser's Origin equals the origin the
+// proxy reports in X-Forwarded-Proto/-Host. Forwarded headers are ignored on any other Host.
+export function isProxiedSameOrigin(headers, allowed, port) {
+  if (!isLabProxyHost(headers.host, allowed, port)) return false;
+  const xfh = String(headers['x-forwarded-host'] || '').trim().toLowerCase();
+  const xfp = String(headers['x-forwarded-proto'] || '').trim().toLowerCase();
+  return xfh !== '' && (xfp === 'https' || xfp === 'http') && headers.origin === `${xfp}://${xfh}`;
+}
+
 export function createApp({ dataDir, env = process.env, webDir = path.resolve(here, '../../web/dist') } = {}) {
+  const labHosts = parseAllowedHosts(env.LAB_ALLOWED_HOSTS); // parsed before the health timer or the server starts
+  const labPort = Number(env.PORT) || 6001;
   const mockOnly = isMockOnly(env);
   if (mockOnly) dataDir = mockDataDir();
   const store = createStore(dataDir);
@@ -32,10 +53,10 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     });
     next();
   });
-  // DNS-rebinding guard: only loopback host names unless the operator opted in with STUDIO_ALLOW_HOST (container publish is loopback-only).
+  // DNS-rebinding guard: only loopback host names, LAB_ALLOWED_HOSTS names on this lab's port, or the operator's STUDIO_ALLOW_HOST (container publish is loopback-only).
   app.use((req, res, next) => {
     const extra = env.STUDIO_ALLOW_HOST;
-    if (ALLOWED_HOST.test(req.headers.host || '') || (extra && req.headers.host === extra)) return next();
+    if (ALLOWED_HOST.test(req.headers.host || '') || (extra && req.headers.host === extra) || isLabProxyHost(req.headers.host, labHosts, labPort)) return next();
     res.status(421).json({ error: 'bad_host' });
   });
   // Writes must come from our own page (blocks cross-site form posts); non-browser clients send no Origin.
@@ -44,7 +65,7 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
     const origin = req.headers.origin;
     let originHost = null;
     try { originHost = origin ? new URL(origin).host : null; } catch { /* Origin: null and junk are refused below */ }
-    if (origin && originHost !== req.headers.host) return res.status(403).json({ error: 'cross_origin' });
+    if (origin && originHost !== req.headers.host && !isProxiedSameOrigin(req.headers, labHosts, labPort)) return res.status(403).json({ error: 'cross_origin' });
     next();
   });
   app.use('/api/health', health.router);
