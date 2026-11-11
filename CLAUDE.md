@@ -20,4 +20,4 @@ diagrams from this data (rule 17). Express API + React Flow web app, npm workspa
 - `MOCK_ONLY=1` (or `MODE=mock`) = hosted read-only mock: every API write is refused with 403 `mock_only`.
 - Every diagram needs movable boxes, Simulate, Reset (restores positions) and a speed control; ReactFlow only, never mermaid.
 - Browser checks: prove UI changes with `npm run e2e` or Playwright before handing over; a 200 is not proof.
-- Commits end with the Co-Authored-By line; PRs end with the Claude Code line; one writer per branch; merge your own PRs after real CI green.
+- No AI attribution anywhere (owner, 2026-11-07): no Co-Authored-By trailer and no "Generated with" line in commits, PR bodies or files; CI runs `scripts/check-no-ai-attribution.sh`; one writer per branch; merge your own PRs after real CI green.
