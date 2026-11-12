@@ -2,9 +2,10 @@
 .page { max-width: 80rem; margin: 0 auto; padding: 1rem 0; }
 em { font-style: normal; font-weight: 700; }
 h1 { margin: 0; font-size: 1.25rem; } h2 { margin: 0.25rem 0; font-size: 1.4rem; } h3 { margin: 0 0 0.5rem; font-size: 1.05rem; } h4 { margin: 0 0 0.25rem; }
+html { font-size: var(--fs, 16px); }
 .lede, .muted { color: var(--muted); } .small { font-size: 0.85rem; }
 .mock-banner { margin: 0; padding: 0.4rem 1rem; text-align: center; font-weight: 600; background: var(--accent-soft); color: var(--danger-text); border-bottom: 1px solid var(--border); }
-.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); background: var(--bg-lab); }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); background: var(--bg-lab); position: relative; }
 .grow { flex: 1 1 18rem; min-width: 0; } .grow select { max-width: 100%; }
 .filebtn { display: inline-block; min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
 .filebtn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }

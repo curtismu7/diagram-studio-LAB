@@ -49,7 +49,7 @@ describe("drags and the undo history", () => {
     render(<App />); await screen.findByTestId("picker");
     await user.click(screen.getByTestId("edit-toggle")); await user.click(screen.getByTestId("add-box"));
     const before = canvas.diagram.nodes.length;
-    await user.click(screen.getByTestId("present"));
+    await user.click(screen.getByTestId("presenter"));
     fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
     fireEvent.keyDown(document.body, { key: "z", metaKey: true });
     expect(canvas.diagram.nodes.length).toBe(before);

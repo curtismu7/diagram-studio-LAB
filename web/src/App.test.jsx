@@ -98,7 +98,7 @@ describe("App", () => {
     await user.click(screen.getByTestId("resume"));
     await act(async () => { vi.advanceTimersByTime(520); });
     expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 3 of 6");
-    await user.click(screen.getByTestId("reset"));
+    await user.click(screen.getByTestId("reset-layout"));
     expect(screen.getByTestId("stepcount")).toHaveTextContent("Not playing");
   });
 
@@ -118,9 +118,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
     await screen.findByTestId("picker");
-    await user.click(screen.getByTestId("present"));
+    await user.click(screen.getByTestId("presenter"));
     expect(document.documentElement.dataset.present).toBe("1");
-    expect(screen.getByTestId("present")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("presenter")).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByTestId("add-box")).toBeNull();
     expect(screen.getByTestId("now")).toHaveTextContent(/Space plays/);
     await user.keyboard("{ArrowRight}");
@@ -149,7 +149,7 @@ describe("App", () => {
       const a = render(<App />);
       await screen.findByTestId("picker");
       expect(document.documentElement.dataset.present).toBeUndefined();
-      expect(screen.getByTestId("present")).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByTestId("presenter")).toHaveAttribute("aria-pressed", "false");
       expect(window.location.search).toBe("");
       a.unmount();
       localStorage.setItem("studio-present", "0");
@@ -172,14 +172,14 @@ describe("App", () => {
       await screen.findByTestId("picker");
       await user.click(screen.getByTestId("edit-toggle"));
       expect(screen.getByTestId("edit-panel")).toBeInTheDocument();
-      await user.click(screen.getByTestId("present"));
+      await user.click(screen.getByTestId("presenter"));
       expect(screen.queryByTestId("edit-panel")).toBeNull();
       expect(screen.queryByTestId("details-editor")).toBeNull();
       expect(screen.getByTestId("save").closest("[data-admin-only]")).not.toBeNull();
       expect(localStorage.getItem("studio-present")).toBe("1");
       await user.keyboard("{Escape}");
       expect(screen.getByTestId("edit-toggle")).toHaveAttribute("aria-pressed", "false");
-      await user.click(screen.getByTestId("present"));
+      await user.click(screen.getByTestId("presenter"));
       a.unmount();
       render(<App />); await screen.findByTestId("picker");
       expect(document.documentElement.dataset.present).toBe("1");
@@ -189,7 +189,7 @@ describe("App", () => {
       const user = userEvent.setup();
       render(<App />);
       await screen.findByTestId("picker");
-      await user.click(screen.getByTestId("present"));
+      await user.click(screen.getByTestId("presenter"));
       await waitFor(() => expect(screen.getByTestId("now")).toHaveFocus());
       const down = (key) => { const ev = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }); document.body.dispatchEvent(ev); return ev.defaultPrevented; };
       expect(down("x")).toBe(false);
@@ -198,7 +198,7 @@ describe("App", () => {
       expect(screen.getByTestId("pause")).toBeInTheDocument();
       expect(down("ArrowRight")).toBe(true);
       await user.keyboard("{Escape}");
-      expect(screen.getByTestId("present")).toHaveFocus();
+      expect(screen.getByTestId("presenter")).toHaveFocus();
     });
 
     it("switching diagram stops the walkthrough; an arrow with no step shows its caption in the panel", async () => {
@@ -207,7 +207,7 @@ describe("App", () => {
       globalThis.fetch = vi.fn(async (u) => ({ ok: true, status: 200, json: async () => (String(u).endsWith("api/diagrams") ? { diagrams: [d, SAMPLES[1]].map((x) => ({ id: x.id, title: x.title, builtin: true })) } : { diagram: String(u).includes(SAMPLES[1].id) ? SAMPLES[1] : d, builtin: true }) }));
       render(<App />);
       await screen.findByTestId("picker");
-      await user.click(screen.getByTestId("present"));
+      await user.click(screen.getByTestId("presenter"));
       await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
       await waitFor(() => expect(screen.getByTestId("stepcount")).toHaveTextContent("Arrow 3 of 6"));
       expect(screen.getByTestId("now")).toHaveTextContent("Authorization server → Client app");
@@ -249,7 +249,7 @@ describe("App", () => {
     localStorage.clear();
     render(<App />);
     await screen.findByTestId("picker");
-    await user.click(screen.getByTestId("present"));
+    await user.click(screen.getByTestId("presenter"));
     await user.keyboard("{ArrowRight}");
     const links = await screen.findByTestId("now-links");
     expect(within(links).getByText(/We send the fingerprint, not the secret\./)).toBeVisible();
@@ -298,7 +298,7 @@ describe("App", () => {
       await user.click(screen.getByTestId("export-svg"));
       const text = await readBlob(exportImage.download.mock.calls[0][0]);
       expect(text.match(/marker-end="url\(#ahh\)"/g)).toHaveLength(1);
-      await user.selectOptions(screen.getByTestId("theme"), "dark");
+      await user.selectOptions(screen.getByTestId("theme-select"), "dark");
       await user.click(screen.getByTestId("export-svg"));
       const dark = await readBlob(exportImage.download.mock.calls[1][0]);
       expect(dark).toContain('fill="#12161d"');

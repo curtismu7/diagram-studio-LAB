@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import fs from "node:fs";
 import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
@@ -6,12 +7,14 @@ import StepLinks from "./StepLinks.jsx";
 import WirePanel from "./WirePanel.jsx";
 import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
-import ModeToggle from "./components/ModeToggle.jsx";
+import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 import ShelfLink from "./components/ShelfLink.jsx";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Version for the TopMenu About button: read once from the lab root package.json (same source the server's /api/health uses).
+const LAB_VERSION = (() => { try { return JSON.parse(fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version || null; } catch { return null; } })();
 // The shared diagrams host serves each diagram at /<diagram-id>; the query form (/?d=<id>) still works.
 const diagramIdFromPath = () => {
   try { return decodeURIComponent(window.location.pathname.slice(import.meta.env.BASE_URL.length)).replace(/\/$/, "") || null; } catch { return null; }
@@ -39,6 +42,7 @@ export default function App() {
   });
   const [arrow, setArrow] = useState({ from: "", to: "" });
   const [theme, setTheme] = useState(() => { try { return ["", "light", "dark"].includes(localStorage.getItem("studio-theme")) ? localStorage.getItem("studio-theme") : ""; } catch { return ""; } });
+  const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("studio-font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
   const total = diagram ? diagram.edges.length : 0;
   const [st, dispatch] = useStepper(total);
 
@@ -69,6 +73,10 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     try { theme ? localStorage.setItem("studio-theme", theme) : localStorage.removeItem("studio-theme"); } catch { /* private mode */ }
   }, [theme]);
+  useEffect(() => {
+    applyFontSize(fontStep);
+    try { localStorage.setItem("studio-font", fontStep); } catch { /* private mode */ }
+  }, [fontStep]);
 
   const dirty = !mockOnly && diagram && saved && !same(diagram, saved); // nothing can be saved in the hosted mock, so nothing is ever "unsaved"
   useEffect(() => {
@@ -81,12 +89,11 @@ export default function App() {
     try { const u = new URL(window.location.href); if (u.searchParams.has("present")) { u.searchParams.delete("present"); window.history.replaceState(null, "", u); } } catch { /* no history */ }
   }, []);
   const nowRef = useRef(null);
-  const presentBtn = useRef(null);
   const focusAfter = useRef(false); // set by the Present button: move focus once the new mode has rendered
   useEffect(() => {
     if (!focusAfter.current) return;
     focusAfter.current = false;
-    (present ? nowRef.current : presentBtn.current)?.focus();
+    (present ? nowRef.current : document.querySelector('[data-testid="presenter"]'))?.focus();
   }, [present]);
   useEffect(() => {
     if (present) document.documentElement.dataset.present = "1"; else delete document.documentElement.dataset.present;
@@ -190,6 +197,7 @@ export default function App() {
     await refresh(); await open(r.data.id); say("ok", `Imported ${r.data.id}.`);
   }
   function reset() { dispatch({ type: "stop" }); setDiagram((d) => resetLayout(d, saved)); setFitKey((k) => k + 1); }
+  const resetLayoutNow = reset; // the header's Reset in TopMenu does the same as the walkthrough bar's
 
   useEffect(() => {
     const onKey = (e) => {
@@ -220,22 +228,23 @@ export default function App() {
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
       <header className="top">
         <h1>Diagram Studio</h1>
-        <ShelfLink path="api/shelf" />
-        <ModeToggle info={modeInfo} onSelect={selectMode} />
+        <TopMenu
+          mode={{ value: modeInfo?.source === "real" ? "real" : "mock", onChange: selectMode, realAvailable: modeInfo ? modeInfo.realAvailable : null, realHint: "Real is not available: this studio is a local authoring tool over a local store. Mock is the whole demo." }}
+          theme={{ value: theme === "" ? "auto" : theme, onChange: (t) => setTheme(t === "auto" ? "" : t) }}
+          fontSize={{ value: fontStep, onChange: setFontStep }}
+          present={{ active: present, onToggle: () => { focusAfter.current = true; setPresent(!present); setEditing(false); } }}
+          help={{ href: "https://github.com/curtismu7/diagram-studio-LAB#readme" }}
+          version={LAB_VERSION}
+          onReset={reset}
+        >
+          <ShelfLink path="api/shelf" />
+        </TopMenu>
         <label className="grow">
           <span className="picker-label">Choose a diagram</span>{" "}
           <select className="picker" aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
             {list.map((d) => <option key={d.id} value={d.id}>{d.title}{list.filter((x) => x.title === d.title).length > 1 ? ` [${d.id}]` : ""}{d.builtin ? " (sample)" : ""}</option>)}
           </select>
           {list.length > 1 && <span className="picker-count" data-testid="picker-count"> {list.length} to explore</span>}
-        </label>
-        <button ref={presentBtn} onClick={() => { focusAfter.current = true; setPresent(!present); setEditing(false); }} aria-pressed={present} data-testid="present">Present</button>
-        <label className="inline">Theme
-          <select value={theme} onChange={(e) => setTheme(e.target.value)} data-testid="theme">
-            <option value="">Auto</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
         </label>
       </header>
 
@@ -250,7 +259,7 @@ export default function App() {
             : <button onClick={() => dispatch({ type: "resume" })} disabled={st.step < 0} data-testid="resume">Resume</button>}
           <button onClick={() => dispatch({ type: "prev" })} disabled={st.step < 0 || st.step === 0} data-testid="prev">Prev</button>
           <button onClick={() => dispatch({ type: "next" })} disabled={st.step < 0 || st.step >= total - 1} data-testid="next">Next</button>
-          <button onClick={reset} data-testid="reset">Reset</button>
+          <button onClick={reset} data-testid="reset-layout">Reset</button>
           <label>Speed{" "}
             <select value={st.speed} onChange={(e) => dispatch({ type: "speed", speed: e.target.value })} data-testid="speed" aria-label="Speed">
               {SPEEDS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}

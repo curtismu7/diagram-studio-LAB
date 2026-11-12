@@ -86,7 +86,7 @@ describe("wire in the app", () => {
   it("presenter mode shows the active step's wire", async () => {
     const user = userEvent.setup();
     await ready("token-exchange");
-    await user.click(screen.getByTestId("present"));
+    await user.click(screen.getByTestId("presenter"));
     await user.click(screen.getByTestId("simulate"));
     expect(await screen.findByTestId("now-wire")).toHaveTextContent("POST https://auth.example.com/token");
   });
