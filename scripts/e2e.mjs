@@ -232,10 +232,10 @@ try {
   const [stepDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
   const stepSvg = fs.readFileSync(await stepDl.path(), 'utf8');
   check((stepSvg.match(/marker-end="url\(#ahh\)"/g) || []).length === 1 && stepSvg.includes('opacity="0.35"'), 'exporting mid-walkthrough highlights exactly the focused arrow and fades later ones');
-  await page.getByTestId('theme').selectOption('dark');
+  await page.getByTestId('theme-select').selectOption('dark');
   const [darkDl] = await Promise.all([page.waitForEvent('download'), T('export-svg').click()]);
   check(fs.readFileSync(await darkDl.path(), 'utf8').includes('fill="#12161d"'), 'dark theme exports a dark page');
-  await page.getByTestId('theme').selectOption('light'); await T('reset').click();
+  await page.getByTestId('theme-select').selectOption('light'); await T('reset').click();
   await page.screenshot({ path: path.join(shots, '5-exports-page.png') });
   fs.writeFileSync(path.join(shots, 'mcp-step-up.png'), png); fs.writeFileSync(path.join(shots, 'mcp-step-up.svg'), svgText);
   // Step and story editor: edit a copy's steps, save, reload, and see them (with story link) on the step cards.
@@ -356,7 +356,7 @@ try {
   await filePage.close();
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
-  await page.getByTestId('theme').selectOption('dark');
+  await page.getByTestId('theme-select').selectOption('dark');
   check(await page.evaluate(() => document.documentElement.dataset.theme) === 'dark', 'dark theme applies');
   await page.setViewportSize({ width: 390, height: 800 });
   check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no horizontal page scroll at phone width');
