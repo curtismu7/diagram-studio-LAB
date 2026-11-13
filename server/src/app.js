@@ -5,9 +5,11 @@ import express from 'express';
 import { parseDiagram } from '@diagram-studio/core';
 import { createStore, StoreError } from './store.js';
 import { createHealth } from './health.js';
-import { bindHost, runChecks } from './doctor.js';
+import { bindHost, runChecks, allPassed } from './doctor.js';
 import { isMockOnly, mockGuard, mockDataDir } from './mock.js';
 import { shelfInfo } from './shelfLink.js';
+
+const pkgVersion = () => JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ALLOWED_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
@@ -37,7 +39,15 @@ export function createApp({ dataDir, env = process.env, webDir = path.resolve(he
   const mockOnly = isMockOnly(env);
   if (mockOnly) dataDir = mockDataDir();
   const store = createStore(dataDir);
-  const health = createHealth({ runChecks: () => runChecks({ env, dataDir }), mockOnly });
+  const health = createHealth({
+    demoId: 'diagram-studio',
+    demoName: 'Diagram Studio',
+    version: pkgVersion(),
+    runChecks: () => runChecks({ env, dataDir }),
+    allPassed,
+    mockOnly: (e) => isMockOnly(e),
+    env,
+  });
   const app = express();
   app.disable('x-powered-by');
 
