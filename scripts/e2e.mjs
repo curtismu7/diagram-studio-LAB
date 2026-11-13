@@ -369,7 +369,7 @@ try {
   check(foreign.length === 0, `no request left the origin${foreign.length ? ': ' + foreign.join(', ') : ''}`);
   check(errors.length === 0, `no console or page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
 } catch (e) {
-  console.log(`FAIL  script error: ${String(e.stack || e.message).split('\n').slice(0,4).join(' | ')}`); failures++;
+  console.log(`FAIL  script error: ${String(e.message).split('\n')[0]}`); failures++;
 } finally {
   await browser.close();
   if (server) server.kill();
