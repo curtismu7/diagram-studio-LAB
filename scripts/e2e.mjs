@@ -39,7 +39,11 @@ try {
   page.on('console', (m) => { if (m.type() === 'error' && !/status of 422/.test(m.text()) && !/Framing .*frame-ancestors 'none'/.test(m.text())) errors.push(m.text()); /* the 422 is the bad import on purpose */ });
   page.on('dialog', (d) => d.accept());
   const T = (id) => page.getByTestId(id);
-  const pos = async (id) => { const b = await T(`node-${id}`).boundingBox(); return b && [Math.round(b.x), Math.round(b.y)]; };
+  // Canvas-relative position: the banner/mode-note can shift the page between measurements.
+  const pos = async (id) => {
+    const c = await T('canvas').boundingBox(); const b = await T(`node-${id}`).boundingBox();
+    return b && c ? [Math.round(b.x - c.x), Math.round(b.y - c.y)] : null;
+  };
 
   await page.goto(base);
   await T('canvas').waitFor();
@@ -169,9 +173,9 @@ try {
   }
   check(all.length >= 35 && badOnes.length === 0, `all ${all.length} built-in diagrams show every box with no overlap${badOnes.length ? ": " + badOnes.join('; ') : ''}`);
   // Presenter mode: keys, bigger type, no edit or file controls, Esc exits, ?present=1 deep link.
-  await page.goto(`${base}/?d=auth-code-pkce`); await T('present').waitFor();
+  await page.goto(`${base}/?d=auth-code-pkce`); await T('presenter').waitFor();
   const normalFont = await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
-  await T('present').click();
+  await T('presenter').click();
   check(await page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize)) > normalFont, 'presenting makes the type bigger');
   check(!(await T('save').isVisible()) && !(await T('edit-toggle').isVisible()), 'presenting hides edit and file controls');
   await page.keyboard.press('ArrowRight');
@@ -300,13 +304,13 @@ try {
   await page.mouse.move(bx.x + 20, bx.y + 10); await page.mouse.down(); await page.mouse.move(bx.x + 140, bx.y + 120, { steps: 12 }); await page.mouse.up();
   const p1 = await pos('client');
   check(p1[0] !== p0[0] || p1[1] !== p0[1], 'drag moved the box');
-  await T('undo').click(); await sleep(250);
+  await T('undo').click(); await sleep(500);
   const p2 = await pos('client');
   check(Math.abs(p2[0] - p0[0]) <= 2 && Math.abs(p2[1] - p0[1]) <= 2 && await T('undo').isDisabled(), 'one Undo undoes the whole drag (many small moves = one step)');
-  await T('redo').click(); await sleep(250);
+  await T('redo').click(); await sleep(500);
   const p3 = await pos('client');
   check(Math.abs(p3[0] - p1[0]) <= 2 && Math.abs(p3[1] - p1[1]) <= 2, 'Redo puts the dragged box back');
-  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await sleep(250);
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await sleep(500);
   check(await T('undo').isDisabled(), 'the keyboard shortcut undoes too');
   await T('tidy').click(); await sleep(400);
   const rects = await page.locator('[data-testid^="node-"]').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.x, r.y, r.right, r.bottom]; }));
@@ -365,7 +369,7 @@ try {
   check(foreign.length === 0, `no request left the origin${foreign.length ? ': ' + foreign.join(', ') : ''}`);
   check(errors.length === 0, `no console or page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
 } catch (e) {
-  console.log(`FAIL  script error: ${String(e.message).split('\n')[0]}`); failures++;
+  console.log(`FAIL  script error: ${String(e.stack || e.message).split('\n').slice(0,4).join(' | ')}`); failures++;
 } finally {
   await browser.close();
   if (server) server.kill();
