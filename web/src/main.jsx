@@ -6,6 +6,7 @@ import "@xyflow/react/dist/style.css";
 import App from "./App.jsx";
 import Embed from "./Embed.jsx";
 import { isEmbedRequest } from "./embedMode.js";
+import "./components/JsonPane.css";
 import "./app.css";
 
 const embed = isEmbedRequest(window.location.search);
