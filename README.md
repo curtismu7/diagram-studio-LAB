@@ -120,6 +120,8 @@ Optional step links: `"story": { "id": "S01", "step": 2 }` points at a story ste
 The studio ships four stories (`content/stories/`, same shape as the demo family's story files); a step card shows the story step's
 Say, Tell and Why. A story id the studio does not ship (say, one from another demo) is shown as a plain label. The content pack lists the four stories.
 
+Optional per-arrow `"color"` (`red`, `dark`, `grey`, `blue`, `green` or `amber`, the same names as group colors): the validator accepts and keeps it, and several labs draw their own arrows with it (a phase colour). This studio does not draw it yet.
+
 Optional code pointers, for a diagram that explains how a repository is built: a node may carry `"sources": [{ "path": "server/src/jobs.js", "line": 88, "end_line": 97, "label": "apply gate" }]`
 (1 to 3 entries, a repo-relative path and a 1-based line range) and the diagram may carry `"repo": { "url": "https://github.com/owner/name", "rev": "<40-character commit>" }`.
 Clicking a box lists its sources, as links to that file at that commit when `repo` is set. The validator checks the shape only. `core/src/verify-sources.js`
