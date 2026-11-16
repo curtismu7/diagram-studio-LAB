@@ -1411,4 +1411,151 @@ export const PFL_PIFLOW_FLOW = {
 
 export const PINGFEDERATE_LAB_DIAGRAMS = [PFL_SIGNIN_FLOW, PFL_PKCE_FLOW, PFL_PAR_FLOW, PFL_RAR_FLOW, PFL_DPOP_FLOW, PFL_CIBA_FLOW, PFL_DCR_FLOW, PFL_TOKEN_EXCHANGE_FLOW, PFL_PIFLOW_FLOW];
 
-export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS];
+// Cedar act.sub Lab (cedar-act-sub-LAB): one agent token, two tools, one act.sub policy each. Simulated data; the lab's Simulate finds its arrows by node id.
+export const CEDAR_ACT_SUB_FLOW = {
+  "schema": "diagram-studio/1",
+  "id": "cedar-act-sub-flow",
+  "title": "One token, two tools, one act.sub policy each",
+  "lede": "Simulated: the agent's PingFederate token carries act = {\"sub\": \"agent-client-example\"}. The mock door evaluates one Cedar rule shape per tool. Simulate walks the scenario you picked; the measured run on a real tenant is shown separately below.",
+  "groups": {
+    "pf": {
+      "label": "PingFederate (mock)",
+      "color": "blue"
+    },
+    "agent": {
+      "label": "Agent",
+      "color": "amber"
+    },
+    "gw": {
+      "label": "Privilege door (mock)",
+      "color": "dark"
+    },
+    "tools": {
+      "label": "Tools",
+      "color": "green"
+    }
+  },
+  "nodes": [
+    {
+      "id": "pf",
+      "group": "pf",
+      "label": "PingFederate",
+      "sub": [
+        "client-credentials token",
+        "act = {sub: agent}"
+      ],
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "agent",
+      "group": "agent",
+      "label": "AI agent",
+      "sub": [
+        "agent-client-example",
+        "holds the token"
+      ],
+      "x": 300,
+      "y": 0
+    },
+    {
+      "id": "door",
+      "group": "gw",
+      "label": "Door: sign-in",
+      "sub": [
+        "door-example",
+        "simulated sign-in check"
+      ],
+      "x": 600,
+      "y": 0
+    },
+    {
+      "id": "cedar",
+      "group": "gw",
+      "label": "AI policies (Cedar)",
+      "sub": [
+        "Active: enforced",
+        "Candidate: not enforced (UNVERIFIED)"
+      ],
+      "x": 600,
+      "y": 150
+    },
+    {
+      "id": "count",
+      "group": "tools",
+      "label": "CountTool",
+      "sub": [
+        "policy A: act.sub = agent-client-example"
+      ],
+      "x": 300,
+      "y": 300
+    },
+    {
+      "id": "list",
+      "group": "tools",
+      "label": "ListIndexTool",
+      "sub": [
+        "policy B: act.sub = agent-b-example"
+      ],
+      "x": 600,
+      "y": 300
+    }
+  ],
+  "edges": [
+    {
+      "source": "pf",
+      "target": "agent",
+      "label": "token"
+    },
+    {
+      "source": "agent",
+      "target": "door",
+      "label": "tools/call"
+    },
+    {
+      "source": "door",
+      "target": "cedar",
+      "label": "sign-in passed"
+    },
+    {
+      "source": "cedar",
+      "target": "count",
+      "label": "CountTool"
+    },
+    {
+      "source": "cedar",
+      "target": "list",
+      "label": "ListIndexTool"
+    }
+  ],
+  "steps": [
+    {
+      "title": "The agent holds a PingFederate token",
+      "what": "act is an object {\"sub\": \"agent-client-example\"}; that is what the policy reads.",
+      "why": "If act were the text \"{}\" instead of an object it is believed to have no sub and so never to match (UNVERIFIED: simulated, not measured).",
+      "edges": [
+        0
+      ]
+    },
+    {
+      "title": "The agent calls a tool",
+      "what": "tools/call with the token as a Bearer. The door checks sign-in first.",
+      "why": "No token is refused here, before any policy (in this mock; the real door's wording and checks were not measured).",
+      "edges": [
+        1,
+        2
+      ]
+    },
+    {
+      "title": "Each tool's Active policy is evaluated",
+      "what": "The policy on CountTool names the token's own agent; the policy on ListIndexTool names a different agent.",
+      "why": "Only Active policies are enforced; per the console documentation (not re-run here, UNVERIFIED) a Candidate is not.",
+      "edges": [
+        3,
+        4
+      ]
+    }
+  ]
+};
+
+export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW];

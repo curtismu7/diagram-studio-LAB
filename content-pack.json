@@ -95,6 +95,11 @@
       "href": "/?d=auth-code-pkce"
     },
     {
+      "id": "cedar-act-sub-flow",
+      "label": "One token, two tools, one act.sub policy each",
+      "href": "/?d=cedar-act-sub-flow"
+    },
+    {
       "id": "ciba-link",
       "label": "CIBA approval link",
       "href": "/?d=ciba-link"
