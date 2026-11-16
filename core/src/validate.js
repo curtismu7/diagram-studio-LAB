@@ -2,15 +2,28 @@
 // Text is never interpreted (the web app renders it as React text), but sizes and shapes are bounded here.
 import { validateWire } from './wire.js';
 export const SCHEMA = 'diagram-studio/1';
-export const LIMITS = { nodes: 60, edges: 120, steps: 60, groups: 8, text: 300, sub: 6, id: 48 };
+export const LIMITS = { nodes: 60, edges: 120, steps: 60, groups: 8, text: 300, sub: 6, id: 48, sources: 3 };
 export const COLORS = ['red', 'dark', 'grey', 'blue', 'green', 'amber'];
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
 const STORY_ID = /^S\d{2}$/;
 const HOP = /^[A-Za-z0-9._:/-]{1,64}$/;
+const REV = /^[0-9a-f]{40}$/;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const str = (v, max = LIMITS.text) => typeof v === 'string' && v.length > 0 && v.length <= max;
 const num = (v) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 20000;
+
+/** Problems with one `sources` entry: a repo-relative file path and a 1-based line range. Shape only; verify-sources.js reads the files. */
+function sourceProblems(s) {
+  if (!isObj(s)) return ['must be an object'];
+  const p = [];
+  if (!str(s.path, 240) || s.path.startsWith('/') || s.path.includes('\\') || s.path.includes('\0') || s.path.split('/').some((seg) => seg === '..' || seg === '')) p.push('path must be a relative file path (no .., no leading /)');
+  const line = (v) => Number.isInteger(v) && v >= 1 && v <= 1000000;
+  if (!line(s.line)) p.push('line must be a whole number from 1');
+  if (s.end_line !== undefined && !(line(s.end_line) && line(s.line) && s.end_line >= s.line)) p.push('end_line must be a whole number not before line');
+  if (s.label !== undefined && !str(s.label, 48)) p.push('label must be text (max 48)');
+  return p;
+}
 
 /** Returns an array of human-readable problems; empty means valid. Never throws. */
 export function validateDiagram(d) {
@@ -21,6 +34,10 @@ export function validateDiagram(d) {
   if (!str(d.title, 120)) p.push('title is required (max 120 characters)');
   if (d.lede !== undefined && typeof d.lede !== 'string') p.push('lede must be text');
   if (typeof d.lede === 'string' && d.lede.length > 600) p.push('lede is too long (max 600)');
+
+  if (d.repo !== undefined) {
+    if (!isObj(d.repo) || !str(d.repo.url, 200) || !/^https:\/\//.test(d.repo.url) || !REV.test(String(d.repo.rev))) p.push('repo must be { url: "https://...", rev: a 40-character lower-case commit id }');
+  }
 
   const groups = isObj(d.groups) ? d.groups : null;
   if (!groups || !Object.keys(groups).length) p.push('groups must be an object with at least one group');
@@ -47,6 +64,10 @@ export function validateDiagram(d) {
       if (groups && !Object.hasOwn(groups, n.group)) p.push(`${at}: unknown group "${n.group}"`);
       if (n.sub !== undefined && (!Array.isArray(n.sub) || n.sub.length > LIMITS.sub || !n.sub.every((s) => typeof s === 'string' && s.length <= 120))) p.push(`${at}: sub must be up to ${LIMITS.sub} short text lines`);
       if (!num(n.x) || !num(n.y)) p.push(`${at}: x and y must be numbers`);
+      if (n.sources !== undefined) {
+        if (!Array.isArray(n.sources) || n.sources.length < 1 || n.sources.length > LIMITS.sources) p.push(`${at}: sources must list 1 to ${LIMITS.sources} entries`);
+        else n.sources.forEach((s, k) => sourceProblems(s).forEach((m) => p.push(`${at} source ${k + 1}: ${m}`)));
+      }
     });
   }
 

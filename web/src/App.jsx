@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import fs from "node:fs";
-import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, validateDiagram } from "@diagram-studio/core";
+import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, sourceHref, sourceLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
@@ -347,6 +347,14 @@ export default function App() {
                 <h3>{selNode.label}</h3>
                 {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
                 {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+                {selNode.sources?.length > 0 && (
+                  <ul data-testid="detail-sources" aria-label="Where this is in the code">
+                    {selNode.sources.map((src, i) => {
+                      const href = sourceHref(diagram.repo, src);
+                      return <li key={i}>{src.label && <>{src.label}: </>}{href ? <a href={href} target="_blank" rel="noopener noreferrer">{sourceLabel(src)}</a> : <code>{sourceLabel(src)}</code>}</li>;
+                    })}
+                  </ul>
+                )}
               </>
             )}
             {selEdge && (

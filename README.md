@@ -120,6 +120,12 @@ Optional step links: `"story": { "id": "S01", "step": 2 }` points at a story ste
 The studio ships four stories (`content/stories/`, same shape as the demo family's story files); a step card shows the story step's
 Say, Tell and Why. A story id the studio does not ship (say, one from another demo) is shown as a plain label. The content pack lists the four stories.
 
+Optional code pointers, for a diagram that explains how a repository is built: a node may carry `"sources": [{ "path": "server/src/jobs.js", "line": 88, "end_line": 97, "label": "apply gate" }]`
+(1 to 3 entries, a repo-relative path and a 1-based line range) and the diagram may carry `"repo": { "url": "https://github.com/owner/name", "rev": "<40-character commit>" }`.
+Clicking a box lists its sources, as links to that file at that commit when `repo` is set. The validator checks the shape only. `core/src/verify-sources.js`
+(Node only, copied by hand like `validate.js`, not exported from the core index) checks that each file exists and the line range is inside it, from a lab's own test:
+`verifySources(diagram, repoRoot)`. It does not notice code that moved within a file. Edit `sources` in the JSON pane; the box editor keeps them but does not show them.
+
 Colors: red, dark, grey, blue, green, amber. Limits: 60 boxes, 120 arrows, 60 steps, 8 groups. Anything else is refused with the reason.
 All text is shown as plain text, never as HTML.
 
