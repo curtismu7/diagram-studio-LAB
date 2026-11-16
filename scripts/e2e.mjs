@@ -59,6 +59,22 @@ try {
   await sleep(150);
   const nowCount = await page.locator('.edge--now').count();
   check(nowCount === 1, `exactly one arrow is highlighted (found ${nowCount})`);
+
+  // Arrow labels: drawn above the boxes, never as SVG text under them; the walked arrow's label changes colour and is raised;
+  // no two labels overlap; none is hidden under a box.
+  const labels = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.edge-label')]; const rects = els.map((l) => l.getBoundingClientRect());
+    const boxes = [...document.querySelectorAll('.react-flow__node')].map((n) => n.getBoundingClientRect());
+    const hit = (a, b) => a.x < b.right && b.x < a.right && a.y < b.bottom && b.y < a.bottom;
+    let pairs = 0; for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) if (hit(rects[i], rects[j])) pairs++;
+    const hidden = els.filter((l, i) => { const t = document.elementFromPoint(rects[i].x + rects[i].width / 2, rects[i].y + rects[i].height / 2); return !(t === l || l.contains(t)); }).length;
+    const hot = els.filter((l) => l.classList.contains('edge-label--now')); const other = els.find((l) => !l.classList.contains('edge-label--now'));
+    return { n: els.length, svgText: document.querySelectorAll('.react-flow__edge-text').length, pairs, hidden, hot: hot.length, hotColour: hot[0] && getComputedStyle(hot[0]).color, otherColour: other && getComputedStyle(other).color, hotZ: hot[0] && getComputedStyle(hot[0]).zIndex, otherZ: other && getComputedStyle(other).zIndex, onBox: els.filter((l, i) => boxes.some((b) => hit(rects[i], b))).length };
+  });
+  check(labels.n === 6 && labels.svgText === 0, `arrow labels are drawn above the boxes, none as SVG text under them (${labels.n} labels, ${labels.svgText} SVG)`);
+  check(labels.hot === 1 && labels.otherColour && labels.hotColour !== labels.otherColour, `the walked arrow's label changes colour (${labels.otherColour} -> ${labels.hotColour})`);
+  check(Number(labels.hotZ) > Number(labels.otherZ), `the walked arrow's label is raised above the others (z ${labels.hotZ} vs ${labels.otherZ})`);
+  check(labels.pairs === 0 && labels.hidden === 0 && labels.onBox === 0, `no label overlaps another label or a box, and none is hidden (${labels.pairs} overlaps, ${labels.onBox} on a box, ${labels.hidden} hidden)`);
   await T('speed').selectOption('fast');
   await page.waitForFunction(() => /Arrow 6 of 6/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
   check(true, 'fast speed auto-advances to the last arrow');

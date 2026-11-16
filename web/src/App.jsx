@@ -278,7 +278,7 @@ export default function App() {
               : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
-        <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge}
+        <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} present={present}
           onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={setSel} />
 
         <ul className="legend" aria-label="Legend">
