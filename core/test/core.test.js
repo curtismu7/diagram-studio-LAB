@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
+import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS, setEdgeLabel } from '../src/index.js';
 
 const clone = (x) => structuredClone(x);
 
@@ -344,4 +344,6 @@ test('an edge may carry a color from the same list as a group, and old diagrams 
   assert.deepEqual(validateDiagram(d), []);
   for (const s of SAMPLES) assert.deepEqual(validateDiagram(s), [], s.id);
   assert.equal(moveNode(d, d.nodes[0].id, 1, 2).edges[0].color, 'blue', 'an edit keeps the edge color');
+  assert.equal(setEdgeLabel(d, 0, 'renamed').edges[0].color, 'blue', 'renaming an arrow keeps its color');
+  assert.equal(setEdgeLabel(d, 0, '').edges[0].color, 'blue', 'clearing its label keeps its color');
 });
