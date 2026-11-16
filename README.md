@@ -114,6 +114,17 @@ it uses the sizes the browser measured, and does not depend on the simulation st
 the label of the arrow being walked turns blue and bold with a border and is raised above the others; labels of arrows not yet walked are
 slightly dimmed. Clicking a label selects its arrow. SVG and PNG export have their own label placement and are unchanged.
 
+## Box details
+
+Click a box (when not editing) and it expands in place; its details appear below its title, it sits above its neighbours, and the view eases to it (zoomed in, up to 100%) so nothing is cut off; collapsing it fits the whole diagram again. They show
+the box's group, where it is in the code (its `sources`, each a link to that file at the pinned commit when the diagram has a `repo`), its
+**reach** (how many boxes have a path of arrows to it, upstream, and how many it has a path to, downstream), and the boxes it **sends to** and
+**receives from**, one row per arrow with the arrow's text (the full text on hover). Click a box in either list to open that box; click the
+open box again, press Close, or click the empty canvas to collapse it. **Copy link** copies a link that opens the same diagram with the box
+expanded (`?d=<diagram>&box=<box>`); a `?box=` that is not in the diagram is ignored. The block is built by `boxPassport` in
+`core/src/passport.js` (pure, tested). On a very dense diagram an expanded box can cover its neighbours and a few labels near its edge;
+collapsing it brings them back.
+
 ## Diagram format (`diagram-studio/1`)
 
 ```json

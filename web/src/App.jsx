@@ -54,11 +54,11 @@ export default function App() {
     if (r.ok) setList(r.data.diagrams); else say("error", r.data.message || "Could not load the diagram list.");
     return r.ok ? r.data.diagrams : [];
   }, []);
-  const open = useCallback(async (id) => {
+  const open = useCallback(async (id, box) => { // `box`: a box id from a shared link (?box=), expanded once the diagram is open
     const r = await api.getDiagram(id);
     if (!r.ok) return say("error", r.data.message || "Could not open that diagram.");
     setDiagram(r.data.diagram); setSaved(r.data.diagram); setBuiltin(r.data.builtin);
-    setSel({}); setEditing(false); setMsg({ kind: "", text: "" }); setFitKey((k) => k + 1);
+    setSel(box && r.data.diagram.nodes.some((n) => n.id === box) ? { node: box } : {}); setEditing(false); setMsg({ kind: "", text: "" }); setFitKey((k) => k + 1);
     dispatch({ type: "stop" });
   }, [dispatch]);
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function App() {
       let want = new URLSearchParams(window.location.search).get("d") || diagramIdFromPath();
       try { want = want || localStorage.getItem("studio-last"); } catch { /* private mode */ }
       const first = l.find((x) => x.id === want) || l[0];
-      if (first) open(first.id);
+      if (first) open(first.id, first.id === want ? new URLSearchParams(window.location.search).get("box") : null);
     });
   }, [refresh, open]);
   useEffect(() => { if (diagram) try { localStorage.setItem("studio-last", diagram.id); } catch { /* private mode */ } }, [diagram?.id]);
@@ -278,7 +278,7 @@ export default function App() {
               : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
-        <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} present={present}
+        <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} selectedNode={editing ? null : sel.node} present={present}
           onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={setSel} />
 
         <ul className="legend" aria-label="Legend">

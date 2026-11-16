@@ -75,6 +75,32 @@ try {
   check(labels.hot === 1 && labels.otherColour && labels.hotColour !== labels.otherColour, `the walked arrow's label changes colour (${labels.otherColour} -> ${labels.hotColour})`);
   check(Number(labels.hotZ) > Number(labels.otherZ), `the walked arrow's label is raised above the others (z ${labels.hotZ} vs ${labels.otherZ})`);
   check(labels.pairs === 0 && labels.hidden === 0 && labels.onBox === 0, `no label overlaps another label or a box, and none is hidden (${labels.pairs} overlaps, ${labels.onBox} on a box, ${labels.hidden} hidden)`);
+
+  // A box expands in place: click it and its details appear below its title, inside the box, on top; click it again and it collapses;
+  // a link with ?box= opens the diagram with that box expanded. The details never start a drag.
+  const firstBox = page.locator('.react-flow__node').first();
+  const boxId = (await firstBox.locator('[data-testid^=node-]').getAttribute('data-testid')).replace('node-', '');
+  await firstBox.locator('strong').click();
+  await page.waitForSelector('.box--open .passport');
+  const px = await page.evaluate(() => {
+    const open = document.querySelector('.box--open'); const t = open.querySelector('strong').getBoundingClientRect(); const p = open.querySelector('.passport').getBoundingClientRect(); const b = open.getBoundingClientRect();
+    const top = document.elementFromPoint(p.x + p.width / 2, p.y + p.height / 2);
+    return { count: document.querySelectorAll('.passport').length, below: p.top >= t.bottom - 1 && p.bottom <= b.bottom + 1, onTop: !!top && !!top.closest('.passport'), text: open.querySelector('.passport').innerText };
+  });
+  check(px.count === 1 && px.below && px.onTop, 'clicking a box expands it in place: details below its title, inside the box, on top');
+  check(/reach/i.test(px.text) && /upstream \d+ · downstream \d+/i.test(px.text) && /outgoing · \d+/i.test(px.text) && /incoming · \d+/i.test(px.text), 'the details show reach, outgoing and incoming');
+  await new Promise((r) => setTimeout(r, 500)); // the view eases to the expanded box
+  const view = await page.evaluate(() => { const c = document.querySelector('.canvas').getBoundingClientRect(); const b = document.querySelector('.box--open').getBoundingClientRect(); return b.top >= c.top - 1 && b.bottom <= c.bottom + 1 && b.left >= c.left - 1 && b.right <= c.right + 1; });
+  check(view, 'the expanded box is brought fully into view, nothing cut off by the canvas edge');
+  const labelsOpen = await page.evaluate(() => { const hit = (a, b) => a.x < b.right && b.x < a.right && a.y < b.bottom && b.y < a.bottom; const rs = [...document.querySelectorAll('.edge-label')].map((l) => l.getBoundingClientRect()); let pairs = 0; for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) if (hit(rs[i], rs[j])) pairs++; return pairs; });
+  check(labelsOpen === 0, `with a box expanded no two labels overlap (${labelsOpen} overlaps)`);
+  await firstBox.locator('strong').click();
+  check(await page.locator('.box--open').count() === 0, 'clicking the open box again collapses it');
+  const link = await browser.newContext({ viewport: { width: 1280, height: 900 } }).then((c) => c.newPage());
+  const diagId = new URL(page.url()).searchParams.get('d') || (await T('picker').inputValue());
+  await link.goto(`${base}/?d=${encodeURIComponent(diagId)}&box=${encodeURIComponent(boxId)}`); await link.waitForSelector('.react-flow__node');
+  check(await link.locator(`[data-testid=node-${boxId}] .passport`).count() === 1, 'a ?box= link opens the diagram with that box expanded');
+  await link.close();
   await T('speed').selectOption('fast');
   await page.waitForFunction(() => /Arrow 6 of 6/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
   check(true, 'fast speed auto-advances to the last arrow');
