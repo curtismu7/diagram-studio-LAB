@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS } from '../src/index.js';
+import { STORIES, findStoryStep, validateStory, STORY_ID, SAMPLES, validateDiagram, parseDiagram, initial, reduce, speedMs, moveNode, resetLayout, addNode, removeNode, removeEdge, addEdge, captions, LIMITS, setEdgeLabel } from '../src/index.js';
 
 const clone = (x) => structuredClone(x);
 
@@ -18,6 +18,8 @@ test('validator rejects each kind of bad input', () => {
   bad((d) => { d.edges[0].source = 'ghost'; }, /unknown source/);
   bad((d) => { d.groups.people.color = 'purple'; }, /color/);
   bad((d) => { d.nodes[0].x = NaN; }, /x and y/);
+  bad((d) => { d.edges[0].color = 'purple'; }, /edge 1: color must be one of/);
+  bad((d) => { d.edges[0].color = 7; }, /edge 1: color must be one of/);
   bad((d) => { d.steps[0].edges = [99]; }, /valid edge/);
   bad((d) => { d.nodes = Array.from({ length: LIMITS.nodes + 1 }, (_, i) => ({ id: `n${i}`, group: 'people', label: 'x', x: 0, y: 0 })); }, /at most/);
   assert.ok(validateDiagram(null).length && validateDiagram([]).length && validateDiagram('x').length);
@@ -334,4 +336,14 @@ test('edit guards: moveStep needs whole numbers, setText only touches title and 
   assert.equal(E.setText(d, 'title', 42).title, '42'); assert.equal(E.setText(d, 'title', null).title, '');
   assert.equal('lede' in E.setText(d, 'lede', ''), false); assert.equal(E.setText(d, 'lede', 'hi').lede, 'hi');
   assert.equal(Object.keys({}).length, 0, 'no prototype pollution');
+});
+
+test('an edge may carry a color from the same list as a group, and old diagrams without one stay valid', () => {
+  for (const c of ['red', 'dark', 'grey', 'blue', 'green', 'amber']) { const d = clone(SAMPLES[0]); d.edges[0].color = c; assert.deepEqual(validateDiagram(d), [], c); }
+  const d = clone(SAMPLES[0]); d.edges[0].color = 'blue'; d.edges[0].dashed = true;
+  assert.deepEqual(validateDiagram(d), []);
+  for (const s of SAMPLES) assert.deepEqual(validateDiagram(s), [], s.id);
+  assert.equal(moveNode(d, d.nodes[0].id, 1, 2).edges[0].color, 'blue', 'an edit keeps the edge color');
+  assert.equal(setEdgeLabel(d, 0, 'renamed').edges[0].color, 'blue', 'renaming an arrow keeps its color');
+  assert.equal(setEdgeLabel(d, 0, '').edges[0].color, 'blue', 'clearing its label keeps its color');
 });
