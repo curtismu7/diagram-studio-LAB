@@ -1558,4 +1558,162 @@ export const CEDAR_ACT_SUB_FLOW = {
   ]
 };
 
-export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW];
+// Cedar in Privilege Lab (cedar-in-privilege-LAB): one call, one door, three kinds of Cedar answer (allowed, held for a human, refused). Simulated data; the lab's Simulate finds its arrows by node id.
+export const CEDAR_IN_PRIVILEGE_FLOW = {
+  "schema": "diagram-studio/1",
+  "id": "cedar-in-privilege-flow",
+  "title": "One call, one door, three kinds of Cedar answer",
+  "lede": "Simulated: a mock agent calls a tool on a mock Privilege door. Sign-in comes first, then the AI policies (Cedar) answer allowed, held for a human or refused. Pick a scenario and press Simulate; only the act.sub case has a result measured on a real tenant.",
+  "groups": {
+    "agent": {
+      "label": "Agent",
+      "color": "amber"
+    },
+    "gw": {
+      "label": "Privilege door (mock)",
+      "color": "dark"
+    },
+    "tools": {
+      "label": "Tool",
+      "color": "green"
+    },
+    "human": {
+      "label": "Human approver (simulated)",
+      "color": "blue"
+    },
+    "refusal": {
+      "label": "Refusal",
+      "color": "red"
+    }
+  },
+  "nodes": [
+    {
+      "id": "agent",
+      "group": "agent",
+      "label": "AI agent",
+      "sub": [
+        "agent-client-example",
+        "holds a mock token"
+      ],
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "door",
+      "group": "gw",
+      "label": "Door: sign-in",
+      "sub": [
+        "door-example",
+        "simulated sign-in check"
+      ],
+      "x": 300,
+      "y": 0
+    },
+    {
+      "id": "cedar",
+      "group": "gw",
+      "label": "AI policies (Cedar)",
+      "sub": [
+        "Active: enforced",
+        "Candidate: not enforced (UNVERIFIED)"
+      ],
+      "x": 600,
+      "y": 0
+    },
+    {
+      "id": "tool",
+      "group": "tools",
+      "label": "Tool is served",
+      "sub": [
+        "allowed: every forbid was lifted or none applied"
+      ],
+      "x": 200,
+      "y": 170
+    },
+    {
+      "id": "human",
+      "group": "human",
+      "label": "Human approver",
+      "sub": [
+        "held: waits for an approval",
+        "approver-example"
+      ],
+      "x": 600,
+      "y": 170
+    },
+    {
+      "id": "refused",
+      "group": "refusal",
+      "label": "Call refused",
+      "sub": [
+        "JSON-RPC -32600",
+        "the message carries the policy's reason"
+      ],
+      "x": 900,
+      "y": 170
+    }
+  ],
+  "edges": [
+    {
+      "source": "agent",
+      "target": "door",
+      "label": "tools/call"
+    },
+    {
+      "source": "door",
+      "target": "cedar",
+      "label": "sign-in passed"
+    },
+    {
+      "source": "cedar",
+      "target": "tool",
+      "label": "allowed"
+    },
+    {
+      "source": "cedar",
+      "target": "human",
+      "label": "held"
+    },
+    {
+      "source": "cedar",
+      "target": "refused",
+      "label": "refused"
+    },
+    {
+      "source": "human",
+      "target": "cedar",
+      "label": "approval recorded"
+    }
+  ],
+  "steps": [
+    {
+      "title": "The agent calls a tool",
+      "what": "tools/call with a mock token as a Bearer. The door checks sign-in first.",
+      "why": "No token is refused here, before any policy (in this mock; the real door wording and checks were not measured).",
+      "edges": [
+        0,
+        1
+      ]
+    },
+    {
+      "title": "The AI policies decide",
+      "what": "Each Active policy on the tool is evaluated for the action the call carries: refuse (mcp:Invoke) or hold (mcp:InvokeUnattended).",
+      "why": "Only Active policies are enforced; per the console documentation (not re-run here, UNVERIFIED) a Candidate is not.",
+      "edges": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "title": "A held call waits for a human",
+      "what": "A person approves it, approval_count becomes 1, and the retry is allowed. Simulated here.",
+      "why": "How the real gateway tells an unattended call apart, and what a real hold returns, were not measured (UNVERIFIED).",
+      "edges": [
+        5
+      ]
+    }
+  ]
+};
+
+export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW, CEDAR_IN_PRIVILEGE_FLOW];
