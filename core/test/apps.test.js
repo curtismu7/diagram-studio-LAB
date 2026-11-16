@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { APP_DIAGRAMS, PINGFEDERATE_LAB_DIAGRAMS, validateDiagram, SAMPLES } from '../src/index.js';
+import { APP_DIAGRAMS, PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW, validateDiagram, SAMPLES } from '../src/index.js';
 
 test('the standalone app diagrams are valid diagram-studio/1 data and are in the sample library', () => {
   for (const d of APP_DIAGRAMS) {
@@ -24,4 +24,12 @@ test('PingFederate Lab registers one diagram per card under its pfl- ids', () =>
   const ids = PINGFEDERATE_LAB_DIAGRAMS.map((d) => d.id).sort();
   assert.deepEqual(ids, ['pfl-ciba', 'pfl-dcr', 'pfl-dpop', 'pfl-par', 'pfl-piflow', 'pfl-pkce', 'pfl-rar', 'pfl-signin', 'pfl-token-exchange']);
   for (const d of PINGFEDERATE_LAB_DIAGRAMS) assert.ok(APP_DIAGRAMS.includes(d), `${d.id} is an app diagram`);
+});
+
+test('Cedar act.sub Lab registers one diagram under cedar-act-sub-flow, with the node ids and arrows its Simulate looks up', () => {
+  assert.equal(CEDAR_ACT_SUB_FLOW.id, 'cedar-act-sub-flow');
+  assert.ok(APP_DIAGRAMS.includes(CEDAR_ACT_SUB_FLOW));
+  assert.deepEqual(CEDAR_ACT_SUB_FLOW.nodes.map((n) => n.id), ['pf', 'agent', 'door', 'cedar', 'count', 'list']);
+  assert.deepEqual(CEDAR_ACT_SUB_FLOW.edges.map((e) => `${e.source}>${e.target}`), ['pf>agent', 'agent>door', 'door>cedar', 'cedar>count', 'cedar>list']);
+  assert.deepEqual(CEDAR_ACT_SUB_FLOW.steps.flatMap((s) => s.edges), [0, 1, 2, 3, 4]);
 });

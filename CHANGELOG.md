@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Apps: the flow of cedar-act-sub-LAB (`cedar-act-sub-flow`, `CEDAR_ACT_SUB_FLOW`) joins the app diagrams, so that lab loads its diagram by name from studio data (rule 17).
 - Arrow labels: drawn above the boxes (not as SVG text under them) and placed so no two overlap and none sits on a box; the label of the arrow being walked turns blue and bold and is raised above the others during Simulate; a click on a label selects its arrow. Across the 49 diagrams the studio ships, label overlaps measured in the browser went from 37 to 0 and labels sitting on a box from 82 to 1.
 - Validator: an arrow may carry an optional `color` (the group color names). Already accepted by the validator copies in the labs that draw coloured arrows; now the canonical validator agrees. The studio does not draw it yet.
 - Optional `sources` on a node (repo-relative path and line range, up to 3) and `repo` on the diagram (https URL and 40-character commit): shape checked by the validator, shown in the box detail as links to the pinned commit, and `core/src/verify-sources.js` for a lab's own test to check the files and line ranges exist.
