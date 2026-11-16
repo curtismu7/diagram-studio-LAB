@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Optional `sources` on a node (repo-relative path and line range, up to 3) and `repo` on the diagram (https URL and 40-character commit): shape checked by the validator, shown in the box detail as links to the pinned commit, and `core/src/verify-sources.js` for a lab's own test to check the files and line ranges exist.
 - Verification mark in the header: the shared `VerifyMark` (vendored byte for byte, pinned, from AI-DEMO-Standalone `shared/verify-mark`) shows this lab's own Verified / In progress mark from the demo shelf, inside the header menu beside the Shelf link. It uses the same `api/shelf` call as the Shelf link, so it shows when that call reaches the shelf (through the lab-proxy) and nothing when the lab runs on its own port, the shelf has no mark for it, or the shelf is unreachable.
 - On the wire: optional `step.wire` (request, response, tokens decoded claim by claim with plain-language meanings, notice, or a no-traffic note) shown in the step list, detail panel, presenter and embed views and the HTML export. Example data for 10 token and MCP flows (`core/src/wiredata.js`); signatures are always `sig-not-real`.
 - Conformance: `CLAUDE.md`, `docs/safety.md`, a forbidden-strings CI job, `MODE=mock`, and SE-cluster manifests with a dry-run deploy script (not deployed).
