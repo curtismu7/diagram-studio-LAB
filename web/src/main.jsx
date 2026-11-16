@@ -7,6 +7,7 @@ import App from "./App.jsx";
 import Embed from "./Embed.jsx";
 import { isEmbedRequest } from "./embedMode.js";
 import "./components/JsonPane.css";
+import "./components/VerifyMark.css";
 import "./app.css";
 
 const embed = isEmbedRequest(window.location.search);
