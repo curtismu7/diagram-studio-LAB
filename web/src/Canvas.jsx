@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Background, BaseEdge, Controls, getBezierPath, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, ViewportPortal, useReactFlow, useStore } from "@xyflow/react";
+import { boxPassport } from "@diagram-studio/core";
 import { handlePoint, placeLabels } from "./labelPlacement.js";
+import Passport, { PassportActions } from "./Passport.jsx";
 
 // One box. Text is rendered as React text only, never as HTML. Arrows run left to right (out on the right, in on the
 // left); an arrow that points back to the left uses the hidden "back" handles, out on the left and in on the right,
@@ -8,11 +10,12 @@ import { handlePoint, placeLabels } from "./labelPlacement.js";
 const BACK = { top: "70%" };
 function Box({ data, selected }) {
   return (
-    <div className={`box box--${data.color}${data.hot ? " box--hot" : ""}${selected ? " box--sel" : ""}`} data-testid={`node-${data.id}`}>
+    <div className={`box box--${data.color}${data.hot ? " box--hot" : ""}${selected ? " box--sel" : ""}${data.passport ? " box--open" : ""}`} data-testid={`node-${data.id}`}>
       <Handle type="target" position={Position.Left} id="in" />
       <Handle type="source" position={Position.Left} id="back-out" className="handle-back" style={BACK} isConnectable={false} />
       <strong>{data.label}</strong>
       {(data.sub || []).map((l, i) => <div key={i} className="box-sub">{l}</div>)}
+      {data.passport && <Passport p={data.passport} />}
       <Handle type="source" position={Position.Right} id="out" />
       <Handle type="target" position={Position.Right} id="back-in" className="handle-back" style={BACK} isConnectable={false} />
     </div>
@@ -39,7 +42,7 @@ export function labelShifts(edges) {
   return shifts;
 }
 
-export function toFlow(d, step, selectedEdge) {
+export function toFlow(d, step, selectedEdge, selectedNode = null) {
   const hot = new Set();
   const shifts = labelShifts(d.edges);
   const x = new Map(d.nodes.map((n) => [n.id, n.x]));
@@ -58,8 +61,8 @@ export function toFlow(d, step, selectedEdge) {
     };
   });
   const nodes = d.nodes.map((n) => ({
-    id: n.id, type: "box", position: { x: n.x, y: n.y },
-    data: { id: n.id, label: n.label, sub: n.sub, color: d.groups[n.group]?.color || "grey", hot: hot.has(n.id) },
+    id: n.id, type: "box", position: { x: n.x, y: n.y }, zIndex: n.id === selectedNode ? 10 : undefined, // an expanded box sits above its neighbours
+    data: { id: n.id, label: n.label, sub: n.sub, color: d.groups[n.group]?.color || "grey", hot: hot.has(n.id), passport: n.id === selectedNode ? boxPassport(d, n.id) : null },
   }));
   return { nodes, edges };
 }
@@ -69,8 +72,8 @@ export function toFlow(d, step, selectedEdge) {
 const boxesOf = (s) => [...s.nodeLookup.values()].map((n) => ({ id: n.id, x: n.internals.positionAbsolute.x, y: n.internals.positionAbsolute.y, w: n.measured?.width ?? 176, h: n.measured?.height ?? 56 }));
 const sameBoxes = (a, b) => a.length === b.length && a.every((n, i) => n.id === b[i].id && n.x === b[i].x && n.y === b[i].y && n.w === b[i].w && n.h === b[i].h);
 
-function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEdge, fitKey, present = false }) {
-  const { nodes, edges } = useMemo(() => toFlow(diagram, step, selectedEdge), [diagram, step, selectedEdge]);
+function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEdge, selectedNode = null, fitKey, present = false }) {
+  const { nodes, edges } = useMemo(() => toFlow(diagram, step, selectedEdge, selectedNode), [diagram, step, selectedEdge, selectedNode]);
   const rf = useReactFlow();
   useEffect(() => { const t = setTimeout(() => rf.fitView({ padding: 0.15 }), 30); return () => clearTimeout(t); }, [fitKey, nodes.length, rf]);
   // Labels: placed from the boxes as React Flow measured them, so they follow a box that is dragged and avoid each other and the boxes.
@@ -102,15 +105,30 @@ function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEd
     for (const el of labelEls.current.values()) observer.current.observe(el);
     return () => observer.current.disconnect();
   }, []);
+  // An expanded box is brought fully into view (zoomed in, up to 100%, so its details are readable); collapsing it fits the whole diagram again.
+  const wasOpen = useRef(null);
+  useEffect(() => {
+    const was = wasOpen.current; wasOpen.current = selectedNode;
+    if (!selectedNode && !was) return undefined;
+    const t = setTimeout(() => rf.fitView(selectedNode ? { nodes: [{ id: selectedNode }], padding: 0.2, maxZoom: 1, duration: 250 } : { padding: 0.15, duration: 250 }), 120); // after the box has been re-measured
+    return () => clearTimeout(t);
+  }, [selectedNode, rf]);
   const onNodesChange = useCallback((changes) => {
     for (const c of changes) if (c.type === "position" && c.position) onMove(c.id, c.position.x, c.position.y, c.dragging === false);
   }, [onMove]);
+  // What an expanded box can do: open the box at the far end of an arrow, close itself, and make a link that opens this diagram with the box expanded.
+  const actions = useMemo(() => ({
+    open: (id) => onSelect({ node: id }),
+    close: () => onSelect({}),
+    link: (id) => { const u = new URL(window.location.href); u.search = ""; u.hash = ""; u.searchParams.set("d", diagram.id); u.searchParams.set("box", id); return u.toString(); },
+  }), [onSelect, diagram.id]);
   return (
+    <PassportActions.Provider value={actions}>
     <ReactFlow
       nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodesChange={onNodesChange}
       nodesDraggable nodesConnectable={editing} elementsSelectable
       onConnect={(c) => editing && onConnect(c.source, c.target)}
-      onNodeClick={(_, n) => onSelect({ node: n.id })} onEdgeClick={(_, e) => onSelect({ edge: e.data.index })} onPaneClick={() => onSelect({})}
+      onNodeClick={(_, n) => onSelect(!editing && selectedNode === n.id ? {} : { node: n.id })} onEdgeClick={(_, e) => onSelect({ edge: e.data.index })} onPaneClick={() => onSelect({})}
       fitView proOptions={{ hideAttribution: true }} minZoom={0.2}
     >
       <Background />
@@ -126,6 +144,7 @@ function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEd
         })}
       </ViewportPortal>
     </ReactFlow>
+    </PassportActions.Provider>
   );
 }
 
