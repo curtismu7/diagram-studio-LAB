@@ -106,6 +106,14 @@ Keys: Space plays or pauses, ← → (or Page Up/Down, handy with a clicker) ste
 Keys are ignored while you type in a text field, and Space on a focused button presses that button; Esc works from the diagram picker too. The choice is remembered in this browser; `?present=1` or `?present=0` sets it on load and is then removed from the address bar.
 Page Up/Down are taken over for stepping while presenting, so they do not scroll the page.
 
+## Arrow labels
+
+Every arrow's label is drawn in a layer above the boxes, so it is never hidden under one. Each label starts on its own arrow and, if that
+spot is taken, slides along the arrow and then sideways to the first spot that touches no other label and no box (`web/src/labelPlacement.js`;
+it uses the sizes the browser measured, and does not depend on the simulation step, so a label never jumps while it plays). During Simulate
+the label of the arrow being walked turns blue and bold with a border and is raised above the others; labels of arrows not yet walked are
+slightly dimmed. Clicking a label selects its arrow. SVG and PNG export have their own label placement and are unchanged.
+
 ## Diagram format (`diagram-studio/1`)
 
 ```json
