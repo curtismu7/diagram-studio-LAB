@@ -8,6 +8,8 @@ import WirePanel from "./WirePanel.jsx";
 import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
+import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
+import talkMd from "../../docs/talk-track.md?raw";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
 import ShelfLink from "./components/ShelfLink.jsx";
@@ -23,6 +25,15 @@ const diagramIdFromPath = () => {
 
 export default function App() {
   const [list, setList] = useState([]);
+  const [talkOpen, setTalkOpen] = useState(false);
+  const talkSteps = (() => {
+    const steps = []; let n = 0;
+    for (const line of talkMd.split("\n")) {
+      const m = line.match(/^\d+\.\s+(?:"(.+?)"|\*\*(.+?)\.\*\*\s*(.*))$/);
+      if (m) { n += 1; steps.push({ id: `s${n}`, title: (m[1] || m[2]).slice(0, 60), say: m[1] || m[3] }); }
+    }
+    return steps.length ? steps : [{ id: "s1", title: "Talk track", say: talkMd.slice(0, 600) }];
+  })();
   const [hist, setHist] = useState(null); // the diagram and its undo/redo history
   const diagram = hist ? hist.present : null;
   // A function edits the open diagram (one undo step); an object replaces it and starts a fresh history.
@@ -234,6 +245,7 @@ export default function App() {
           theme={{ value: theme === "" ? "auto" : theme, onChange: (t) => setTheme(t === "auto" ? "" : t) }}
           fontSize={{ value: fontStep, onChange: setFontStep }}
           present={{ active: present, onToggle: () => { focusAfter.current = true; setPresent(!present); setEditing(false); } }}
+          talkTrack={{ active: talkOpen, onToggle: () => setTalkOpen((v) => !v) }}
           help={{ href: "https://github.com/curtismu7/diagram-studio-LAB#readme" }}
           version={LAB_VERSION}
           onReset={reset}
@@ -398,6 +410,8 @@ export default function App() {
           </ol>
         )}
       </main>
+      <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
+
     </div>
   );
 }
