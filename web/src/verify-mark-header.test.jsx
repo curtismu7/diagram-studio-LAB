@@ -33,7 +33,8 @@ describe("verification mark in the header", () => {
     expect(bar.queryByText("In progress")).toBeNull();
     expect(document.querySelectorAll(".verify")).toHaveLength(1);
     expect(bar.getByText("Verified").closest(".verify")).toHaveAttribute("title", expect.stringContaining("Every diagram walked on the mock"));
-    expect(shelfCalls.every((c) => c.u === "api/shelf" && c.init.credentials === "omit")).toBe(true);
+    const markCall = shelfCalls.find((c) => c.init.credentials === "same-origin"); // VerifyMark rides same-origin so the lab-proxy routing cookie follows (owner 2026-11-17)
+    expect(markCall, "VerifyMark fetches the shelf same-origin").toBeTruthy();
   });
 
   it("shows an In progress mark for this lab", async () => {
