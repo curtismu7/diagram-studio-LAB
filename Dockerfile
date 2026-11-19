@@ -8,6 +8,7 @@ COPY server/package.json server/
 RUN npm ci
 COPY core core
 COPY web web
+COPY docs docs
 RUN npm run build -w web
 
 FROM node:26-alpine
