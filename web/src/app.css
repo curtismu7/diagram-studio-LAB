@@ -46,7 +46,7 @@ html { font-size: var(--fs, 16px); }
 /* Arrow labels live in a layer above the boxes (Canvas.jsx). The layer itself lets clicks through; only a label takes them. */
 .canvas .react-flow__viewport-portal { pointer-events: none; z-index: 5; }
 .edge-label { position: absolute; left: 0; top: 0; max-width: 224px; width: max-content; padding: 3px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 11px; line-height: 1.3; text-align: center; pointer-events: all; cursor: pointer; }
-.edge-label--now { border: 2px solid var(--status-info); color: var(--status-info); font-weight: 700; box-shadow: 0 0 0 2px var(--surface), 0 2px 8px rgba(0, 0, 0, 0.25); }
+.edge-label--now { border: 2px solid var(--status-info); color: var(--status-info); font-weight: 700; box-shadow: 0 0 0 2px var(--surface), var(--edge-now-shadow); }
 .edge-label--future { opacity: 0.7; }
 .edge-label--sel { outline: 2px dashed var(--text); outline-offset: 1px; }
 .panel, .step { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 0.75rem 1rem; margin: 0.5rem 0; }
