@@ -18,7 +18,7 @@ describe("toSvg output is well-formed XML for every built-in diagram", () => {
       const { svg } = toSvg(d);
       const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
       expect(doc.querySelector("parsererror"), d.id).toBeNull();
-      expect(doc.querySelectorAll("path.e").length, d.id).toBe(d.edges.length);
+      expect(doc.querySelectorAll(d.layout === "sequence" ? "g.m" : "path.e").length, d.id).toBe(d.edges.length);
     }
   });
 });

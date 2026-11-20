@@ -57,6 +57,9 @@ export default function App() {
   const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("studio-font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
   const total = diagram ? diagram.edges.length : 0;
   const [st, dispatch] = useStepper(total);
+  // In a sequence diagram the side panel follows the message being walked, so Simulate shows each request and response as it goes.
+  const isSeq = diagram?.layout === "sequence";
+  useEffect(() => { if (isSeq && st.step >= 0) setSel({ edge: st.step }); }, [isSeq, st.step]);
 
   useEffect(() => { api.getHealth().then((r) => { if (r.ok && r.data.mode === "mock-only") setMockOnly(true); }); }, []);
   const say = (kind, text) => setMsg({ kind, text });
@@ -235,6 +238,61 @@ export default function App() {
   const playing = st.step >= 0 && !st.paused;
   const activeStep = st.step >= 0 && diagram.steps ? diagram.steps.findIndex((s) => s.edges.includes(st.step)) : -1;
 
+  const seq = diagram.layout === "sequence";
+  const detailPanel = !editing && (
+    <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
+      {!selNode && !selEdge && <p className="muted">{seq ? "Click a message to see its request, response and the standards behind it, or a lifeline to see its role and messages." : "Click a box or an arrow to see what it is and which steps it is part of."}</p>}
+      {selNode && (
+        <>
+          <h3>{selNode.label}</h3>
+          {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
+          {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+          {diagram.layout === "sequence" && (
+            <div data-testid="detail-messages">
+              <h4>Messages through {selNode.label}</h4>
+              <ul className="seq-msglist">
+                {diagram.edges.map((e, i) => (e.source === selNode.id || e.target === selNode.id) && (
+                  <li key={i}><button type="button" className="linklike" onClick={() => setSel({ edge: i })} data-testid={`detail-msg-${i}`}>{i + 1}. {e.label || "(no label)"}</button></li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {selNode.sources?.length > 0 && (
+            <ul data-testid="detail-sources" aria-label="Where this is in the code">
+              {selNode.sources.map((src, i) => {
+                const href = sourceHref(diagram.repo, src);
+                return <li key={i}>{src.label && <>{src.label}: </>}{href ? <a href={href} target="_blank" rel="noopener noreferrer">{sourceLabel(src)}</a> : <code>{sourceLabel(src)}</code>}</li>;
+              })}
+            </ul>
+          )}
+        </>
+      )}
+      {selEdge && (
+        <>
+          <h3>{seq ? "Message" : "Arrow"} {sel.edge + 1}: {diagram.nodes.find((n) => n.id === selEdge.source)?.label} to {diagram.nodes.find((n) => n.id === selEdge.target)?.label}</h3>
+          {selEdge.label && <p data-testid="detail-edge-label">{selEdge.label}</p>}
+        </>
+      )}
+      {(selEdge || (selNode && diagram.layout !== "sequence")) && (() => {
+        const touches = (s) => (s.edges || []).some((ei) => {
+          const e = diagram.edges[ei];
+          return selEdge ? ei === sel.edge : e && (e.source === selNode.id || e.target === selNode.id);
+        });
+        const parts = (diagram.steps || []).map((s, i) => ({ s, i })).filter(({ s }) => touches(s));
+        if (parts.length === 0) return <p className="muted" data-testid="detail-nosteps">It is not part of a numbered step.</p>;
+        return (
+          <ul className="detail-steps" data-testid="detail-steps">
+            {parts.map(({ s, i }) => (
+              <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}
+                <StepLinks step={{ refs: s.refs }} testId={`detail-links-${i + 1}`} />
+                {s.wire && <details className="wire-step" open={parts.length === 1 || undefined}><summary>Show the example messages and tokens</summary><WirePanel wire={s.wire} testId={`detail-wire-${i + 1}`} /></details>}</li>
+            ))}
+          </ul>
+        );
+      })()}
+    </section>
+  );
+
   return (
     <div className="shell">
       {mockOnly && <p className="mock-banner" role="note" data-testid="mock-banner">Hosted mock: sample data only, nothing leaves this server</p>}
@@ -279,7 +337,7 @@ export default function App() {
               {SPEEDS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </label>
-          <span className="muted small" data-testid="stepcount" aria-live="polite">{st.step >= 0 ? `Arrow ${st.step + 1} of ${total}` : "Not playing"}</span>
+          <span className="muted small" data-testid="stepcount" aria-live="polite">{st.step >= 0 ? `${diagram.layout === "sequence" ? "Message" : "Arrow"} ${st.step + 1} of ${total}` : "Not playing"}</span>
         </div>
         <p className="caption" data-testid="caption" aria-live="polite">{st.step >= 0 ? caps[st.step] : "Press Simulate to walk the arrows in order. Drag any box to move it."}</p>
 
@@ -290,12 +348,15 @@ export default function App() {
               : st.step >= 0 ? <p>{caps[st.step]}</p> : <p className="muted">Space plays or pauses · ← → or Page Up/Down step · R reset · 1 2 3 speed · Esc exits.</p>}
           </section>
         )}
-        <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} selectedNode={editing ? null : sel.node} present={present}
+        <div className={seq ? "seq-split" : undefined}>
+          <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} selectedNode={editing ? null : sel.node} present={present}
           onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={setSel} />
+          {seq && detailPanel}
+        </div>
 
-        <ul className="legend" aria-label="Legend">
+        {diagram.layout !== "sequence" && <ul className="legend" aria-label="Legend">
           {Object.entries(diagram.groups).map(([k, g]) => <li key={k}><i className={`sw sw--${g.color}`} />{g.label}</li>)}
-        </ul>
+        </ul>}
 
         <div className="bar" role="toolbar" aria-label="Edit and file" data-admin-only>
           <button onClick={() => setEditing(!editing)} aria-pressed={editing} data-testid="edit-toggle">{editing ? "Done editing" : "Edit"}</button>
@@ -351,48 +412,7 @@ export default function App() {
           </section>
         )}
 
-        {!editing && (
-          <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
-            {!selNode && !selEdge && <p className="muted">Click a box or an arrow to see what it is and which steps it is part of.</p>}
-            {selNode && (
-              <>
-                <h3>{selNode.label}</h3>
-                {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
-                {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
-                {selNode.sources?.length > 0 && (
-                  <ul data-testid="detail-sources" aria-label="Where this is in the code">
-                    {selNode.sources.map((src, i) => {
-                      const href = sourceHref(diagram.repo, src);
-                      return <li key={i}>{src.label && <>{src.label}: </>}{href ? <a href={href} target="_blank" rel="noopener noreferrer">{sourceLabel(src)}</a> : <code>{sourceLabel(src)}</code>}</li>;
-                    })}
-                  </ul>
-                )}
-              </>
-            )}
-            {selEdge && (
-              <>
-                <h3>Arrow {sel.edge + 1}: {diagram.nodes.find((n) => n.id === selEdge.source)?.label} to {diagram.nodes.find((n) => n.id === selEdge.target)?.label}</h3>
-                {selEdge.label && <p data-testid="detail-edge-label">{selEdge.label}</p>}
-              </>
-            )}
-            {(selNode || selEdge) && (() => {
-              const touches = (s) => (s.edges || []).some((ei) => {
-                const e = diagram.edges[ei];
-                return selEdge ? ei === sel.edge : e && (e.source === selNode.id || e.target === selNode.id);
-              });
-              const parts = (diagram.steps || []).map((s, i) => ({ s, i })).filter(({ s }) => touches(s));
-              if (parts.length === 0) return <p className="muted" data-testid="detail-nosteps">It is not part of a numbered step.</p>;
-              return (
-                <ul className="detail-steps" data-testid="detail-steps">
-                  {parts.map(({ s, i }) => (
-                    <li key={i}><strong>Step {i + 1}: {s.title}.</strong> {s.what}{s.why && <> <em>Why it matters:</em> {s.why}</>}
-                      {s.wire && <details className="wire-step" open={parts.length === 1 || undefined}><summary>Show the example messages and tokens</summary><WirePanel wire={s.wire} testId={`detail-wire-${i + 1}`} /></details>}</li>
-                  ))}
-                </ul>
-              );
-            })()}
-          </section>
-        )}
+        {!seq && detailPanel}
 
         {editing && <DetailsEditor diagram={diagram} edit={edit} type={type} done={done} problems={problems} selectedNode={sel.node} />}
 

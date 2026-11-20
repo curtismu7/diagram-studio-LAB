@@ -84,7 +84,7 @@ function labelsFor(d, { placed }) {
 }
 describe("every diagram the studio ships", () => {
   const seen = new Set(); // a diagram that is in two lists is counted once
-  const all = [...SAMPLES, ...APP_DIAGRAMS.filter((d) => d?.nodes), ...LIBRARY].filter((d) => !seen.has(d.id) && seen.add(d.id));
+  const all = [...SAMPLES, ...APP_DIAGRAMS.filter((d) => d?.nodes), ...LIBRARY].filter((d) => d.layout !== "sequence" && !seen.has(d.id) && seen.add(d.id)); // a sequence diagram draws its own labels (sequenceLayout), not this placement
   it("has no overlapping labels, where the old placement had many", () => {
     let before = 0; let after = 0; let worst = 0; let labelled = 0;
     for (const d of all) {

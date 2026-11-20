@@ -1,11 +1,13 @@
 // Auto-layout ("Tidy"): a layered, left-to-right layout. Pure and deterministic.
 // Layers come from the longest path from the sources (back arrows of a cycle are ignored for layering); boxes in a layer are ordered
 // by the average position of their neighbours over a few sweeps, ties broken by first appearance in the arrow list.
+import { isSequence, tidySequence } from './sequence.js';
 const FOLD_AFTER = 5; // more columns than this are folded into rows
 const ROW_GAP = 110; // clear space between rows of columns
 export const LAYOUT = { columnGap: 440, rowGap: 170 }; // rowGap - 120 is the clear space between stacked boxes (50)
 
 export function autoLayout(d, { columnGap = LAYOUT.columnGap, rowGap = LAYOUT.rowGap, sweeps = 4 } = {}) {
+  if (isSequence(d)) return tidySequence(d); // lifelines in a row, evenly spaced, in the order the boxes are listed
   const ids = d.nodes.map((n) => n.id);
   const index = new Map(ids.map((id, i) => [id, i]));
   const out = new Map(ids.map((id) => [id, []]));

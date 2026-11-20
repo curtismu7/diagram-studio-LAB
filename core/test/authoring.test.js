@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SAMPLES, validateDiagram, autoLayout, history as H, TEMPLATES, newDiagram, slugify, LIMITS } from '../src/index.js';
+import { SAMPLES, validateDiagram, autoLayout, history as H, TEMPLATES, newDiagram, slugify, LIMITS, isSequence, SEQ, LARGE_HTML_BYTES } from '../src/index.js';
 
 const clone = (x) => structuredClone(x);
 
@@ -55,7 +55,8 @@ test('autoLayout: every built-in diagram stays valid, keeps its content, and has
     assert.deepEqual(validateDiagram(t), [], d.id);
     assert.deepEqual(t.nodes.map((n) => [n.id, n.label, n.group, n.sub]), d.nodes.map((n) => [n.id, n.label, n.group, n.sub]), `${d.id}: only positions change`);
     assert.deepEqual(t.edges, d.edges); assert.deepEqual(t.steps, d.steps);
-    assert.equal(overlapping(t), 0, `${d.id}: no overlaps`);
+    if (isSequence(d)) assert.ok(t.nodes.every((n, i) => i === 0 || n.x - t.nodes[i - 1].x >= SEQ.boxW), `${d.id}: lifeline boxes do not overlap`);
+    else assert.equal(overlapping(t), 0, `${d.id}: no overlaps`);
     assert.deepEqual(autoLayout(t), t, `${d.id}: tidying a tidy diagram changes nothing`);
     assert.deepEqual(autoLayout(d), t, `${d.id}: deterministic`);
   }
@@ -193,7 +194,7 @@ test('toHtml: one frame per arrow plus the overview, two scripts, unique ids, no
     assert.equal(new Set(ids).size, ids.length, `${d.id}: no duplicate ids (marker ids are per frame)`);
     assert.doesNotMatch(html.replace(/<script type="application\/json" id="d">[^]*?<\/script>/, '').replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, ''), /https?:\/\/|<link|<img|src=|href=|@import|url\((?!#)/, `${d.id}: nothing is fetched (the inert JSON data block is skipped: it holds example URLs as text)`);
     assert.match(html, /Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"/);
-    assert.ok(html.length < 1_000_000, `${d.id}: ${html.length} bytes`);
+    assert.ok(html.length < (isSequence(d) ? LARGE_HTML_BYTES : 1_000_000), `${d.id}: ${html.length} bytes`); // a sequence bakes one tall picture per message, so it gets the same ceiling the app warns at
     assert.equal(toHtml(d), html, `${d.id}: deterministic`);
   }
 });

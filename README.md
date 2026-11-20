@@ -147,7 +147,18 @@ Clicking a box lists its sources, as links to that file at that commit when `rep
 (Node only, copied by hand like `validate.js`, not exported from the core index) checks that each file exists and the line range is inside it, from a lab's own test:
 `verifySources(diagram, repoRoot)`. It does not notice code that moved within a file. Edit `sources` in the JSON pane; the box editor keeps them but does not show them.
 
-Colors: red, dark, grey, blue, green, amber. Limits: 60 boxes, 120 arrows, 60 steps, 8 groups. Anything else is refused with the reason.
+Sequence diagrams: add `"layout": "sequence"` and the boxes become lifelines in a row (a box's `x` is where its lifeline is; drag it sideways, Reset restores it; `y` is ignored)
+and the arrows become numbered messages down the page, in order, with a message to the same box drawn as a small loop and `"dashed": true` for a return.
+Optional, all ranges are 0-based arrow numbers:
+`"bands": [{ "title": "Phase 1 - Search", "color": "blue", "from": 0, "to": 17 }]` (pale colour band under a yellow banner; in order, not overlapping),
+`"notes": [{ "text": "...", "at": 5, "over": ["gateway"] }]` (a yellow note before arrow 5, over one or two lifelines), and
+`"blocks": [{ "kind": "alt", "title": "user approves", "from": 46, "to": 49, "else": { "title": "still pending", "at": 48 } }]` (`alt`, `loop` or `opt` frames; they nest or stay apart).
+A step may cite the standards behind it: `"refs": [{ "spec": "RFC 8693", "section": "2.1", "note": "optional" }]` (an `RFC` and a number, or `CIBA Core 1.0`, `OIDC Core 1.0`, `MCP`; the link is built
+by the studio, never stored in the diagram). Click a message to see its step, its example request and response (`wire`) and its standards; click a lifeline for its role and the messages through it.
+The sequence is drawn from one pure function (`sequenceLayout`, core) by both the canvas and the SVG / PNG / HTML exports. The look is the reference Lucidchart sequence: lavender lifeline boxes with purple lifelines,
+black arrows with numbered discs, pale blue / peach / green bands under a yellow banner, yellow notes (the `--seq-*` tokens in `app.css`, with dark variants).
+
+Colors: red, dark, grey, blue, green, amber. Limits: 60 boxes, 120 arrows, 120 steps, 8 groups (sequence: 12 bands, 40 notes, 12 blocks; 5 refs per step). Anything else is refused with the reason.
 All text is shown as plain text, never as HTML.
 
 ## Hosting the mock
