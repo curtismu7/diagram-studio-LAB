@@ -124,7 +124,7 @@ function Inner({ diagram, step, onMove, onSelect, selectedEdge, selectedNode = n
       nodes={nodes} edges={[]} nodeTypes={nodeTypes} onNodesChange={onNodesChange}
       nodesDraggable nodesConnectable={false} elementsSelectable
       onNodeClick={(_, n) => { if (n.type === "actor") onSelect({ node: n.id }); }} onPaneClick={() => onSelect({})}
-      panOnScroll zoomOnScroll={false} zoomActivationKeyCode={["Meta", "Control"]} defaultViewport={{ x: 20 * fitZoom, y: 12, zoom: fitZoom }} proOptions={{ hideAttribution: true }} minZoom={0.15} maxZoom={2}
+      autoPanOnNodeDrag={false} panOnScroll zoomOnScroll={false} zoomActivationKeyCode={["Meta", "Control"]} defaultViewport={{ x: 20 * fitZoom, y: 12, zoom: fitZoom }} proOptions={{ hideAttribution: true }} minZoom={0.15} maxZoom={2}
     >
       <Controls showInteractive={false} />
     </ReactFlow>

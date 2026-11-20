@@ -418,14 +418,16 @@ try {
   await page.waitForFunction(() => /Message [2-9] of 71/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
   check(/Message \d+: /.test(await T('detail-panel').innerText()), 'Simulate keeps the side panel on the message being walked');
   await T('pause').click();
-  await T('reset-layout').click(); await page.waitForTimeout(400); // Simulate scrolled the lifeline boxes out of view: Reset refits to the top
-  const seqBefore = await T('node-mcp').boundingBox();
+  // The view eases to each message and back to the top on Reset; measure a box only once it has stopped moving.
+  const settled = async (id) => { let last = null; for (let i = 0; i < 30; i++) { const b = await T(`node-${id}`).boundingBox(); if (b && last && Math.abs(b.x - last.x) < 0.5 && Math.abs(b.y - last.y) < 0.5) return b; last = b; await page.waitForTimeout(150); } return last; };
+  await T('reset-layout').click();
+  const seqBefore = await settled('mcp');
   await page.mouse.move(seqBefore.x + 20, seqBefore.y + 10); await page.mouse.down(); await page.mouse.move(seqBefore.x + 150, seqBefore.y + 10, { steps: 8 }); await page.mouse.up();
-  const seqMoved = await T('node-mcp').boundingBox();
-  check(Math.abs(seqMoved.x - seqBefore.x) > 60 && Math.abs(seqMoved.y - seqBefore.y) < 5, 'a lifeline box drags sideways only');
-  await T('reset-layout').click(); await page.waitForTimeout(400);
-  const seqAfter = await T('node-mcp').boundingBox();
-  check(Math.abs(seqAfter.x - seqBefore.x) < 5, 'Reset puts the lifeline back');
+  const seqMoved = await settled('mcp');
+  check(Math.abs(seqMoved.x - seqBefore.x) > 60 && Math.abs(seqMoved.y - seqBefore.y) < 5, `a lifeline box drags sideways only (moved ${Math.round(seqMoved.x - seqBefore.x)}px across, ${Math.round(seqMoved.y - seqBefore.y)}px down)`);
+  await T('reset-layout').click();
+  const seqAfter = await settled('mcp');
+  check(Math.abs(seqAfter.x - seqBefore.x) < 5, `Reset puts the lifeline back (${Math.round(seqAfter.x - seqBefore.x)}px off)`);
   await page.screenshot({ path: path.join(shots, '2b-sequence.png') });
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
