@@ -371,3 +371,31 @@ describe("App", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 });
+
+describe("All diagrams", () => {
+  afterEach(() => { window.history.replaceState(null, "", "/"); });
+  it("the header button opens the index; picking a card shows that diagram and leaves the index", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByTestId("canvas");
+    expect(screen.queryByTestId("all-diagrams-page")).toBeNull();
+    await user.click(screen.getByTestId("all-diagrams"));
+    expect(await screen.findByTestId("all-diagrams-page")).toBeInTheDocument();
+    expect(window.location.search).toContain("view=all");
+    expect(screen.queryByTestId("canvas")).toBeNull();
+    await user.click(screen.getByTestId("index-card-token-exchange"));
+    await screen.findByTestId("canvas");
+    expect(screen.queryByTestId("all-diagrams-page")).toBeNull();
+    expect(window.location.search).not.toContain("view=all");
+    expect(screen.getByTestId("picker")).toHaveValue("token-exchange");
+  });
+  it("?view=all opens the index straight away, and the button closes it again", async () => {
+    window.history.replaceState(null, "", "/?view=all");
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByTestId("all-diagrams-page")).toBeInTheDocument();
+    await user.click(screen.getByTestId("all-diagrams"));
+    await screen.findByTestId("canvas");
+    expect(screen.queryByTestId("all-diagrams-page")).toBeNull();
+  });
+});

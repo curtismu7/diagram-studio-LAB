@@ -174,3 +174,14 @@ a { color: var(--status-info); }
 .refs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; list-style: none; padding: 0; margin: 0.4rem 0; font-size: 0.9rem; }
 :root[data-present="1"] .canvas--seq { height: max(22rem, calc(100vh - 19rem)); }
 .seq-split .wire-cols { grid-template-columns: 1fr; } /* the side panel is narrow: request above response, not beside it */
+
+/* All diagrams (the index page): sections of cards, each a link. */
+.index h2 { margin-bottom: 0.25rem; }
+.index-filter { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; font-weight: 600; } .index-filter input { min-width: 16rem; }
+.index-section { margin: 1.25rem 0; } .index-section h3 { margin-bottom: 0.1rem; }
+.index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.75rem; list-style: none; padding: 0; margin: 0.5rem 0; }
+.index-card { display: flex; flex-direction: column; gap: 0.35rem; height: 100%; box-sizing: border-box; padding: 0.7rem 0.85rem; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 8px; background: var(--surface); color: var(--text); text-decoration: none; }
+.index-card:hover { background: var(--accent-soft); } .index-card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.index-card strong { font-size: 1rem; line-height: 1.25; } .index-card__lede { font-size: 0.88rem; color: var(--muted); line-height: 1.4; }
+.index-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: auto; }
+.index-not { margin: 1.5rem 0; } .index-not ul { padding-left: 1.2rem; }

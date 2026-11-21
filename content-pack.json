@@ -65,6 +65,11 @@
   ],
   "diagrams": [
     {
+      "id": "a2a-delegation-sequence",
+      "label": "A2A delegation: nested act chain",
+      "href": "/?d=a2a-delegation-sequence"
+    },
+    {
       "id": "a2aarchitecture-delegation",
       "label": "A2A architecture: delegation",
       "href": "/?d=a2aarchitecture-delegation"
@@ -78,6 +83,16 @@
       "id": "agent-door-flow",
       "label": "A member's agent meets Northwind Air's MCP door",
       "href": "/?d=agent-door-flow"
+    },
+    {
+      "id": "agent-onboarding-react-flow",
+      "label": "Agent onboarding",
+      "href": "/?d=agent-onboarding-react-flow"
+    },
+    {
+      "id": "ai-policies",
+      "label": "AI Policies demo: where a tool call is decided",
+      "href": "/?d=ai-policies"
     },
     {
       "id": "aic-exchange",
@@ -115,6 +130,16 @@
       "href": "/?d=ciba-link"
     },
     {
+      "id": "cimd-privilege-capabilities",
+      "label": "CIMD in Privilege: what the agent can do",
+      "href": "/?d=cimd-privilege-capabilities"
+    },
+    {
+      "id": "cimd-privilege-flow",
+      "label": "CIMD in Privilege: the flow",
+      "href": "/?d=cimd-privilege-flow"
+    },
+    {
       "id": "consent-mock",
       "label": "Consent on a mock phone",
       "href": "/?d=consent-mock"
@@ -123,6 +148,11 @@
       "id": "davinci-lifecycle",
       "label": "DaVinci SDK lifecycle",
       "href": "/?d=davinci-lifecycle"
+    },
+    {
+      "id": "davinci-sdk-lifecycle-sequence",
+      "label": "DaVinci SDK client lifecycle",
+      "href": "/?d=davinci-sdk-lifecycle-sequence"
     },
     {
       "id": "delegated-commerce",
@@ -170,6 +200,41 @@
       "href": "/?d=ext-seq"
     },
     {
+      "id": "external-door-credential-paths",
+      "label": "External door: two credential paths",
+      "href": "/?d=external-door-credential-paths"
+    },
+    {
+      "id": "gateway-claims-sequence",
+      "label": "Gateway required claims: a matching act.sub",
+      "href": "/?d=gateway-claims-sequence"
+    },
+    {
+      "id": "gateway-enforcement-journey",
+      "label": "Gateway vs policy-decision enforcement",
+      "href": "/?d=gateway-enforcement-journey"
+    },
+    {
+      "id": "gateway-topology-a2a",
+      "label": "Privilege gateway topology: Agent-to-agent topology",
+      "href": "/?d=gateway-topology-a2a"
+    },
+    {
+      "id": "gateway-topology-agent",
+      "label": "Privilege gateway topology: Agent topology",
+      "href": "/?d=gateway-topology-agent"
+    },
+    {
+      "id": "gateway-topology-agentless",
+      "label": "Privilege gateway topology: Agentless topology",
+      "href": "/?d=gateway-topology-agentless"
+    },
+    {
+      "id": "gateway-topology-lb",
+      "label": "Privilege gateway topology: Load-balanced gateway",
+      "href": "/?d=gateway-topology-lb"
+    },
+    {
       "id": "group-policy",
       "label": "Group Policy",
       "href": "/?d=group-policy"
@@ -195,9 +260,19 @@
       "href": "/?d=identity-for-ai"
     },
     {
+      "id": "identity-for-ai-reference-sequence",
+      "label": "Identity for AI: reference sequence",
+      "href": "/?d=identity-for-ai-reference-sequence"
+    },
+    {
       "id": "idjagrunner-flow",
       "label": "ID-JAG Runner: the lab's flow, step by step",
       "href": "/?d=idjagrunner-flow"
+    },
+    {
+      "id": "invest-dual-flow-sequence",
+      "label": "Invest: two authorization flows",
+      "href": "/?d=invest-dual-flow-sequence"
     },
     {
       "id": "investdualauth-invest",
@@ -210,6 +285,11 @@
       "href": "/?d=jev-gallery"
     },
     {
+      "id": "mcp-gateway-oauth-sequence",
+      "label": "MCP gateway OAuth flow: call sequence",
+      "href": "/?d=mcp-gateway-oauth-sequence"
+    },
+    {
       "id": "mcp-obs",
       "label": "MCP observability",
       "href": "/?d=mcp-obs"
@@ -220,9 +300,19 @@
       "href": "/?d=mcp-step-up"
     },
     {
+      "id": "mgof-architecture",
+      "label": "MCP gateway OAuth flow: architecture",
+      "href": "/?d=mgof-architecture"
+    },
+    {
       "id": "mock-authorize-flow",
       "label": "Mock Authorize: how a client gets a decision",
       "href": "/?d=mock-authorize-flow"
+    },
+    {
+      "id": "observability",
+      "label": "Observability: telemetry data flow",
+      "href": "/?d=observability"
     },
     {
       "id": "p1az-inspector-flow",
@@ -235,9 +325,29 @@
       "href": "/?d=personal-agent"
     },
     {
+      "id": "personal-agent-dual",
+      "label": "Personal agent design: dual gateway",
+      "href": "/?d=personal-agent-dual"
+    },
+    {
+      "id": "personal-agent-request-flow",
+      "label": "Personal agent request flow",
+      "href": "/?d=personal-agent-request-flow"
+    },
+    {
+      "id": "personal-agent-target",
+      "label": "Personal agent design: target",
+      "href": "/?d=personal-agent-target"
+    },
+    {
       "id": "pf-cedar",
       "label": "PingFederate and Cedar",
       "href": "/?d=pf-cedar"
+    },
+    {
+      "id": "pf-token-demo",
+      "label": "A federation-issued JWT accepted by the Privilege gateway",
+      "href": "/?d=pf-token-demo"
     },
     {
       "id": "pfidjag-jag",
@@ -300,9 +410,39 @@
       "href": "/?d=pfl-token-exchange"
     },
     {
+      "id": "phase-266",
+      "label": "Phase 266 architecture",
+      "href": "/?d=phase-266"
+    },
+    {
+      "id": "pmd-architecture",
+      "label": "AI Agent Gateway: architecture",
+      "href": "/?d=pmd-architecture"
+    },
+    {
+      "id": "pmd-auth-flow",
+      "label": "AI Agent Gateway: auth flow",
+      "href": "/?d=pmd-auth-flow"
+    },
+    {
+      "id": "pmd-sign-in-tool-call",
+      "label": "AI Agent Gateway: sign-in with a tool call",
+      "href": "/?d=pmd-sign-in-tool-call"
+    },
+    {
       "id": "poc-scope-to-tool-ciba",
       "label": "POC: agent token exchange + CIBA approval",
       "href": "/?d=poc-scope-to-tool-ciba"
+    },
+    {
+      "id": "poppy-sequence",
+      "label": "Personal agent protocol: discover, sign in, call",
+      "href": "/?d=poppy-sequence"
+    },
+    {
+      "id": "privilege-mcp-sequence",
+      "label": "AI agent gateway: sign-in and tool call",
+      "href": "/?d=privilege-mcp-sequence"
     },
     {
       "id": "privilegefirstgateway-fork",
@@ -315,14 +455,74 @@
       "href": "/?d=privilegefirstgateway-gateway"
     },
     {
+      "id": "resource-server-placement",
+      "label": "Where the resource-server check sits",
+      "href": "/?d=resource-server-placement"
+    },
+    {
+      "id": "session-lab",
+      "label": "Session lab",
+      "href": "/?d=session-lab"
+    },
+    {
       "id": "sim-push",
       "label": "Simulated push approval",
       "href": "/?d=sim-push"
     },
     {
+      "id": "third-party-token-exchange-sequence",
+      "label": "Third-party actor token exchange",
+      "href": "/?d=third-party-token-exchange-sequence"
+    },
+    {
       "id": "token-exchange",
       "label": "Token exchange (RFC 8693)",
       "href": "/?d=token-exchange"
+    },
+    {
+      "id": "token-flow-api-key-path",
+      "label": "Token flow: API key path",
+      "href": "/?d=token-flow-api-key-path"
+    },
+    {
+      "id": "token-flow-bad-scope",
+      "label": "Token flow: A call with the wrong scope",
+      "href": "/?d=token-flow-bad-scope"
+    },
+    {
+      "id": "token-flow-dual-token-path",
+      "label": "Token flow: Dual-token path",
+      "href": "/?d=token-flow-dual-token-path"
+    },
+    {
+      "id": "token-flow-full-flow",
+      "label": "Token flow: Full flow",
+      "href": "/?d=token-flow-full-flow"
+    },
+    {
+      "id": "token-flow-get-accounts",
+      "label": "Token flow: Get accounts call",
+      "href": "/?d=token-flow-get-accounts"
+    },
+    {
+      "id": "token-flow-id-token",
+      "label": "Token flow: ID token",
+      "href": "/?d=token-flow-id-token"
+    },
+    {
+      "id": "token-flow-oauth-bearer-path",
+      "label": "Token flow: OAuth bearer path",
+      "href": "/?d=token-flow-oauth-bearer-path"
+    },
+    {
+      "id": "token-flow-user-token",
+      "label": "Token flow: User token",
+      "href": "/?d=token-flow-user-token"
+    },
+    {
+      "id": "token-flow-withdrawal",
+      "label": "Token flow: Withdrawal with step-up",
+      "href": "/?d=token-flow-withdrawal"
     }
   ],
   "stories": [
