@@ -475,6 +475,9 @@ try {
   await page.goto(`${base}/?view=all`);
   await T('all-diagrams-page').waitFor();
   check(true, '?view=all opens the index directly');
+  await page.goto(`${base}/#all`);
+  await T('all-diagrams-page').waitFor();
+  check(true, '/#all (the shelf front door) opens the index directly');
   await page.screenshot({ path: path.join(shots, '2c-all-diagrams.png'), fullPage: true });
   await page.goto(base); await T('canvas').waitFor();
   // Dark mode, small screen: no horizontal scroll.

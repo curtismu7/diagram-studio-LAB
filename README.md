@@ -127,7 +127,7 @@ collapsing it brings them back.
 
 ## All diagrams
 
-The **All diagrams** button in the header (or `/?view=all`) opens an index of every diagram in sections that follow the demo family's own diagrams page
+The **All diagrams** button in the header (or `/?view=all`, or `/#all`, the address the demo shelf's Open button uses) opens an index of every diagram in sections that follow the demo family's own diagrams page
 (Architecture, Tokens and delegation, Agent privilege, Personal agent, Agent onboarding and audit, Sign-in and approval, Lab flows, Basics, More), with a
 filter. Each card is a link to the diagram. A diagram is placed by the route of the demo page it was converted from (`core/src/sections.js`); the page also lists,
 as text, the demo's diagrams that are not here and why (live data, an editor, customer-specific). Diagrams you saved yourself appear under **Your diagrams**.
