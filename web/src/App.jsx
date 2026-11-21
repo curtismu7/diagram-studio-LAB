@@ -48,9 +48,14 @@ export default function App() {
   // Rule 19: the toggle asks the server; a refusal keeps the current mode on screen.
   const selectMode = async (source) => { const r = await api.setMode(source); if (r.ok) setModeInfo(r.data); };
   // "All diagrams": the index page. ?view=all opens it; picking a card (or any diagram) leaves it.
-  const [view, setView] = useState(() => { try { return new URLSearchParams(window.location.search).get("view") === "all" ? "index" : "diagram"; } catch { return "diagram"; } });
+  // The shelf's Open button goes to "/#all" (its open path allows a fragment but no query): the same index, as the front door.
+  const [view, setView] = useState(() => { try { return new URLSearchParams(window.location.search).get("view") === "all" || window.location.hash === "#all" ? "index" : "diagram"; } catch { return "diagram"; } });
   useEffect(() => {
-    try { const u = new URL(window.location.href); if (view === "index") u.searchParams.set("view", "all"); else u.searchParams.delete("view"); window.history.replaceState(null, "", u); } catch { /* no history */ }
+    try {
+      const u = new URL(window.location.href);
+      if (view === "index") u.searchParams.set("view", "all"); else { u.searchParams.delete("view"); if (u.hash === "#all") u.hash = ""; } // leaving the index also drops the "#all" door
+      window.history.replaceState(null, "", u);
+    } catch { /* no history */ }
   }, [view]);
   const [editing, setEditing] = useState(false);
   const [sel, setSel] = useState({});

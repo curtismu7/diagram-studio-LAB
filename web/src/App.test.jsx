@@ -398,4 +398,14 @@ describe("All diagrams", () => {
     await screen.findByTestId("canvas");
     expect(screen.queryByTestId("all-diagrams-page")).toBeNull();
   });
+  it("#all (the shelf's front door) opens the index, and leaving the index drops it from the address", async () => {
+    window.history.replaceState(null, "", "/#all");
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByTestId("all-diagrams-page")).toBeInTheDocument();
+    await user.click(screen.getByTestId("index-card-token-exchange"));
+    await screen.findByTestId("canvas");
+    expect(window.location.hash).toBe("");
+    expect(window.location.search).not.toContain("view=all");
+  });
 });

@@ -16,6 +16,8 @@ test('the shelf entry is portable: a placeholder compose path, no author path, a
   const port = new URL(entry.url).port; assert.equal(new URL(entry.url).hostname, 'localhost');
   assert.match(compose, new RegExp(`"127\\.0\\.0\\.1:\\$\\{HOST_PORT:-${port}\\}:${port}"`), 'the published port matches the entry URL');
   assert.deepEqual(entry.composeOverlays, []);
+  // The card opens the All diagrams index: the shelf's openPath allows a path and a #fragment, never a query, so the door is "/#all".
+  assert.equal(entry.openPath, '/#all'); assert.match(entry.openPath, /^\/[A-Za-z0-9._~\-/#]*$/);
 });
 
 test('no tracked file names an author home directory or the internal source-project name', () => {
