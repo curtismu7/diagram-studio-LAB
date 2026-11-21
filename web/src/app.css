@@ -115,8 +115,8 @@ a { color: var(--status-info); }
 @media (max-width: 900px) { .wire-cols { grid-template-columns: 1fr; } }
 .wire .json { margin: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; } .wire pre.json { padding: 0.5rem 0.75rem; font: 0.8rem/1.5 var(--font-mono); }
 .wire table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .wire th, .wire td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-.wire td code, .wire td .small { overflow-wrap: anywhere; } .wire-focus td { background: var(--accent-soft); }
-.wire-notice { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
+.wire td code, .wire td .small { overflow-wrap: anywhere; } .wire-focus td { background: var(--j-hot-bg, var(--surface-2)); } .wire-focus td:first-child { box-shadow: inset 3px 0 0 var(--j-hot-edge, var(--status-info)); }
+.wire-notice { border-left: 4px solid var(--status-info); background: var(--j-hot-bg, var(--surface-2)); padding: 0.4rem 0.75rem; border-radius: 0 6px 6px 0; }
 .wire-terms { margin-top: 0.5rem; } .wire-terms summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; } .wire-terms dt { font-weight: 600; } .wire-terms dd { margin: 0 0 0.3rem; color: var(--muted); }
 .wire-step { margin-top: 0.4rem; } .wire-step > summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
 @media (max-width: 40rem) { .wire table, .wire thead, .wire tbody, .wire tr, .wire td { display: block; } .wire thead { display: none; } .wire tr { border-bottom: 1px solid var(--border); padding: 0.3rem 0; } .wire td { border: 0; padding: 0.1rem 0.25rem; } }
