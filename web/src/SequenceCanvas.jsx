@@ -110,12 +110,6 @@ function Inner({ diagram, step, onMove, onSelect, selectedEdge, selectedNode = n
   const fitZoom = Math.min(1, Math.max(0.6, (viewW || L.width) / (L.width + 40))); // wide diagrams start readable (60%) and pan sideways, not shrunk to a thumbnail
   // Start at the top, the whole width visible; Reset (fitKey) does the same.
   useEffect(() => { if (!viewW) return undefined; const t = setTimeout(() => rf.setViewport({ x: 20 * fitZoom, y: 12, zoom: fitZoom }), 30); return () => clearTimeout(t); }, [fitKey, rf, viewW]); // eslint-disable-line react-hooks/exhaustive-deps -- fitZoom follows viewW
-  // Simulate walks 70+ messages down a tall page: keep the one in focus in view.
-  useEffect(() => {
-    if (step < 0) return;
-    const r = L.rows[step]; if (!r) return;
-    rf.setCenter(r.self ? r.x1 + 120 : (r.x1 + r.x2) / 2, r.y, { zoom: Math.max(fitZoom, 0.6), duration: 250 });
-  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
   const onNodesChange = useCallback((changes) => {
     for (const c of changes) if (c.type === "position" && c.position && c.id !== "seq-board") onMove(c.id, c.position.x, 0, c.dragging === false);
   }, [onMove]);

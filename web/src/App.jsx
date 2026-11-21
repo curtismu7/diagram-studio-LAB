@@ -312,6 +312,7 @@ export default function App() {
       defaultWidth={520}
       defaultHeight={null}
       placement="right"
+      noBackdrop
       storageKey="seq-detail-dialog"
       singletonKey="seq-detail"
       testId="detail-panel"
@@ -363,8 +364,8 @@ export default function App() {
           {playing
             ? <button onClick={() => dispatch({ type: "pause" })} data-testid="pause">Pause</button>
             : <button onClick={() => dispatch({ type: "resume" })} disabled={st.step < 0} data-testid="resume">Resume</button>}
-          <button onClick={() => dispatch({ type: "prev" })} disabled={st.step < 0 || st.step === 0} data-testid="prev">Prev</button>
-          <button onClick={() => dispatch({ type: "next" })} disabled={st.step < 0 || st.step >= total - 1} data-testid="next">Next</button>
+          <button onClick={() => { if (st.step < 0) { dispatch({ type: "simulate", total }); dispatch({ type: "pause" }); } else dispatch({ type: "prev" }); }} disabled={!total || st.step === 0} data-testid="prev">Prev</button>
+          <button onClick={() => { if (st.step < 0) { dispatch({ type: "simulate", total }); dispatch({ type: "pause" }); } else dispatch({ type: "next" }); }} disabled={!total || st.step >= total - 1} data-testid="next">Next</button>
           <button onClick={reset} data-testid="reset-layout">Reset</button>
           <label>Speed{" "}
             <select value={st.speed} onChange={(e) => dispatch({ type: "speed", speed: e.target.value })} data-testid="speed" aria-label="Speed">
