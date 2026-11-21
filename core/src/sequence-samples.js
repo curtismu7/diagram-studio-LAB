@@ -64,7 +64,7 @@ m('user', 'agent', '"Book LAX to JFK" + Bearer user token (OIDC via DaVinci logi
   refs: [r('OIDC Core 1.0'), r('RFC 6750', '2.1')],
   wire: { request: req('POST', 'https://agent.example.com/chat', [JSN, bearer('user-token-example')], J({ message: 'Book LAX to JFK' }), ILL), tokens: [userToken] },
 });
-m('agent', 'as', 'On-behalf-of exchange (user token -> token, aud = AI gateway)', false, {
+m('agent', 'as', 'Agent identity service OBO exchange (user token -> token, aud = AI gateway)', false, {
   title: 'The agent swaps the user\'s token for one meant for the AI gateway',
   what: 'The agent runtime\'s identity service asks the authorization server for a token whose audience is the AI gateway, presenting the user\'s token as proof (an on-behalf-of exchange). Whether this is RFC 8693 or a vendor-specific variant is (not traced); the shape below is the standard one.',
   why: 'The user\'s own token was issued for the chat widget. A token for the gateway lets the gateway trust the call without the agent ever holding a broader credential.',
@@ -99,7 +99,7 @@ m('aigw', 'mcp', 'POST /mcp (agent token forwarded unchanged)', false, {
   refs: [r('MCP'), r('RFC 9110', '9.3.3')],
   wire: { request: req('POST', `${MCPH}/mcp`, [JSN, bearer('gateway-token-example')], rpcCall(1, 'search_flights', { origin: 'LAX', destination: 'JFK' })) },
 });
-m('mcp', 'as', 'RFC 8693 token exchange (subject = user token, aud = approval gateway, scope = flights-api)', false, {
+m('mcp', 'as', 'RFC 8693 token exchange (subject = user token, aud = approval-gateway.example.com, scope = flights-api)', false, {
   title: 'The MCP server exchanges the token for one the API gateway accepts',
   what: 'The Flight MCP server asks the authorization server for a new token. The subject is the user\'s token, the audience is the API gateway in front of the flights API, and the scope is narrowed to flights-api.',
   why: 'This is token exchange doing its job: the downstream token is smaller than the one that came in, and it is addressed to exactly one service.',
@@ -206,7 +206,7 @@ m('aigw', 'mcp', 'POST /mcp', false, {
   refs: [r('MCP'), r('RFC 9110', '9.3.3')],
   wire: { request: req('POST', `${MCPH}/mcp`, [JSN, bearer('gateway-token-example')], rpcCall(2, 'create_booking', { flight: 'FL-100', passengers: [{ name: 'Alex Example' }] })) },
 });
-m('mcp', 'as', 'RFC 8693 token exchange (scope = flights-api, aud = approval gateway)', false, {
+m('mcp', 'as', 'RFC 8693 token exchange (scope = flights-api, aud = approval-gateway.example.com)', false, {
   title: 'The MCP server exchanges the token again',
   what: 'The same exchange as in phase 1: subject is the user\'s token, audience is the API gateway, scope is flights-api.',
   why: 'Each call gets its own short-lived token. Nothing is reused between the search and the booking.',
@@ -264,14 +264,14 @@ m('gw', 'as', 'POST /as/cibaAuthorization (client_id + client_secret) scope=open
 });
 m('as', 'gw', 'auth_req_id + expires_in', true, {
   title: 'The authorization server accepts the request',
-  what: 'It returns an auth_req_id (the handle for this approval) and expires_in (how long the user has).',
+  what: 'It returns an auth_req_id (the handle for this approval) and expires_in (how long the user has). In the reference PingOne setup the handle lives 120 seconds and is polled every 2 seconds, and only poll delivery is supported.',
   why: 'The handle is the only thing needed to ask later whether the user said yes. It is useless to anyone who cannot also prove the matching caller and request.',
   refs: [r('CIBA Core 1.0', undefined, 'Successful authentication request acknowledgement')],
-  wire: { response: res('200 OK', [JSN, 'Cache-Control: no-store'], J({ auth_req_id: 'req-example-1', expires_in: 120, interval: 5 }), 'Illustrative: interval is not shown in the chart (not traced).') },
+  wire: { response: res('200 OK', [JSN, 'Cache-Control: no-store'], J({ auth_req_id: 'req-example-1', expires_in: 120, interval: 2 }), 'Illustrative: the chart does not show these values. 120 seconds and a 2 second poll interval are what the reference PingOne setup uses.') },
 });
 m('as', 'device', 'push: "Approve BK-XXXX"', false, {
   title: 'The user\'s other device gets a push to approve',
-  what: 'The authorization server sends a push notification to the user\'s enrolled device asking them to approve BK-XXXX.',
+  what: 'The authorization server sends a push notification to the user\'s enrolled device asking them to approve BK-XXXX. The chart shows a push; a PingOne setup can also deliver the prompt as an email or SMS link (not traced here which one the approval plugin targets).',
   why: 'A second device the agent cannot touch. The agent can ask but it cannot answer for the user.',
   refs: [r('CIBA Core 1.0', undefined, 'The server authenticates the user out of band')],
   wire: none('Delivered by the push service of the authorization server. The payload is internal to the product (not traced).'),
@@ -404,7 +404,7 @@ m('as', 'gw', 'authorization_pending', true, {
   refs: [r('CIBA Core 1.0', undefined, 'authorization_pending in poll mode'), r('RFC 6749', '5.2')],
   wire: { response: res('400 Bad Request', [JSN], J({ error: 'authorization_pending' })) },
 });
-m('gw', 'gw', 'sleep(interval)', false, {
+m('gw', 'gw', 'ngx.sleep(interval)', false, {
   title: 'The gateway waits one interval',
   what: 'The plugin pauses for the polling interval before asking again.',
   why: 'Polling too fast is rejected by the authorization server; a pause keeps the loop polite.',
