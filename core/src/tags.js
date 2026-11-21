@@ -68,7 +68,7 @@ const RULES = {
   'agent-gateway': /agent gateway|ai gateway|ai agent gateway|mcp gateway|gateway-bound/i,
   'pingone-mcp': /pingone mcp/i,
   pingfederate: /ping ?federate/i,
-  pinggateway: /ping ?gateway/i,
+  pinggateway: /ping[ -]?gateway/i,
 
   'ai-agent-security': /\bagents?\b|\bai\b/i,
   'mcp-security': /\bmcp\b.*(?:gateway|door|hostile|poison|authori[sz]|token|scope|oauth)|(?:gateway|door|hostile|poison|authori[sz]|token|scope|oauth).*\bmcp\b/i,
@@ -108,6 +108,8 @@ const SPEC_TAG = {
 const WEIGHT = { title: 3, lede: 2, groups: 1, nodes: 1, steps: 1, edges: 0.5 };
 const NEED = { product: 2, usecase: 4, standard: 2 };
 const MAX_SUBJECTS = 3;
+// A box that is named after a Ping product ("PingOne Agent Gateway", "PingOne Authorize") is strong evidence for that product, so a box counts double for product tags.
+const PRODUCT_NODE_WEIGHT = 2;
 
 function parts(d) {
   return {
@@ -118,6 +120,7 @@ function parts(d) {
     edges: d.edges.map((e) => e.label || '').join('\n'),
   };
 }
+const PRODUCT_TAGS = new Set(TAG_GROUPS.find((g) => g.id === 'product').tags.map((t) => t.id));
 const hits = (re, text) => Math.min(3, (text.match(new RegExp(re.source, 'gi')) || []).length);
 
 /** The score of every tag for a diagram (only tags that scored at all). */
@@ -126,10 +129,11 @@ export function tagScores(d) {
   const out = {};
   for (const [id, re] of Object.entries(RULES)) {
     let score = 0;
-    for (const [k, w] of Object.entries(WEIGHT)) score += w * hits(re, p[k]);
+    for (const [k, w] of Object.entries(WEIGHT)) score += (k === 'nodes' && PRODUCT_TAGS.has(id) ? PRODUCT_NODE_WEIGHT : w) * hits(re, p[k]);
     if (score > 0) out[id] = score;
   }
-  for (const s of d.steps || []) for (const r of s.refs || []) { const t = SPEC_TAG[r.spec]; if (t) out[t] = (out[t] || 0) + 2; }
+  // A step citing a standard is one point for it, so a standard needs two citing steps (or a mention in the words) to become a tag: a diagram that lists a dozen RFCs once each is not about all of them.
+  for (const s of d.steps || []) for (const r of s.refs || []) { const t = SPEC_TAG[r.spec]; if (t) out[t] = (out[t] || 0) + 1; }
   return out;
 }
 
@@ -139,14 +143,33 @@ export function tagText(d) { return Object.values(parts(d)).filter(Boolean).join
 // Curated corrections where the rules over- or under-tag: { diagram id: { add: [tag ids], remove: [tag ids] } }.
 export const TAG_OVERRIDES = {
   // The four basics, and the gallery: teaching material, not a product walk-through.
-  'auth-code-pkce': { add: ['sign-in-and-mfa', 'learning'] }, 'token-exchange': { add: ['learning'] }, 'delegation-chain': { add: ['learning'] }, 'mcp-step-up': { add: ['learning'] },
+  'auth-code-pkce': { add: ['sign-in-and-mfa', 'learning'] }, 'token-exchange': { add: ['learning'] },
+  'delegation-chain': { add: ['learning', 'token-exchange'] }, // each hop is an RFC 8693 exchange
+  'mcp-step-up': { add: ['learning', 'ai-agent-security', 'mcp-security'], remove: ['agent-gateway'] }, // "MCP gateway" here is the idea, not the Ping product
   'jev-gallery': { add: ['learning'] },
   // DaVinci SDK lifecycle: the sign-in journey a client runs.
   'davinci-lifecycle': { add: ['sign-in-and-mfa'] }, 'davinci-sdk-lifecycle-sequence': { add: ['sign-in-and-mfa'] },
   // The pi.flow family: PingOne's native flows.
-  'pfl-signin': { add: ['pingone', 'sign-in-and-mfa'] }, 'pfl-piflow': { add: ['pingone', 'sign-in-and-mfa'] }, 'pfl-pkce': { add: ['pingone', 'token-security'] },
-  'pfl-par': { add: ['pingone', 'token-security'] }, 'pfl-rar': { add: ['pingone'] }, 'pfl-dpop': { add: ['pingone'] }, 'pfl-ciba': { add: ['pingone'] },
-  'pfl-dcr': { add: ['pingone'] }, 'pfl-token-exchange': { add: ['pingone'] },
+  'pfl-signin': { add: ['pingone', 'sign-in-and-mfa'], remove: ['pingfederate'] }, 'pfl-piflow': { add: ['pingone', 'sign-in-and-mfa'] }, 'pfl-pkce': { add: ['pingone', 'token-security'] },
+  'pfl-par': { add: ['pingone', 'token-security'] }, 'pfl-rar': { add: ['pingone'], remove: ['pingfederate'] }, 'pfl-dpop': { add: ['pingone'] }, 'pfl-ciba': { add: ['pingone'] },
+  'pfl-dcr': { add: ['pingone'], remove: ['pingfederate'] }, 'pfl-token-exchange': { add: ['pingone'] },
+  // The pi.flow family is PingOne, not PingFederate (its boxes only mention PingFederate in passing).
+  // Review pass (2026-11-21): corrections where the words in a diagram say more or less than what it is about.
+  'mock-authorize-flow': { add: ['pingone-authorize'], remove: ['pingone'] }, // a mock of PingOne Authorize's decision endpoint
+  'agent-door-flow': { add: ['pingone-protect'] }, // its box is "PingOne Authorize + Protect"
+  'cedar-act-sub-flow': { add: ['pingone-privilege', 'agent-identity'] }, // AI policies behind the Privilege door; the policy is about act.sub
+  'mgof-architecture': { remove: ['pingone-authorize'] }, // an OAuth broker diagram, no decision point in it
+  'gateway-topology-lb': { remove: ['tool-poisoning'] }, // the hostile family is a test load here, not the subject
+  'delegation-chain-value': { add: ['token-exchange'] },
+  'identity-for-ai': { add: ['agent-identity'] },
+  'gateway-topology-agentless': { add: ['mcp-security', 'token-security'] }, // its standards come from step cites, which no longer decide a subject
+  'token-flow-bad-scope': { add: ['oauth'] }, 'token-flow-user-token': { add: ['oauth'] }, // scopes and user tokens: OAuth even where no step cites it
+  'ciba-link': { remove: ['pingid'] }, // /mfa-test is a route name here, not PingID
+  'pfidjag-jag': { remove: ['agent-gateway'] }, // its gateway is PingGateway; "MCP gateway" is the role
+  'privilegefirstgateway-fork': { add: ['authorization-policy'] },
+  'resource-server-placement': { add: ['pinggateway'] }, // its gateway box is IG, PingGateway
+  'architectureoverview-overview': { add: ['ai-agent-security'] },
+  'gateway-enforcement-journey': { add: ['agent-gateway'] },
 };
 
 const cache = new WeakMap();
