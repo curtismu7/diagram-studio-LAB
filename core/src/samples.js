@@ -107,5 +107,14 @@ export const BASICS = [authCode, exchange, mcp, chain].map(linked);
 import { APP_DIAGRAMS } from './apps.js';
 import { withWire } from './wiredata.js';
 import { CIBA_APPROVAL_SEQUENCE } from './sequence-samples.js';
+import { CONVERTED_FLOWS, CONVERTED_FLOWS_ROUTES } from './converted-flows.js';
+import { CONVERTED_SEQUENCES, CONVERTED_SEQUENCES_ROUTES } from './converted-sequences.js';
+import { DIAGRAM_ROUTES } from './sections.js';
+import { autoLayout } from './layout.js';
 
-export const SAMPLES = [...BASICS, ...LIBRARY, ...APP_DIAGRAMS, CIBA_APPROVAL_SEQUENCE].map(withWire);
+// Converted from the demo family's own diagram pages (flow configs and Mermaid sequences), with generic names: see docs/library.md.
+Object.assign(DIAGRAM_ROUTES, CONVERTED_FLOWS_ROUTES, CONVERTED_SEQUENCES_ROUTES);
+// These converted flows draw with fewer label and arrow collisions when laid out by Tidy than with the positions the conversion gave them.
+const TIDY = new Set(['pmd-sign-in-tool-call', 'phase-266', 'resource-server-placement', 'personal-agent-target', 'gateway-enforcement-journey', 'gateway-topology-lb']);
+const converted = CONVERTED_FLOWS.map((d) => (TIDY.has(d.id) ? autoLayout(d) : d));
+export const SAMPLES = [...BASICS, ...LIBRARY, ...APP_DIAGRAMS, CIBA_APPROVAL_SEQUENCE, ...converted, ...CONVERTED_SEQUENCES].map(withWire);
