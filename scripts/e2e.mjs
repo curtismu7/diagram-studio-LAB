@@ -409,14 +409,22 @@ try {
   check(await page.locator('[data-testid^="seq-band-"]').count() === 3 && await page.locator('[data-testid^="seq-block-"]').count() === 3, 'with its 3 phase bands and 3 alt / loop frames');
   await T('seq-msg-21').dispatchEvent('click');
   const seqPanel = await T('detail-panel').innerText();
-  check(/Message 22/.test(seqPanel) && /RFC 8693/.test(seqPanel), 'clicking message 22 shows its step and the RFC it cites');
+  check(/Message 22/.test(seqPanel) && /RFC 8693/.test(seqPanel), 'clicking message 22 opens its step and the RFC it cites in the floating dialog');
   check(await T('detail-panel').locator('a[href^="https://www.rfc-editor.org/rfc/rfc8693"]').count() >= 1, 'the RFC is a link to rfc-editor.org');
   check(await T('detail-wire-22').count() === 1 && (await T('detail-wire-22').locator('[data-testid=wire-request]').count()) === 1, 'and its example request and response');
+  await T('fd-titlebar').hover();
+  // drag the dialog clear of the lifeline boxes, so the drag test below measures a box, not the dialog
+  const bar = await T('fd-titlebar').boundingBox();
+  await page.mouse.move(bar.x + bar.width / 2, bar.y + 10); await page.mouse.down(); await page.mouse.move(bar.x + bar.width / 2, bar.y - 400, { steps: 8 }); await page.mouse.up();
+  await page.locator('.fd-close-btn').click();
   await T('node-aigw').click();
-  check(/Messages through/.test(await T('detail-panel').innerText()), 'clicking a lifeline lists the messages through it');
+  check(/Messages through/.test(await T('detail-panel').innerText()), 'clicking a lifeline lists the messages through it in the dialog');
+  check(await T('seq-node-desc').count() === 1 && /AI gateway/.test(await T('seq-node-desc').innerText()), 'the lifeline role shows below the diagram too');
+  await page.locator('.fd-close-btn').click();
   await T('simulate').click();
   await page.waitForFunction(() => /Message [2-9] of 71/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
-  check(/Message \d+: /.test(await T('detail-panel').innerText()), 'Simulate keeps the side panel on the message being walked');
+  check(/Message \d+: /.test(await T('detail-panel').innerText()), 'Simulate keeps the dialog on the message being walked');
+  await page.locator('.fd-close-btn').click();
   await T('pause').click();
   // The view eases to each message and back to the top on Reset; measure a box only once it has stopped moving.
   const settled = async (id) => { let last = null; for (let i = 0; i < 30; i++) { const b = await T(`node-${id}`).boundingBox(); if (b && last && Math.abs(b.x - last.x) < 0.5 && Math.abs(b.y - last.y) < 0.5) return b; last = b; await page.waitForTimeout(150); } return last; };

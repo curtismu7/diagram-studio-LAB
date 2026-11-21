@@ -19,7 +19,8 @@ function fakeApi() {
 beforeEach(() => { localStorage.clear(); window.history.replaceState(null, "", "/"); canvas = null; fakeApi(); });
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); });
 
-async function ready() {
+async function ready(id) {
+  if (id) window.history.replaceState(null, "", `/?d=${id}`);
   render(<App />);
   await waitFor(() => expect(canvas?.diagram?.nodes?.length).toBeGreaterThan(0));
   return canvas.diagram;
@@ -58,6 +59,36 @@ describe("detail panel when reading (not editing)", () => {
     await act(async () => { canvas.onSelect({ node: d.nodes[0].id }); });
     await act(async () => { canvas.onSelect({}); });
     expect(screen.getByTestId("detail-panel")).toHaveTextContent(/Click a box or an arrow/);
+  });
+});
+
+describe("sequence diagrams: pop-out detail dialog and the description below the canvas", () => {
+  it("a click on a message opens the details in a floating dialog (with a Close), not a fixed side panel", async () => {
+    await ready("ciba-approval-sequence");
+    await act(async () => { canvas.onSelect({ edge: 0 }); });
+    expect(document.querySelector(".fd-panel")).not.toBeNull();
+    expect(document.querySelector(".fd-close-btn")).not.toBeNull();
+    expect(screen.getByTestId("detail-panel")).toHaveTextContent("Message 1:");
+  });
+
+  it("a click on a lifeline opens its role and messages in the dialog and shows its description below the canvas", async () => {
+    await ready("ciba-approval-sequence");
+    const d = SAMPLES.find((s) => s.id === "ciba-approval-sequence");
+    const node = d.nodes[0];
+    await act(async () => { canvas.onSelect({ node: node.id }); });
+    expect(screen.getByTestId("detail-panel")).toHaveTextContent(/Messages through/);
+    const desc = screen.getByTestId("seq-node-desc");
+    expect(desc).toHaveTextContent(node.label);
+    expect(desc.textContent.length).toBeGreaterThan(node.label.length);
+  });
+
+  it("the dialog closes on its Close button; the below-canvas description stays until another pick", async () => {
+    await ready("ciba-approval-sequence");
+    const d = SAMPLES.find((s) => s.id === "ciba-approval-sequence");
+    await act(async () => { canvas.onSelect({ node: d.nodes[0].id }); });
+    await act(async () => { document.querySelector(".fd-close-btn").click(); });
+    expect(screen.queryByTestId("detail-panel")).toBeNull();
+    expect(screen.getByTestId("seq-node-desc")).toHaveTextContent(d.nodes[0].label);
   });
 });
 

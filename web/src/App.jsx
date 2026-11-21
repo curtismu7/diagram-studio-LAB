@@ -9,6 +9,7 @@ import DetailsEditor from "./DetailsEditor.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
+import FloatingDialog from "./floating-dialog/FloatingDialog.jsx";
 import talkMd from "../../docs/talk-track.md?raw";
 import { useStepper } from "./useStepper.js";
 import { keyAction } from "./presenterKeys.js";
@@ -47,6 +48,10 @@ export default function App() {
   const selectMode = async (source) => { const r = await api.setMode(source); if (r.ok) setModeInfo(r.data); };
   const [editing, setEditing] = useState(false);
   const [sel, setSel] = useState({});
+  // Sequence diagrams: clicking a message or a lifeline opens the details in a floating dialog (drag, resize, pop out)
+  // instead of the fixed side panel; the lifeline's description also shows below the canvas.
+  const [seqDetailOpen, setSeqDetailOpen] = useState(false);
+  const seqPick = useCallback((next) => { setSel(next); setSeqDetailOpen(true); }, []);
   const [msg, setMsg] = useState({ kind: "", text: "" });
   const [fitKey, setFitKey] = useState(0);
   const [present, setPresent] = useState(() => {
@@ -59,7 +64,7 @@ export default function App() {
   const [st, dispatch] = useStepper(total);
   // In a sequence diagram the side panel follows the message being walked, so Simulate shows each request and response as it goes.
   const isSeq = diagram?.layout === "sequence";
-  useEffect(() => { if (isSeq && st.step >= 0) setSel({ edge: st.step }); }, [isSeq, st.step]);
+  useEffect(() => { if (isSeq && st.step >= 0) { setSel({ edge: st.step }); setSeqDetailOpen(true); } }, [isSeq, st.step]);
 
   useEffect(() => { api.getHealth().then((r) => { if (r.ok && r.data.mode === "mock-only") setMockOnly(true); }); }, []);
   const say = (kind, text) => setMsg({ kind, text });
@@ -239,14 +244,14 @@ export default function App() {
   const activeStep = st.step >= 0 && diagram.steps ? diagram.steps.findIndex((s) => s.edges.includes(st.step)) : -1;
 
   const seq = diagram.layout === "sequence";
-  const detailPanel = !editing && (
-    <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
-      {!selNode && !selEdge && <p className="muted">{seq ? "Click a message to see its request, response and the standards behind it, or a lifeline to see its role and messages." : "Click a box or an arrow to see what it is and which steps it is part of."}</p>}
+  const detailBody = (
+    <>
       {selNode && (
         <>
           <h3>{selNode.label}</h3>
           {diagram.groups?.[selNode.group] && <p className="muted" data-testid="detail-group">{diagram.groups[selNode.group].label}</p>}
           {selNode.sub?.length > 0 && <ul data-testid="detail-sub">{selNode.sub.map((l, i) => <li key={i}>{l}</li>)}</ul>}
+          {selNode.desc && <p data-testid="detail-desc">{selNode.desc}</p>}
           {diagram.layout === "sequence" && (
             <div data-testid="detail-messages">
               <h4>Messages through {selNode.label}</h4>
@@ -290,8 +295,29 @@ export default function App() {
           </ul>
         );
       })()}
-    </section>
+    </>
   );
+  const detailPanel = !editing && (seq ? (
+    <FloatingDialog
+      isOpen={seqDetailOpen && (Boolean(selNode) || Boolean(selEdge))}
+      onClose={() => setSeqDetailOpen(false)}
+      title={selEdge ? `Message ${sel.edge + 1}` : selNode ? selNode.label : "Details"}
+      ariaLabel="Selected detail"
+      defaultWidth={520}
+      defaultHeight={null}
+      placement="right"
+      storageKey="seq-detail-dialog"
+      singletonKey="seq-detail"
+      testId="detail-panel"
+    >
+      <div className="panel--plain" role="region" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel-body">{detailBody}</div>
+    </FloatingDialog>
+  ) : (
+    <section className="panel" aria-label="Selected detail" aria-live="polite" data-testid="detail-panel">
+      {!selNode && !selEdge && <p className="muted">Click a box or an arrow to see what it is and which steps it is part of.</p>}
+      {detailBody}
+    </section>
+  ));
 
   return (
     <div className="shell">
@@ -350,7 +376,13 @@ export default function App() {
         )}
         <div className={seq ? "seq-split" : undefined}>
           <Canvas diagram={diagram} step={st.step} editing={editing} onMove={onMove} fitKey={fitKey} selectedEdge={sel.edge} selectedNode={editing ? null : sel.node} present={present}
-          onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={setSel} />
+          onConnect={(s, t) => edit((d) => addEdge(d, s, t))} onSelect={seq ? seqPick : setSel} />
+          {seq && selNode && !editing && (
+            <p className="seq-desc" data-testid="seq-node-desc" aria-live="polite">
+              <strong>{selNode.label}</strong>{selNode.sub?.length > 0 && <> — {selNode.sub.join(" · ")}</>}
+              {selNode.desc && <>: {selNode.desc}</>}
+            </p>
+          )}
           {seq && detailPanel}
         </div>
 
