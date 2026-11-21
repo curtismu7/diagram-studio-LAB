@@ -16,3 +16,4 @@ export { boxPassport } from './passport.js';
 export { SEQ, SEQ_THEMES, isSequence, sequenceLayout, sequenceSvg, tidySequence, wrapText } from './sequence.js';
 export { SECTIONS, sectionOf, groupBySection } from './sections.js';
 export { DIAGRAM_ROUTES, NOT_INCLUDED } from './sections.js';
+export { TAG_GROUPS, TAG_IDS, TAG_LABEL, TAG_OVERRIDES, tagGroupOf, tagScores, tagText, tagsOf, matchesTags, tagCounts, groupByTagGroup } from './tags.js';

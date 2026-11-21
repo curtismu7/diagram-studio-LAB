@@ -450,6 +450,28 @@ try {
   await T('index-card-token-exchange').click();
   await T('canvas').waitFor();
   check(await T('all-diagrams-page').count() === 0 && (await T('picker').inputValue()) === 'token-exchange', 'a card opens its diagram and leaves the index');
+  // Tags like the demo shelf's: a tag panel with chips and counts, narrowing by tag, Group by Ping product, and the view in the address.
+  await T('all-diagrams').click(); await T('all-diagrams-page').waitFor(); // reopen the index (the card click above left it)
+  await T('index-tags-toggle').click();
+  check(await T('index-tagset-product').count() === 1 && await T('index-tagset-usecase').count() === 1 && await T('index-tagset-standard').count() === 1, 'the tag panel has the Ping products, Subjects and Standards groups');
+  await T('index-chip-ciba').click();
+  const cibaCards = await page.locator('[data-testid^="index-card-"]').count();
+  check(cibaCards >= 3 && cibaCards < cards && await T('index-card-ciba-approval-sequence').count() === 1, `the CIBA tag narrows the cards (${cibaCards} of ${cards}) and keeps the CIBA sequence`);
+  check(page.url().includes('tags=ciba'), 'and puts the tag in the address');
+  await T('index-group').selectOption('product');
+  check(await T('index-section-pingone').count() === 1, 'Group by Ping product makes a PingOne group');
+  await T('index-clear').click();
+  await T('index-group').selectOption('product');
+  check(await T('index-section-none').count() === 1 && (await T('index-section-none').innerText()).includes('Not specific to a Ping product'), 'diagrams that name no Ping product go under "Not specific to a Ping product"');
+  await T('index-group').selectOption('section');
+  // The Ping product menu: only products that are in diagrams, a pick narrows the cards, "All Ping products" clears it.
+  const productOpts = await T('index-product').locator('option').allInnerTexts();
+  check(productOpts[0] === 'All Ping products' && productOpts.length > 5 && productOpts.every((t, i) => i === 0 || /\(\d+\)$/.test(t)) && !productOpts.some((t) => /\(0\)$/.test(t)), `the Ping product menu lists the ${productOpts.length - 1} products that are in diagrams, with counts`);
+  await T('index-product').selectOption('pingfederate');
+  const pfCards = await page.locator('[data-testid^="index-card-"]').count();
+  check(pfCards > 3 && pfCards < cards && page.url().includes('tags=pingfederate'), `choosing PingFederate shows ${pfCards} diagrams and puts it in the address`);
+  await T('index-product').selectOption('');
+  check(await page.locator('[data-testid^="index-card-"]').count() === cards, 'All Ping products shows them all again');
   await page.goto(`${base}/?view=all`);
   await T('all-diagrams-page').waitFor();
   check(true, '?view=all opens the index directly');

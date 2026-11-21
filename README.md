@@ -132,6 +132,13 @@ The **All diagrams** button in the header (or `/?view=all`) opens an index of ev
 filter. Each card is a link to the diagram. A diagram is placed by the route of the demo page it was converted from (`core/src/sections.js`); the page also lists,
 as text, the demo's diagrams that are not here and why (live data, an editor, customer-specific). Diagrams you saved yourself appear under **Your diagrams**.
 
+**Tags and grouping, like the demo shelf.** Every diagram carries tags in the shelf's own groups and ids: **Ping products** (PingOne, PingFederate, PingGateway, PingOne Authorize, DaVinci, Privilege, Agent Gateway ...),
+**Subjects** (agent identity and delegation, human approval, sign-in and step-up, token security, MCP security ...) and **Standards and protocols** (OAuth, Token Exchange RFC 8693, CIBA, PAR, DPoP, MCP, A2A ...).
+A **Ping product** menu next to the filter lists only the products that appear in some diagram, with how many each would show: the quickest way to find the diagrams for one product (it sets the same tag the chips do). "Filter by tag" opens the chips, with a **Close** button (the panel remembers whether you left it open): inside a group the picked chips are alternatives, across groups they all have to hold, and each chip shows how many diagrams it would give with the other filters applied.
+"Group by" switches the page between Section, Ping product, Subject and Standard; in the tag groupings a diagram appears under each of its tags, and diagrams that name no Ping product go under "Not specific to a Ping product".
+The view is in the address (`?view=all&tags=ciba,pingfederate&q=token&group=product`; an unknown tag id is ignored). A diagram's tags are derived, not typed: `core/src/tags.js` scores the words in its title, description,
+box and step titles and the standards its steps cite, keeps the tags that score enough (at most three subjects), and applies `TAG_OVERRIDES` for the few it gets wrong. Diagrams you saved yourself have no tags and sit under **Your diagrams** until you pick one.
+
 ## Diagram format (`diagram-studio/1`)
 
 ```json
