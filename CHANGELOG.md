@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Sequence layout: `"layout": "sequence"` draws a diagram as lifelines and numbered messages in order, with phase `bands`, yellow `notes` and `alt` / `loop` / `opt` `blocks`, in the look of the reference Lucidchart sequence (lavender boxes, purple lifelines, black arrows with numbered discs). Click a message for its step, example request / response and standards; click a lifeline for its role and its messages; Simulate keeps the message in focus in view. Pure `sequenceLayout` in core feeds the canvas and the SVG / PNG / HTML exports. Optional `step.refs` cites RFCs and a short list of specs (the link is built by the studio). Steps limit raised from 60 to 120. Tidy spaces lifelines evenly. The HTML export lists a step's standards as text (it stays free of links).
 - Box details: click a box and it expands in place, details below its title: its group, its code pointers (links to the pinned commit), reach (boxes upstream and downstream along the arrows), and the boxes it sends to and receives from (each opens that box). Click again, Close, or the empty canvas collapses it; Copy link and `?d=<id>&box=<box>` open a diagram with a box expanded. Pure `boxPassport` in core.
 - Apps: the flow of cedar-act-sub-LAB (`cedar-act-sub-flow`, `CEDAR_ACT_SUB_FLOW`) joins the app diagrams, so that lab loads its diagram by name from studio data (rule 17).
 - Apps: the flow of cedar-in-privilege-LAB (`cedar-in-privilege-flow`, `CEDAR_IN_PRIVILEGE_FLOW`) joins the app diagrams, so that lab loads its diagram by name from studio data (rule 17).

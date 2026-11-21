@@ -105,6 +105,11 @@
       "href": "/?d=cedar-in-privilege-flow"
     },
     {
+      "id": "ciba-approval-sequence",
+      "label": "Agent booking with out-of-band approval (CIBA)",
+      "href": "/?d=ciba-approval-sequence"
+    },
+    {
       "id": "ciba-link",
       "label": "CIBA approval link",
       "href": "/?d=ciba-link"

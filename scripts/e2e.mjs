@@ -400,6 +400,35 @@ try {
   check((await filePage.locator('#cnt').innerText()) === 'Not playing', 'Reset returns to the overview');
   check(fileReqs.length === 0 && fileErrs.length === 0, `the saved page makes no network request and has no errors${fileReqs.concat(fileErrs).length ? ': ' + fileReqs.concat(fileErrs).join(' | ') : ''}`);
   await filePage.close();
+  // Sequence layout: 10 lifelines, 71 numbered messages, click one for its request / response / standards, Simulate keeps the panel on the message
+  // in focus, a lifeline drags sideways and Reset puts it back.
+  await T('picker').selectOption('ciba-approval-sequence');
+  await T('seq-board').waitFor();
+  check(await page.locator('[data-testid^="seq-msg-"]').count() === 71, 'the CIBA sequence draws 71 numbered messages');
+  check(await page.locator('[data-testid^="node-"]').count() === 10, 'and 10 lifeline boxes');
+  check(await page.locator('[data-testid^="seq-band-"]').count() === 3 && await page.locator('[data-testid^="seq-block-"]').count() === 3, 'with its 3 phase bands and 3 alt / loop frames');
+  await T('seq-msg-21').dispatchEvent('click');
+  const seqPanel = await T('detail-panel').innerText();
+  check(/Message 22/.test(seqPanel) && /RFC 8693/.test(seqPanel), 'clicking message 22 shows its step and the RFC it cites');
+  check(await T('detail-panel').locator('a[href^="https://www.rfc-editor.org/rfc/rfc8693"]').count() >= 1, 'the RFC is a link to rfc-editor.org');
+  check(await T('detail-wire-22').count() === 1 && (await T('detail-wire-22').locator('[data-testid=wire-request]').count()) === 1, 'and its example request and response');
+  await T('node-aigw').click();
+  check(/Messages through/.test(await T('detail-panel').innerText()), 'clicking a lifeline lists the messages through it');
+  await T('simulate').click();
+  await page.waitForFunction(() => /Message [2-9] of 71/.test(document.querySelector('[data-testid=stepcount]').textContent), null, { timeout: 8000 });
+  check(/Message \d+: /.test(await T('detail-panel').innerText()), 'Simulate keeps the side panel on the message being walked');
+  await T('pause').click();
+  // The view eases to each message and back to the top on Reset; measure a box only once it has stopped moving.
+  const settled = async (id) => { let last = null; for (let i = 0; i < 30; i++) { const b = await T(`node-${id}`).boundingBox(); if (b && last && Math.abs(b.x - last.x) < 0.5 && Math.abs(b.y - last.y) < 0.5) return b; last = b; await page.waitForTimeout(150); } return last; };
+  await T('reset-layout').click();
+  const seqBefore = await settled('mcp');
+  await page.mouse.move(seqBefore.x + 20, seqBefore.y + 10); await page.mouse.down(); await page.mouse.move(seqBefore.x + 150, seqBefore.y + 10, { steps: 8 }); await page.mouse.up();
+  const seqMoved = await settled('mcp');
+  check(Math.abs(seqMoved.x - seqBefore.x) > 60 && Math.abs(seqMoved.y - seqBefore.y) < 5, `a lifeline box drags sideways only (moved ${Math.round(seqMoved.x - seqBefore.x)}px across, ${Math.round(seqMoved.y - seqBefore.y)}px down)`);
+  await T('reset-layout').click();
+  const seqAfter = await settled('mcp');
+  check(Math.abs(seqAfter.x - seqBefore.x) < 5, `Reset puts the lifeline back (${Math.round(seqAfter.x - seqBefore.x)}px off)`);
+  await page.screenshot({ path: path.join(shots, '2b-sequence.png') });
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByTestId('theme-select').selectOption('dark');

@@ -3,6 +3,7 @@ import { Background, BaseEdge, Controls, getBezierPath, Handle, MarkerType, Posi
 import { boxPassport } from "@diagram-studio/core";
 import { handlePoint, placeLabels } from "./labelPlacement.js";
 import Passport, { PassportActions } from "./Passport.jsx";
+import SequenceCanvas from "./SequenceCanvas.jsx";
 
 // One box. Text is rendered as React text only, never as HTML. Arrows run left to right (out on the right, in on the
 // left); an arrow that points back to the left uses the hidden "back" handles, out on the left and in on the right,
@@ -149,5 +150,6 @@ function Inner({ diagram, step, editing, onMove, onConnect, onSelect, selectedEd
 }
 
 export default function Canvas(props) {
+  if (props.diagram?.layout === "sequence") return <SequenceCanvas {...props} />;
   return <div className="canvas" data-testid="canvas" role="group" aria-label="Diagram canvas. Drag boxes to move them."><ReactFlowProvider><Inner {...props} /></ReactFlowProvider></div>;
 }

@@ -13,3 +13,4 @@ export { validateWire, wireView, CLAIMS, WIRE_LIMITS } from './wire.js';
 export { WIRE, withWire } from './wiredata.js';
 export { sourceLabel, sourceHref } from './sources.js';
 export { boxPassport } from './passport.js';
+export { SEQ, SEQ_THEMES, isSequence, sequenceLayout, sequenceSvg, tidySequence, wrapText } from './sequence.js';

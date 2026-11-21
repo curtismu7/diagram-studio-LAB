@@ -1,6 +1,7 @@
 // Diagram -> standalone SVG, a pure function of the document (no DOM). Used for the SVG download and, drawn to a canvas, the PNG.
 // Boxes are sized from their text (no browser measurement), so the picture is close to, not identical with, the on-screen layout.
 import { COLORS, validateDiagram } from './validate.js';
+import { isSequence, sequenceSvg } from './sequence.js';
 
 const FILL = { red: '#c8102e', dark: '#2b3445', grey: '#6b7587', blue: '#1f6fb5', green: '#1a7f37', amber: '#8a5a00' };
 const THEMES = {
@@ -73,6 +74,7 @@ const LABEL_SHAPES = [{ chars: 34, lines: 3, cost: 0 }, { chars: 22, lines: 4, c
 export function toSvg(d, { theme = 'light', step = -1, title = true, idPrefix = '' } = {}) {
   const problems = validateDiagram(d);
   if (problems.length) throw new Error(`toSvg: diagram is not valid: ${problems[0]}`);
+  if (isSequence(d)) return sequenceSvg(d, { theme, step, title, idPrefix });
   const T = THEMES[theme] || THEMES.light;
   const colorOf = (g) => (COLORS.includes(d.groups[g]?.color) ? d.groups[g].color : 'grey');
   const boxes = d.nodes.map((n) => layoutBox({ ...n, color: colorOf(n.group) }));

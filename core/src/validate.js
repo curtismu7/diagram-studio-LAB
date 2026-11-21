@@ -2,7 +2,24 @@
 // Text is never interpreted (the web app renders it as React text), but sizes and shapes are bounded here.
 import { validateWire } from './wire.js';
 export const SCHEMA = 'diagram-studio/1';
-export const LIMITS = { nodes: 60, edges: 120, steps: 60, groups: 8, text: 300, sub: 6, id: 48, sources: 3 };
+export const LIMITS = { nodes: 60, edges: 120, steps: 120, groups: 8, text: 300, sub: 6, id: 48, sources: 3, bands: 12, notes: 40, blocks: 12, refs: 5 };
+export const LAYOUTS = ['sequence'];
+export const BLOCK_KINDS = ['alt', 'loop', 'opt'];
+// Standards a step can cite. An RFC is { spec: 'RFC 8693', section?: '2.1' }; the other specs are a fixed list so a diagram can never
+// carry an arbitrary link (the URL is built from this table, never stored in the diagram).
+export const SPECS = {
+  'CIBA Core 1.0': 'https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html',
+  'OIDC Core 1.0': 'https://openid.net/specs/openid-connect-core-1_0.html',
+  'MCP': 'https://modelcontextprotocol.io/specification',
+};
+const RFC = /^RFC \d{3,5}$/;
+const SECTION = /^[A-Za-z0-9.-]{1,16}$/;
+/** The public URL for a spec reference, or null when the reference is not one we can link. */
+export function specUrl(ref) {
+  if (!ref || typeof ref.spec !== 'string') return null;
+  if (RFC.test(ref.spec)) return `https://www.rfc-editor.org/rfc/rfc${ref.spec.slice(4)}${ref.section && SECTION.test(ref.section) ? `#section-${ref.section}` : ''}`;
+  return Object.hasOwn(SPECS, ref.spec) ? SPECS[ref.spec] : null;
+}
 export const COLORS = ['red', 'dark', 'grey', 'blue', 'green', 'amber'];
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
 const STORY_ID = /^S\d{2}$/;
@@ -25,11 +42,68 @@ function sourceProblems(s) {
   return p;
 }
 
+const idx = (v, n) => Number.isInteger(v) && v >= 0 && v < n;
+
+/** Problems with the sequence-only parts (bands, notes, blocks). Ranges are 0-based arrow numbers. */
+function sequenceProblems(d, ids, n) {
+  const p = [];
+  const list = (key, max) => {
+    if (d[key] === undefined) return [];
+    if (!Array.isArray(d[key]) || d[key].length > max) { p.push(`${key} must be a list of at most ${max}`); return []; }
+    return d[key];
+  };
+  const range = (o, at) => { if (!idx(o.from, n) || !idx(o.to, n) || o.from > o.to) { p.push(`${at}: from and to must be arrow numbers with from not after to`); return false; } return true; };
+  const bands = list('bands', LIMITS.bands);
+  let end = -1;
+  bands.forEach((b, i) => {
+    const at = `band ${i + 1}`;
+    if (!isObj(b) || !str(b.title, 120)) return p.push(`${at}: title is required (max 120)`);
+    if (!COLORS.includes(b.color)) p.push(`${at}: color must be one of ${COLORS.join(', ')}`);
+    if (range(b, at)) { if (b.from <= end) p.push(`${at}: bands must be in order and must not overlap`); end = b.to; }
+  });
+  list('notes', LIMITS.notes).forEach((o, i) => {
+    const at = `note ${i + 1}`;
+    if (!isObj(o) || !str(o.text, 160)) return p.push(`${at}: text is required (max 160)`);
+    if (!idx(o.at, n)) p.push(`${at}: at must be the number of the arrow it sits before`);
+    if (o.over !== undefined && !(Array.isArray(o.over) && o.over.length >= 1 && o.over.length <= 2 && o.over.every((x) => ids.has(x)))) p.push(`${at}: over must name one or two boxes`);
+  });
+  const blocks = list('blocks', LIMITS.blocks);
+  const ok = [];
+  blocks.forEach((b, i) => {
+    const at = `block ${i + 1}`;
+    if (!isObj(b) || !BLOCK_KINDS.includes(b.kind)) return p.push(`${at}: kind must be one of ${BLOCK_KINDS.join(', ')}`);
+    if (!str(b.title, 120)) p.push(`${at}: title is required (max 120)`);
+    if (!range(b, at)) return;
+    if (b.else !== undefined && !(isObj(b.else) && str(b.else.title, 120) && Number.isInteger(b.else.at) && b.else.at > b.from && b.else.at <= b.to)) p.push(`${at}: else needs a title and an arrow number after from and not after to`);
+    ok.push([at, b]);
+  });
+  // Blocks nest or stay apart; two that cross would not draw as frames.
+  ok.forEach(([at, a], i) => ok.slice(i + 1).forEach(([, b]) => {
+    const apart = a.to < b.from || b.to < a.from; const inside = (a.from <= b.from && b.to <= a.to) || (b.from <= a.from && a.to <= b.to);
+    if (!apart && !inside) p.push(`${at}: blocks must nest or stay apart, not cross`);
+  }));
+  return p;
+}
+
+/** Problems with one step's `refs`: the standards it cites. */
+function refProblems(refs, at) {
+  if (!Array.isArray(refs) || refs.length < 1 || refs.length > LIMITS.refs) return [`${at}: refs must list 1 to ${LIMITS.refs} standards`];
+  const p = [];
+  refs.forEach((r, k) => {
+    if (!isObj(r) || !specUrl(r)) return p.push(`${at} ref ${k + 1}: spec must be "RFC" and a number (for example "RFC 8693") or one of ${Object.keys(SPECS).join(', ')}`);
+    if (r.section !== undefined && !(typeof r.section === 'string' && SECTION.test(r.section))) p.push(`${at} ref ${k + 1}: section must be a short number such as 2.1`);
+    if (r.note !== undefined && !str(r.note, 160)) p.push(`${at} ref ${k + 1}: note must be text (max 160)`);
+  });
+  return p;
+}
+
 /** Returns an array of human-readable problems; empty means valid. Never throws. */
 export function validateDiagram(d) {
   const p = [];
   if (!isObj(d)) return ['diagram must be an object'];
   if (d.schema !== SCHEMA) p.push(`schema must be "${SCHEMA}"`);
+  if (d.layout !== undefined && !LAYOUTS.includes(d.layout)) p.push(`layout must be one of ${LAYOUTS.join(', ')}`);
+  if (d.layout === undefined && (d.bands !== undefined || d.notes !== undefined || d.blocks !== undefined)) p.push('bands, notes and blocks need layout "sequence"');
   if (typeof d.id !== 'string' || !ID.test(d.id) || d.id.length > LIMITS.id) p.push('id must be lowercase letters, digits, - or _ (max 48)');
   if (!str(d.title, 120)) p.push('title is required (max 120 characters)');
   if (d.lede !== undefined && typeof d.lede !== 'string') p.push('lede must be text');
@@ -95,10 +169,12 @@ export function validateDiagram(d) {
       if (s.story !== undefined && !(isObj(s.story) && STORY_ID.test(s.story.id) && Number.isInteger(s.story.step) && s.story.step >= 1 && s.story.step <= 99)) p.push(`${at}: story must be { id: "S01", step: 1 }: the id is S and two digits, the step a whole number from 1 to 99`);
       if (s.hop !== undefined && !(typeof s.hop === 'string' && HOP.test(s.hop))) p.push(`${at}: hop must be a short id (letters, digits . _ : / -)`);
       if (s.wire !== undefined) p.push(...validateWire(s.wire, at));
+      if (s.refs !== undefined) p.push(...refProblems(s.refs, at));
       const n = Array.isArray(d.edges) ? d.edges.length : 0;
       if (!Array.isArray(s.edges) || !s.edges.every((x) => Number.isInteger(x) && x >= 0 && x < n)) p.push(`${at}: edges must list valid edge numbers`);
     });
   }
+  if (d.layout === 'sequence' && Array.isArray(d.edges)) p.push(...sequenceProblems(d, ids, d.edges.length));
   return p;
 }
 

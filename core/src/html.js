@@ -44,6 +44,8 @@ function show(){
   if(si>=0){var s=D.steps[si];pan.appendChild(el('h2',(si+1)+'. '+s.title));pan.appendChild(el('p',s.what));
     if(s.why)pan.appendChild(el('p','Why it matters: '+s.why,'muted'));
     if(s.hop)pan.appendChild(el('p','Trace hop: '+s.hop,'muted'));
+    if(s.refs&&s.refs.length){var rp=el('p',undefined,'refs');rp.appendChild(el('strong','Standards: '));
+      rp.appendChild(document.createTextNode(s.refs.map(function(r){return r.name+(r.note?' ('+r.note+')':'');}).join(' · ')));pan.appendChild(rp);}
     if(s.story){pan.appendChild(el('p','Say: '+s.story.say,'say'));pan.appendChild(el('p',s.story.tell));}
     if(s.wire)wire(s.wire);}
   play.textContent=timer?'Pause':'Play';
@@ -76,7 +78,7 @@ export function toHtml(d, { theme = 'light' } = {}) {
     title: d.title, captions: captions(d), stepOf,
     steps: (d.steps || []).map((s) => {
       const ss = s.story ? findStoryStep(s.story) : null;
-      return { title: s.title, what: s.what, ...(s.why ? { why: s.why } : {}), ...(s.hop ? { hop: s.hop } : {}), ...(s.wire ? { wire: wireView(s.wire) } : {}), ...(ss ? { story: { say: ss.say, tell: ss.tell } } : {}) };
+      return { title: s.title, what: s.what, ...(s.why ? { why: s.why } : {}), ...(s.hop ? { hop: s.hop } : {}), ...(s.refs ? { refs: s.refs.map((r) => ({ name: `${r.spec}${r.section ? ` section ${r.section}` : ''}`, ...(r.note ? { note: r.note } : {}) })) } : {}), ...(s.wire ? { wire: wireView(s.wire) } : {}), ...(ss ? { story: { say: ss.say, tell: ss.tell } } : {}) };
     }),
   };
   return `<!doctype html>

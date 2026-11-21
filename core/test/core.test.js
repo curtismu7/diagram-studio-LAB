@@ -187,7 +187,7 @@ test('toSvg: one rect and one line per box/arrow, labels escaped, deterministic,
 
 test('toSvg handles every built-in diagram and parallel arrows, long text, and negative coordinates', async () => {
   const { toSvg } = await import('../src/index.js');
-  for (const d of SAMPLES) { const r = toSvg(d); assert.ok(r.width > 0 && r.height > 0, d.id); assert.equal((r.svg.match(/<path class="e" /g) || []).length, d.edges.length, d.id); }
+  for (const d of SAMPLES) { const r = toSvg(d); assert.ok(r.width > 0 && r.height > 0, d.id); assert.equal((r.svg.match(d.layout === 'sequence' ? /<g class="m"/g : /<path class="e" /g) || []).length, d.edges.length, d.id); }
   const d = clone(SAMPLES[0]);
   d.edges = [{ source: 'user', target: 'api', label: 'x'.repeat(160) }, { source: 'api', target: 'user' }, { source: 'user', target: 'api' }];
   d.steps = [];
