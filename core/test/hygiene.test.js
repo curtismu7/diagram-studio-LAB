@@ -25,4 +25,8 @@ test('shipped content has no emails on real domains, ids, addresses, paths or pe
     names: /cmuir|curtis|procyon|ping-devops|pingidentity|pingone\.com|ai-demo|demo_api|banking_[a-z]|\.ping\.demo|mcpgw/i,
   };
   for (const [k, re] of Object.entries(patterns)) assert.equal(re.test(text), false, `${k} found in the shipped content`);
+  // A tenant or environment id shortened to its first 8 characters is still an identifier (two such prefixes were found in shipped diagrams on 2026-11-21).
+  // Eight hex characters with at least one digit and one letter; the obvious placeholder a1b2c3d4 is allowed.
+  const eightHex = [...text.matchAll(/\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{8}\b/gi)].map((m) => m[0].toLowerCase()).filter((x) => x !== 'a1b2c3d4');
+  assert.deepEqual([...new Set(eightHex)], [], 'an 8-character hex id-like string is in the shipped content');
 });

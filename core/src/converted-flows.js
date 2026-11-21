@@ -218,7 +218,7 @@ export const CONVERTED_FLOWS = [
    },
    {
     "title": "Who is calling (inferred)",
-    "what": "People sign in through PingOne env 0428ba4f (federated to the demo environment; PingFederate is only a sign-in source behind it). The gateway matches the caller to a Privilege user by email alias and loads their groups; its log reports 4 users, 4 agents, 1 group.",
+    "what": "People sign in through PingOne environment A (federated to the demo environment; PingFederate is only a sign-in source behind it). The gateway matches the caller to a Privilege user by email alias and loads their groups; its log reports 4 users, 4 agents, 1 group.",
     "why": "A PF token never reaches the door for people. The match by email is read from the log, not tested.",
     "edges": [
      3

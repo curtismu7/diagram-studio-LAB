@@ -5539,7 +5539,7 @@ export const LIBRARY = [
    {
     "id": "priv",
     "group": "p1",
-    "label": "PingOne 0428ba4f",
+    "label": "PingOne environment A",
     "sub": [
      "Privilege \"AI Agent\" env",
      "issues the token",
@@ -5551,7 +5551,7 @@ export const LIBRARY = [
    {
     "id": "demo",
     "group": "p1",
-    "label": "PingOne 01d89b06",
+    "label": "PingOne environment B",
     "sub": [
      "demo env",
      "federation app + sign-on"
@@ -5669,7 +5669,7 @@ export const LIBRARY = [
    {
     "source": "priv",
     "target": "door",
-    "label": "token issued by 0428ba4f; PF scopes are not expected in it",
+    "label": "token issued by environment A; PF scopes are not expected in it",
     "dashed": true
    },
    {
@@ -5722,7 +5722,7 @@ export const LIBRARY = [
   "steps": [
    {
     "title": "The door is its own authorization server",
-    "what": "An unauthenticated call gets a 401 whose metadata names the door itself as issuer. Its /authorize redirects to the Privilege-owned PingOne environment 0428ba4f with a fixed scope list.",
+    "what": "An unauthenticated call gets a 401 whose metadata names the door itself as issuer. Its /authorize redirects to the Privilege-owned PingOne environment A with a fixed scope list.",
     "why": "For a person signing in, a PingFederate token never reaches the door. Agents are different: see route C below.",
     "edges": [
      0,
@@ -5731,7 +5731,7 @@ export const LIBRARY = [
    },
    {
     "title": "Sign-in is federated to the demo environment",
-    "what": "Environment 0428ba4f hands the sign-in on to 01d89b06, the demo environment, so the user logs in once, there.",
+    "what": "Environment A hands the sign-in on to environment B, the demo environment, so the user logs in once, there.",
     "why": "That is the only place PingFederate can be added without touching Privilege.",
     "edges": [
      2
@@ -5739,7 +5739,7 @@ export const LIBRARY = [
    },
    {
     "title": "Route A: PingFederate as an external IdP",
-    "what": "PF would be added to 01d89b06 the way AIC already is: an IdP object plus a sign-on policy on the federation app. PF authenticates; PingOne takes the identity. Not done yet, and a write to ask about first.",
+    "what": "PF would be added to environment B the way AIC already is: an IdP object plus a sign-on policy on the federation app. PF authenticates; PingOne takes the identity. Not done yet, and a write to ask about first.",
     "why": "This brings the PF user in. It does not carry PF claims through to Cedar.",
     "edges": [
      3,
@@ -5748,7 +5748,7 @@ export const LIBRARY = [
    },
    {
     "title": "The token Cedar sees is Privilege's",
-    "what": "0428ba4f issues the token with its own scopes. PF scopes appearing in context.token.scopes is untested; assume they do not.",
+    "what": "Environment A issues the token with its own scopes. PF scopes appearing in context.token.scopes is untested; assume they do not.",
     "why": "Protect on identity and groups, not on a PF scope, until a live call proves otherwise.",
     "edges": [
      5

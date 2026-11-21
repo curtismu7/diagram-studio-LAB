@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { SAMPLES, TAG_GROUPS, TAG_IDS, TAG_OVERRIDES, tagGroupOf, tagsOf, tagScores, matchesTags, tagCounts, groupByTagGroup } from '../src/index.js';
 
 const byId = (id) => SAMPLES.find((d) => d.id === id);
@@ -46,7 +47,9 @@ test('tags follow the diagram: titles, product names and cited standards decide 
   assert.ok(tagsOf(byId('hostilemcp-hostile')).includes('tool-poisoning'));
   assert.ok(tagsOf(byId('hostilemcp-hostile')).includes('mcp'));
   const d = structuredClone(byId('auth-code-pkce')); d.id = 'x-ref'; d.steps[0].refs = [{ spec: 'RFC 9126' }];
-  assert.ok(tagsOf(d).includes('par'), 'a cited RFC adds its tag');
+  assert.ok(!tagsOf(d).includes('par'), 'one step citing a standard is not enough to tag it');
+  const d2 = structuredClone(byId('auth-code-pkce')); d2.id = 'x-ref-2'; d2.steps[0].refs = [{ spec: 'RFC 9126' }]; d2.steps[1].refs = [{ spec: 'RFC 9126' }]; // a fresh object: tagsOf caches per diagram object
+  assert.ok(tagsOf(d2).includes('par'), 'two steps citing it are');
   assert.ok(!tagsOf(byId('auth-code-pkce')).includes('par'));
 });
 
@@ -86,4 +89,27 @@ test('groupByTagGroup: a diagram sits under each of its tags in the group, the r
   const seen = new Set(g.flatMap((b) => b.items.map((d) => d.id)));
   assert.equal(seen.size, SAMPLES.length, 'every diagram appears at least once');
   assert.deepEqual(groupByTagGroup(SAMPLES, 'nope', 'x'), []);
+});
+
+test('a box named after a Ping product counts for that product, and a hyphenated ping-gateway is PingGateway', () => {
+  const base = structuredClone(byId('token-exchange'));
+  const withBox = (label) => ({ ...structuredClone(base), id: `x-${label.length}`, title: 'Plain', lede: '', nodes: base.nodes.map((n, i) => (i === 0 ? { ...n, label } : n)) });
+  assert.ok(tagsOf(withBox('PingOne Authorize')).includes('pingone-authorize'), 'one box is enough');
+  assert.ok(tagsOf(withBox('ping-gateway :8080')).includes('pinggateway'), 'hyphenated');
+  assert.ok(!tagsOf(withBox('A plain service')).includes('pinggateway'));
+});
+
+test('the review pass: corrections the rules cannot make are in TAG_OVERRIDES and take effect', () => {
+  assert.ok(tagsOf(byId('mock-authorize-flow')).includes('pingone-authorize'));
+  assert.ok(!tagsOf(byId('mock-authorize-flow')).includes('pingone'));
+  for (const id of ['pfl-signin', 'pfl-rar', 'pfl-dcr']) assert.ok(!tagsOf(byId(id)).includes('pingfederate'), id);
+  assert.ok(!tagsOf(byId('gateway-topology-lb')).includes('tool-poisoning'));
+  assert.ok(tagsOf(byId('token-flow-full-flow')).includes('agent-gateway'), 'its box is "PingOne Agent Gateway"');
+  assert.ok(tagsOf(byId('mcp-step-up')).includes('learning') && !tagsOf(byId('mcp-step-up')).includes('agent-gateway'));
+  assert.ok(tagsOf(byId('delegation-chain')).includes('learning') && tagsOf(byId('delegation-chain')).includes('token-exchange'), 'both overrides kept');
+  // an object literal with a repeated key silently drops the first: every override id must appear once
+  const src = fs.readFileSync(new URL('../src/tags.js', import.meta.url), 'utf8');
+  const block = src.slice(src.indexOf('export const TAG_OVERRIDES'), src.indexOf('const cache = new WeakMap()'));
+  const ids = [...block.matchAll(/^\s*'([a-z0-9-]+)': \{|, '([a-z0-9-]+)': \{/gm)].map((m) => m[1] || m[2]);
+  assert.equal(new Set(ids).size, ids.length, `a key is repeated: ${ids.filter((x, i) => ids.indexOf(x) !== i).join(', ')}`);
 });
