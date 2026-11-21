@@ -143,9 +143,8 @@ a { color: var(--status-info); }
   --seq-band-blue: #1b2a45; --seq-band-amber: #3a2e1a; --seq-band-green: #17352a; --seq-band-grey: #222831; --seq-band-red: #3b1d22; --seq-band-dark: #1d222b;
 }
 .canvas--seq { height: max(30rem, calc(100vh - 16rem)); }
-.seq-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 30rem); gap: 0.75rem; align-items: start; }
-.seq-split > .panel { max-height: max(30rem, calc(100vh - 16rem)); overflow: auto; margin: 0; }
-@media (max-width: 62rem) { .seq-split { grid-template-columns: minmax(0, 1fr); } .seq-split > .panel { max-height: none; } }
+.seq-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; align-items: start; }
+.seq-desc { margin: 0; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); font-size: 0.95rem; }
 .seq-actor { box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px; padding: 4px 8px; text-align: center; font-size: 12px; line-height: 1.25; color: var(--text); background: var(--seq-actor); border: 1px solid var(--seq-life); border-radius: 4px; cursor: grab; }
 .seq-actor--foot { cursor: default; }
 .seq-actor__sub { font-size: 10.5px; opacity: 0.75; }
@@ -173,7 +172,7 @@ a { color: var(--status-info); }
 .linklike { all: unset; cursor: pointer; color: var(--focus); text-decoration: underline; } .linklike:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .refs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; list-style: none; padding: 0; margin: 0.4rem 0; font-size: 0.9rem; }
 :root[data-present="1"] .canvas--seq { height: max(22rem, calc(100vh - 19rem)); }
-.seq-split .wire-cols { grid-template-columns: 1fr; } /* the side panel is narrow: request above response, not beside it */
+.panel--plain .wire-cols { grid-template-columns: 1fr; } /* the dialog is narrow: request above response, not beside it */
 
 /* All diagrams (the index page): sections of cards, each a link. */
 .index h2 { margin-bottom: 0.25rem; }
