@@ -74,7 +74,7 @@ describe("the standalone HTML page works with no help from the studio", () => {
     w.document.dispatchEvent(new w.KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
     expect(text(w, "cnt")).toBe("Arrow 1 of 6");
     for (const s of SAMPLES) { const p = open(s); expect(visible(p)).toEqual([0]); click(p, "next"); expect(text(p, "cnt")).toContain(`of ${s.edges.length}`); }
-  });
+  }, 120_000); // opens one exported page per diagram in jsdom: the studio ships 90+, some with 70 baked-in pictures
 });
 
 // A page whose setInterval/clearInterval are recorded, so speeds and timer stopping can be asserted exactly.

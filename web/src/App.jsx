@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import fs from "node:fs";
-import { SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, sourceHref, sourceLabel, validateDiagram } from "@diagram-studio/core";
+import { DIAGRAM_ROUTES, NOT_INCLUDED, SPEEDS, LARGE_HTML_BYTES, TEMPLATES, history as H, autoLayout, newDiagram, toHtml, toSvg, addEdge, addNode, captions, moveNode, removeEdge, removeNode, renameNode, resetLayout, setEdgeLabel, sourceHref, sourceLabel, validateDiagram } from "@diagram-studio/core";
 import * as api from "./api.js";
 import Canvas from "./Canvas.jsx";
 import StepLinks from "./StepLinks.jsx";
 import WirePanel from "./WirePanel.jsx";
 import DetailsEditor from "./DetailsEditor.jsx";
+import AllDiagrams from "./AllDiagrams.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
@@ -46,6 +47,11 @@ export default function App() {
   useEffect(() => { api.getInfo().then((r) => r.ok && setModeInfo(r.data)).catch(() => {}); }, []);
   // Rule 19: the toggle asks the server; a refusal keeps the current mode on screen.
   const selectMode = async (source) => { const r = await api.setMode(source); if (r.ok) setModeInfo(r.data); };
+  // "All diagrams": the index page. ?view=all opens it; picking a card (or any diagram) leaves it.
+  const [view, setView] = useState(() => { try { return new URLSearchParams(window.location.search).get("view") === "all" ? "index" : "diagram"; } catch { return "diagram"; } });
+  useEffect(() => {
+    try { const u = new URL(window.location.href); if (view === "index") u.searchParams.set("view", "all"); else u.searchParams.delete("view"); window.history.replaceState(null, "", u); } catch { /* no history */ }
+  }, [view]);
   const [editing, setEditing] = useState(false);
   const [sel, setSel] = useState({});
   // Sequence diagrams: clicking a message or a lifeline opens the details in a floating dialog (drag, resize, pop out)
@@ -154,7 +160,7 @@ export default function App() {
 
 
   const guardLeave = () => !dirty || window.confirm("Discard unsaved changes?");
-  const pick = (id) => { if (id !== diagram?.id && guardLeave()) open(id); };
+  const pick = (id) => { if (id === diagram?.id) { setView("diagram"); return; } if (guardLeave()) { setView("diagram"); open(id); } };
 
   async function save() {
     const r = await api.saveDiagram(diagram);
@@ -338,6 +344,7 @@ export default function App() {
           <VerifyMark id="diagram-studio" path="api/shelf" />
         </TopMenu>
         <label className="grow">
+          <button type="button" onClick={() => setView(view === "index" ? "diagram" : "index")} aria-pressed={view === "index"} data-testid="all-diagrams">All diagrams</button>{" "}
           <span className="picker-label">Choose a diagram</span>{" "}
           <select className="picker" aria-label="Diagram" value={diagram.id} onChange={(e) => { pick(e.target.value); if (present) e.target.blur(); }} data-testid="picker">
             {list.map((d) => <option key={d.id} value={d.id}>{d.title}{list.filter((x) => x.title === d.title).length > 1 ? ` [${d.id}]` : ""}{d.builtin ? " (sample)" : ""}</option>)}
@@ -347,6 +354,7 @@ export default function App() {
       </header>
 
       <main className="page">
+        {view === "index" ? <AllDiagrams list={list} routes={DIAGRAM_ROUTES} notIncluded={NOT_INCLUDED} onOpen={pick} /> : (<>
         <h2>{diagram.title}{dirty && <span className="muted small"> · unsaved changes</span>}</h2>
         {diagram.lede && <p className="lede">{diagram.lede}</p>}
 
@@ -461,6 +469,7 @@ export default function App() {
             ))}
           </ol>
         )}
+      </>)}
       </main>
       <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
 

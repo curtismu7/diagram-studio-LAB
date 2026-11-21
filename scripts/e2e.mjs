@@ -437,6 +437,24 @@ try {
   const seqAfter = await settled('mcp');
   check(Math.abs(seqAfter.x - seqBefore.x) < 5, `Reset puts the lifeline back (${Math.round(seqAfter.x - seqBefore.x)}px off)`);
   await page.screenshot({ path: path.join(shots, '2b-sequence.png') });
+  // All diagrams: the index page, grouped like the demo's diagrams page; a card opens its diagram; the filter narrows; ?view=all opens it directly.
+  await T('all-diagrams').click();
+  await T('all-diagrams-page').waitFor();
+  const cards = await page.locator('[data-testid^="index-card-"]').count();
+  const total = await page.locator('[data-testid=picker] option').count();
+  check(cards >= 52 && cards === total, `the index lists every diagram as a card (${cards} cards, ${total} in the picker)`);
+  check(await page.locator('[data-testid^="index-section-"]').count() >= 5, 'in at least 5 sections');
+  await T('index-filter').fill('out-of-band');
+  check(await page.locator('[data-testid^="index-card-"]').count() < cards && await T('index-card-ciba-approval-sequence').count() === 1, 'the filter narrows the cards and keeps the CIBA sequence');
+  await T('index-filter').fill('');
+  await T('index-card-token-exchange').click();
+  await T('canvas').waitFor();
+  check(await T('all-diagrams-page').count() === 0 && (await T('picker').inputValue()) === 'token-exchange', 'a card opens its diagram and leaves the index');
+  await page.goto(`${base}/?view=all`);
+  await T('all-diagrams-page').waitFor();
+  check(true, '?view=all opens the index directly');
+  await page.screenshot({ path: path.join(shots, '2c-all-diagrams.png'), fullPage: true });
+  await page.goto(base); await T('canvas').waitFor();
   // Dark mode, small screen: no horizontal scroll.
   await T('picker').selectOption('mcp-step-up');
   await page.getByTestId('theme-select').selectOption('dark');

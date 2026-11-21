@@ -125,6 +125,13 @@ expanded (`?d=<diagram>&box=<box>`); a `?box=` that is not in the diagram is ign
 `core/src/passport.js` (pure, tested). On a very dense diagram an expanded box can cover its neighbours and a few labels near its edge;
 collapsing it brings them back.
 
+## All diagrams
+
+The **All diagrams** button in the header (or `/?view=all`) opens an index of every diagram in sections that follow the demo family's own diagrams page
+(Architecture, Tokens and delegation, Agent privilege, Personal agent, Agent onboarding and audit, Sign-in and approval, Lab flows, Basics, More), with a
+filter. Each card is a link to the diagram. A diagram is placed by the route of the demo page it was converted from (`core/src/sections.js`); the page also lists,
+as text, the demo's diagrams that are not here and why (live data, an editor, customer-specific). Diagrams you saved yourself appear under **Your diagrams**.
+
 ## Diagram format (`diagram-studio/1`)
 
 ```json
