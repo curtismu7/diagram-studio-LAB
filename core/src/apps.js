@@ -1813,14 +1813,14 @@ export const BEDROCK_ASSUMED_ROLE_FLOW = {
     N('gw', 'gw', 'Gateway', ['Reaches Bedrock under an assumed IAM role (release notes)'], 400, 170),
     N('role', 'aws', 'Customer IAM role', ['Trust policy and external ID: lab model', 'Who may assume it: lab model'], 800, 0),
     N('bedrock', 'aws', 'Amazon Bedrock', ['The model call runs under the assumed role (release notes)', 'Also works as a fallback target (release notes)'], 800, 170),
-    N('obs', 'obs', 'Metering, AI Guard, audit', ['Intact on the same call', 'Release notes'], 800, 340),
+    N('obs', 'obs', 'Metering, AI Guard, audit', ['Intact on the same call', 'Release notes'], 800, 320),
   ],
   edges: [
     E('key', 'gw', '1 call with the key'),
     E('gw', 'role', '2 assume the role (lab model)'),
     E('role', 'gw', '3 short-lived credentials (lab model)'),
     E('gw', 'bedrock', '4 the model call, under the assumed role'),
-    E('gw', 'obs', '5 metering, AI Guard and audit see the call'),
+    E('gw', 'obs', '5 metering, AI Guard, audit'),
   ],
   steps: [
     { title: 'The key holds no credential', what: 'The call arrives with an LLM key that stores no provider credential (release notes).', edges: [0] },
