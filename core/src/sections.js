@@ -3,6 +3,8 @@
 // route of the page it was converted from (DIAGRAM_ROUTES: diagram id -> route); lab flows and the four basics are placed by id.
 // No route is ever shown or linked: it is only the key that decides the section.
 
+import { MODEL_GATEWAY_DIAGRAMS } from './apps.js';
+
 export const SECTIONS = [
   { id: 'basics', title: 'Basics', blurb: 'The four patterns most other diagrams build on.' },
   { id: 'architecture', title: 'Architecture', blurb: 'How the pieces fit together and where each runs.' },
@@ -51,7 +53,6 @@ const ROUTE_OF = {
   'privilegefirstgateway-fork': '/privilege-first-gateway', 'privilegefirstgateway-gateway': '/privilege-first-gateway', 'sim-push': '/mfa-test#push-diagram',
   'ciba-approval-sequence': '/ciba-approval-sequence', 'pf-cedar': '/privilege-ai-policies', 'identity-for-ai': '/architecture/token-flow',
 };
-const MODEL_GATEWAY_IDS = new Set(['model-fallback', 'semantic-cache', 'model-armor-inspector', 'bedrock-assumed-role', 'rate-limit-bucket']);
 const BASIC_IDS = new Set(['auth-code-pkce', 'token-exchange', 'mcp-step-up', 'delegation-chain']);
 const LAB_IDS = new Set(['idjagrunner-flow', 'p1az-inspector-flow', 'mock-authorize-flow', 'agent-door-flow', 'cedar-act-sub-flow', 'cedar-in-privilege-flow']);
 
@@ -61,7 +62,7 @@ const LAB_IDS = new Set(['idjagrunner-flow', 'p1az-inspector-flow', 'mock-author
  */
 export function sectionOf(id, routes = {}) {
   if (BASIC_IDS.has(id)) return 'basics';
-  if (MODEL_GATEWAY_IDS.has(id)) return 'model-gateway';
+  if (MODEL_GATEWAY_DIAGRAMS.some((d) => d.id === id)) return 'model-gateway'; // single source: any diagram added to that list lands here
   if (LAB_IDS.has(id) || /^pfl-/.test(id)) return 'labs';
   const route = routes[id] || ROUTE_OF[id];
   return (route && ROUTE_SECTION[route]) || 'more';

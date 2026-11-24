@@ -53,9 +53,27 @@ test('the five model-gateway labs each load one diagram by a stable id, every ar
   }
 });
 
-test('anything beyond the release notes is labelled in the diagram text', () => {
-  for (const d of MODEL_GATEWAY_DIAGRAMS) {
-    assert.match(JSON.stringify(d), /lab model/i, `${d.id}: says "lab model"`);
-    assert.match(JSON.stringify(d), /UNVERIFIED/, `${d.id}: says UNVERIFIED`);
-  }
+// Every step, and every box that states a behaviour, must say where it comes from: the release notes, the lab's own model, or UNVERIFIED.
+const LABEL = /release notes|lab model|UNVERIFIED/i;
+const PLAIN_BOXES = new Set(['app', 'key', 'callers']); // the caller boxes only name who calls
+const unlabelled = (d) => [
+  ...d.steps.filter((st) => !LABEL.test([st.title, st.what, st.why].filter(Boolean).join(' '))).map((st) => `${d.id}: step "${st.title}"`),
+  ...d.nodes.filter((n) => !PLAIN_BOXES.has(n.id) && (n.sub || []).length && !LABEL.test(n.sub.join(' '))).map((n) => `${d.id}: box "${n.id}"`),
+];
+
+test('every step and every behaviour-stating box of the model-gateway diagrams carries release notes, lab model or UNVERIFIED', () => {
+  assert.deepEqual(MODEL_GATEWAY_DIAGRAMS.flatMap(unlabelled), []);
+});
+
+test('the label check fails when one step or one box loses its label (mutation)', () => {
+  const d = structuredClone(MODEL_GATEWAY_DIAGRAMS[0]);
+  d.steps[2] = { ...d.steps[2], what: 'The first model answers.', why: undefined };
+  assert.deepEqual(unlabelled(d), [`${d.id}: step "${d.steps[2].title}"`]);
+  const e = structuredClone(MODEL_GATEWAY_DIAGRAMS[1]);
+  e.nodes.find((n) => n.id === 'model').sub = ['Called only when there is no hit'];
+  assert.deepEqual(unlabelled(e), [`${e.id}: box "model"`]);
+});
+
+test('the gateway stays on the answer path: no arrow carries an answer from a model or store straight to the app', () => {
+  for (const d of MODEL_GATEWAY_DIAGRAMS) for (const e of d.edges) assert.ok(!(e.target === 'app' && !['gw'].includes(e.source)), `${d.id}: ${e.source} -> app`);
 });
