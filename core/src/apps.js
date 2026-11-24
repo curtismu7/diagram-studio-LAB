@@ -1819,7 +1819,7 @@ export const BEDROCK_ASSUMED_ROLE_FLOW = {
     E('key', 'gw', '1 call with the key'),
     E('gw', 'role', '2 assume the role (lab model)'),
     E('role', 'gw', '3 short-lived credentials (lab model)'),
-    E('gw', 'bedrock', '4 the model call, under the assumed role'),
+    E('gw', 'bedrock', '4 the model call'),
     E('gw', 'obs', '5 metering, AI Guard, audit'),
   ],
   steps: [
