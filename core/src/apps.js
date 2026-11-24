@@ -1716,4 +1716,161 @@ export const CEDAR_IN_PRIVILEGE_FLOW = {
   ]
 };
 
-export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW, CEDAR_IN_PRIVILEGE_FLOW];
+// Model-gateway labs (five Privilege labs, 2026-11-21 release): one diagram each, loaded by name (rule 17).
+// The vendor release notes are the only source. What they say is plain; anything beyond them is the lab's own model and is marked "lab model" or "UNVERIFIED" in the text.
+const DASHED = (source, target, label) => ({ source, target, label, dashed: true });
+
+export const MODEL_FALLBACK_FLOW = {
+  schema: 'diagram-studio/1', id: 'model-fallback', title: 'LLM Model Fallback: a second model answers',
+  lede: 'An LLM key names a second model to answer when its first is down, overloaded or out of budget. The fallback can be another provider and carries its own budget (release notes). The rest, such as the refusal text, is the lab’s own model.',
+  groups: { app: G('Caller', 'dark'), gw: G('Gateway (lab model)', 'red'), models: G('Models', 'blue'), out: G('Result', 'grey') },
+  nodes: [
+    N('app', 'app', 'Your app', ['Calls the gateway with its LLM key'], 0, 121),
+    N('gw', 'gw', 'Gateway', ['The key names a primary and a fallback model', 'Order of attempts: lab model'], 440, 114),
+    N('primary', 'models', 'Primary model', ['First choice for the key', 'Has its own budget (lab model)'], 880, 0),
+    N('fallback', 'models', 'Fallback model', ['Can be another provider', 'Carries its own budget'], 880, 121),
+    N('refusal', 'out', 'Named refusal', ['Both budgets exhausted', 'Names which ran out: lab model'], 880, 242),
+  ],
+  edges: [
+    E('app', 'gw', '1 request with the key'),
+    E('gw', 'primary', '2 try the primary model'),
+    E('primary', 'gw', '3a healthy: answer'),
+    DASHED('gw', 'fallback', '3b primary down, overloaded or out of budget: try the fallback'),
+    E('fallback', 'gw', '4 answer, charged to the fallback’s own budget'),
+    E('gw', 'app', '5 answer to the app'),
+    DASHED('gw', 'refusal', '6 fallback budget exhausted too: refuse'),
+    DASHED('refusal', 'app', '7 refusal returned, never a blank page'),
+  ],
+  steps: [
+    { title: 'The app calls with its key', what: 'The request reaches the gateway with the LLM key. The key names a primary model and a second model to use if the first cannot answer.', edges: [0] },
+    { title: 'Primary model first', what: 'In the lab model the gateway tries the primary model first.', edges: [1] },
+    { title: 'Healthy primary answers', what: 'When the primary is healthy it answers and no fallback is attempted. The answer goes back to the app.', why: 'Lab model: the trace shows one attempt and names the model that served.', edges: [2] },
+    { title: 'Primary cannot answer', what: 'If the primary is down, overloaded or out of budget, the gateway tries the key’s fallback model.', why: 'From the release notes: down, overloaded or out of budget. UNVERIFIED: what counts as overloaded, whether a retry comes first, what happens mid-stream, and whether AI Guard runs again on the fallback’s answer.', edges: [3] },
+    { title: 'Fallback answers', what: 'The fallback model answers. It can be a different provider and has its own budget, so its spend is charged to that budget and not the primary’s.', why: 'Release notes: the fallback carries its own budget, so the agent keeps serving within a known ceiling. How the answer names the serving model is lab model.', edges: [4, 5] },
+    { title: 'Both budgets exhausted', what: 'If the fallback’s budget is spent as well, the call is refused with a named refusal that says which budgets ran out.', why: 'Lab model: the refusal wording and shape are the lab’s own and UNVERIFIED against the product.', edges: [6, 7] },
+  ],
+};
+
+export const SEMANTIC_CACHE_FLOW = {
+  schema: 'diagram-studio/1', id: 'semantic-cache', title: 'Semantic Cache: a similar prompt reuses an earlier answer',
+  lede: 'An LLM key reuses earlier answers for semantically similar prompts. Each key names its own embedding model and vector Redis and sets match strictness and TTL; the Usage tab shows Requests, From cache and Saved (release notes). The lab’s encoder is a stand-in, not a real embedding model.',
+  groups: { app: G('Caller', 'dark'), gw: G('Gateway: the LLM key', 'red'), store: G('Per-key services', 'blue'), model: G('Model', 'grey') },
+  nodes: [
+    N('app', 'app', 'Your app', ['Sends a prompt with the LLM key'], 0, 136),
+    N('gw', 'gw', 'Gateway', ['Match strictness and TTL are set per key'], 440, 136),
+    N('embed', 'store', 'Embedding model', ['Named per key (release notes)', 'Lab: a stand-in encoder, not a real embedding model'], 880, 0),
+    N('vector', 'store', 'Vector Redis', ['Named per key (release notes)', 'Lab model: earlier prompts and answers'], 1320, 129),
+    N('model', 'model', 'LLM', ['Called only when there is no hit'], 880, 136),
+    N('usage', 'gw', 'Usage tab', ['Requests, From cache, Saved', 'How Saved is computed: UNVERIFIED'], 880, 257),
+  ],
+  edges: [
+    E('app', 'gw', '1 prompt'),
+    E('gw', 'embed', '2 embed with the key’s embedding model'),
+    E('embed', 'vector', '3 search the key’s vector Redis'),
+    E('vector', 'gw', '4a hit above the key’s strictness: cached answer'),
+    DASHED('gw', 'model', '4b miss: call the model'),
+    E('model', 'gw', '5 fresh answer'),
+    E('gw', 'vector', '6 store the answer with the key’s TTL'),
+    E('gw', 'app', '7 answer to the app'),
+    E('gw', 'usage', '8 count the call'),
+  ],
+  steps: [
+    { title: 'A prompt arrives', what: 'The app sends a prompt with its LLM key. The cache settings belong to the key.', edges: [0] },
+    { title: 'Embed the prompt', what: 'The prompt is turned into a vector by the embedding model the key names.', why: 'Lab model: a deterministic stand-in encoder, labelled as not a real embedding model, so a run is repeatable.', edges: [1] },
+    { title: 'Look in the key’s vector store', what: 'The vector is compared with earlier prompts stored in the key’s own vector Redis. Two keys with different settings do not share answers.', why: 'Lab model. UNVERIFIED: whether the cache is scoped by user or only by key, and whether AI Guard runs before or after the lookup.', edges: [2] },
+    { title: 'A close match is a hit', what: 'If the closest earlier prompt is at or above the key’s match strictness, its cached answer is returned and the model is not called.', edges: [3] },
+    { title: 'No match is a miss', what: 'Otherwise the model is called, its answer is stored with the key’s TTL, and a later similar prompt can reuse it until the TTL passes.', why: 'Lab model: what the product does when the Redis is unavailable is UNVERIFIED.', edges: [4, 5, 6] },
+    { title: 'Answer and count', what: 'The app gets the answer, and the Usage tab counts the call under Requests, From cache and Saved.', why: 'UNVERIFIED: how Saved is computed (tokens or cost).', edges: [7, 8] },
+  ],
+};
+
+export const MODEL_ARMOR_INSPECTOR_FLOW = {
+  schema: 'diagram-studio/1', id: 'model-armor-inspector', title: 'External inspector in AI Guard: enforcing or advisory',
+  lede: 'A key’s external guardrail can be GCP Model Armor, Azure AI Content Safety or Amazon Bedrock Guardrails: one inspector per key, with an authority cap that can hold it advisory while it is evaluated on live traffic (release notes). The lab’s inspectors are stubs and make no claim about detection quality.',
+  groups: { app: G('Caller', 'dark'), gw: G('Gateway: AI Guard', 'red'), insp: G('The key’s one external inspector', 'blue'), out: G('Outcome', 'grey') },
+  nodes: [
+    N('app', 'app', 'Your app', ['Sends a request with the LLM key'], 0, 136),
+    N('gw', 'gw', 'Gateway: AI Guard', ['One external inspector per key', 'Authority cap: enforcing or advisory'], 440, 129),
+    N('inspector', 'insp', 'External inspector', ['GCP Model Armor, Azure AI Content Safety or Amazon Bedrock Guardrails', 'Lab: a stub, not the real service'], 880, 0),
+    N('refusal', 'out', 'Refusal (enforcing)', ['The gateway’s own refusal', 'Wording: lab model'], 880, 272),
+    N('advisory', 'out', 'Logged, passes (advisory)', ['The finding is recorded', 'The call goes through'], 880, 151),
+    N('target', 'out', 'Model or tool call', ['Reached only when not blocked'], 1320, 144),
+  ],
+  edges: [
+    E('app', 'gw', '1 request'),
+    E('gw', 'inspector', '2 send for inspection'),
+    E('inspector', 'gw', '3 findings, or clean'),
+    DASHED('gw', 'refusal', '4a enforcing: block with the gateway’s refusal'),
+    DASHED('gw', 'advisory', '4b advisory (authority cap): log the finding, pass'),
+    E('advisory', 'target', '5 the call goes through'),
+  ],
+  steps: [
+    { title: 'A request reaches AI Guard', what: 'The request arrives at the gateway with the LLM key. The key has one external inspector.', edges: [0] },
+    { title: 'Ask the inspector', what: 'The gateway sends the content to the key’s inspector. Selecting another inspector replaces the first: one per key.', why: 'UNVERIFIED (lab model): which filters each inspector offers, what the gateway does when the inspector is unreachable (fail open or fail closed), and the timeout value.', edges: [1] },
+    { title: 'Findings come back', what: 'The inspector returns findings, or reports the content clean.', why: 'Lab model: a malformed answer from the inspector is treated as a named error, not a pass.', edges: [2] },
+    { title: 'Enforcing: the gateway blocks', what: 'While the inspector is enforcing, a finding stops the call and the caller gets the gateway’s own refusal.', edges: [3] },
+    { title: 'Advisory: log and pass', what: 'With the authority cap holding the inspector advisory, the same finding is logged and the call goes through. This is how an inspector is evaluated on live traffic without risk.', why: 'Release notes: the authority cap can hold the inspector advisory. Switching back to enforcing blocks again (lab model).', edges: [4, 5] },
+  ],
+};
+
+export const BEDROCK_ASSUMED_ROLE_FLOW = {
+  schema: 'diagram-studio/1', id: 'bedrock-assumed-role', title: 'Bedrock under an assumed role: no stored credential',
+  lede: 'An LLM key reaches Amazon Bedrock under an assumed IAM role: no provider credential is stored on the key, and metering, AI Guard and audit stay intact (release notes). The trust policy, external ID and short-lived credentials are the lab’s own model.',
+  groups: { key: G('Caller', 'dark'), gw: G('Gateway', 'red'), aws: G('Customer’s AWS account (lab model)', 'blue'), obs: G('Same call', 'grey') },
+  nodes: [
+    N('key', 'key', 'LLM key', ['No provider credential stored on the key', 'Release notes'], 0, 129),
+    N('gw', 'gw', 'Gateway', ['Assumes the customer’s IAM role'], 440, 136),
+    N('role', 'aws', 'Customer IAM role', ['Trust policy names the gateway', 'External ID: lab model'], 880, 0),
+    N('bedrock', 'aws', 'Amazon Bedrock', ['Model call under the assumed role', 'Also usable as a fallback target'], 880, 121),
+    N('obs', 'obs', 'Metering, AI Guard, audit', ['Intact on the same call', 'Release notes'], 880, 272),
+  ],
+  edges: [
+    E('key', 'gw', '1 call with the key'),
+    E('gw', 'role', '2 assume the role (trust policy, external ID)'),
+    E('role', 'gw', '3 short-lived credentials'),
+    E('gw', 'bedrock', '4 invoke the model'),
+    DASHED('bedrock', 'gw', '5 answer'),
+    E('gw', 'obs', '6 metering, AI Guard and audit see the call'),
+  ],
+  steps: [
+    { title: 'The key holds no credential', what: 'The call arrives with an LLM key that stores no provider credential. The key object shows no credential field in assumed-role mode.', edges: [0] },
+    { title: 'Assume the customer’s role', what: 'The gateway asks to assume an IAM role in the customer’s account. The role’s trust policy has to name the gateway, and an external ID can be required.', why: 'Lab model. UNVERIFIED: the console fields, the session length and the error text. Failures the lab shows, each with its own named result: wrong trust principal, external ID mismatch, missing invoke permission, model not enabled in the region, expired session.', edges: [1] },
+    { title: 'Short-lived credentials', what: 'The role hands back short-lived credentials. They are used for this call and refreshed when they expire.', why: 'Lab model: session length and refresh are the lab’s own and UNVERIFIED.', edges: [2] },
+    { title: 'Call Bedrock', what: 'The gateway invokes the model on Amazon Bedrock with those credentials and gets the answer.', why: 'Release notes: the same assumed-role model can also be a fallback target.', edges: [3, 4] },
+    { title: 'Metering, AI Guard and audit', what: 'The same call is metered, passes through AI Guard and is written to audit, as with a stored key.', why: 'Release notes: metering, AI Guard and audit intact.', edges: [5] },
+  ],
+};
+
+export const RATE_LIMIT_BUCKET_FLOW = {
+  schema: 'diagram-studio/1', id: 'rate-limit-bucket', title: 'Rate limits: a refilling bucket, in-flight cap and shared limit',
+  lede: 'Request-rate caps run on a continuously refilling bucket; LLM calls also have an in-flight cap; limits can be shared across the gateway cluster through Redis; MCP and A2A applications get their own app-wide caps (release notes). Units, numbers and the refusal the client sees are the lab’s own model.',
+  groups: { callers: G('Callers', 'dark'), limits: G('Limits at a gateway node (lab model)', 'red'), shared: G('Shared across nodes', 'blue'), out: G('Outcome', 'grey') },
+  nodes: [
+    N('callers', 'callers', 'Callers', ['LLM keys, MCP apps, A2A apps'], 0, 144),
+    N('bucket', 'limits', 'Refilling bucket', ['Request-rate cap, refills continuously', 'Units and numbers: UNVERIFIED'], 440, 0),
+    N('inflight', 'limits', 'In-flight cap', ['For LLM calls', 'Slow calls hold slots'], 440, 136),
+    N('appcaps', 'limits', 'App-wide caps', ['MCP and A2A applications', 'Own RPM and max-concurrent caps'], 440, 257),
+    N('redis', 'shared', 'Redis', ['Shares a limit across gateway nodes', 'Outage behaviour: UNVERIFIED'], 880, 61),
+    N('refusal', 'out', 'Refusal to the caller', ['What the client sees: UNVERIFIED', 'The lab shows no fallback here'], 880, 197),
+  ],
+  edges: [
+    E('callers', 'bucket', '1 take a token'),
+    E('callers', 'inflight', '2 an LLM call takes a slot'),
+    E('callers', 'appcaps', '3 an MCP or A2A app counts against its app-wide caps'),
+    E('bucket', 'redis', '4 the limit is shared through Redis'),
+    DASHED('bucket', 'refusal', '5a bucket empty: refused'),
+    DASHED('inflight', 'refusal', '5b no free slot: refused'),
+    DASHED('appcaps', 'refusal', '5c app-wide cap reached: refused'),
+  ],
+  steps: [
+    { title: 'A refilling bucket', what: 'Each call takes a token from a bucket that refills continuously, so a burst drains it and capacity returns gradually, not all at once as with a fixed window.', why: 'Release notes: a continuously refilling bucket. The side-by-side with a fixed window is the lab’s own model. Spike protection is shown only as the bucket’s burst.', edges: [0] },
+    { title: 'In-flight cap for LLM calls', what: 'An LLM call also needs a free in-flight slot. Slow calls hold slots, so the next call can be refused even when the request rate is low.', edges: [1] },
+    { title: 'App-wide caps for MCP and A2A', what: 'An MCP or A2A application has its own app-wide requests-per-minute and max-concurrent caps. They are separate from a key’s caps, so one agent can use up the app’s cap for the others.', why: 'Release notes: own app-wide RPM and max-concurrent caps. That one agent can exhaust the cap for the others is lab model.', edges: [2] },
+    { title: 'Shared across the cluster', what: 'With a shared limit, gateway nodes count against the same limit through Redis. Without sharing, each node would allow the full limit, so a client could get several times it.', why: 'Release notes: limits can be shared across the gateway cluster through Redis. The two-node comparison is lab model.', edges: [3] },
+    { title: 'A refusal', what: 'When the bucket is empty, no slot is free or an app-wide cap is reached, the call is refused.', why: 'UNVERIFIED: the client’s refusal shape. Open question, not shown here: whether a rate-limit refusal can trigger a model fallback.', edges: [4, 5, 6] },
+  ],
+};
+
+export const MODEL_GATEWAY_DIAGRAMS = [MODEL_FALLBACK_FLOW, SEMANTIC_CACHE_FLOW, MODEL_ARMOR_INSPECTOR_FLOW, BEDROCK_ASSUMED_ROLE_FLOW, RATE_LIMIT_BUCKET_FLOW];
+
+export const APP_DIAGRAMS = [P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, AGENT_DOOR_FLOW, ...PINGFEDERATE_LAB_DIAGRAMS, CEDAR_ACT_SUB_FLOW, CEDAR_IN_PRIVILEGE_FLOW, ...MODEL_GATEWAY_DIAGRAMS];

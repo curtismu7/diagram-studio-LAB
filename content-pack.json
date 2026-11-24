@@ -110,6 +110,11 @@
       "href": "/?d=auth-code-pkce"
     },
     {
+      "id": "bedrock-assumed-role",
+      "label": "Bedrock under an assumed role: no stored credential",
+      "href": "/?d=bedrock-assumed-role"
+    },
+    {
       "id": "cedar-act-sub-flow",
       "label": "One token, two tools, one act.sub policy each",
       "href": "/?d=cedar-act-sub-flow"
@@ -310,6 +315,16 @@
       "href": "/?d=mock-authorize-flow"
     },
     {
+      "id": "model-armor-inspector",
+      "label": "External inspector in AI Guard: enforcing or advisory",
+      "href": "/?d=model-armor-inspector"
+    },
+    {
+      "id": "model-fallback",
+      "label": "LLM Model Fallback: a second model answers",
+      "href": "/?d=model-fallback"
+    },
+    {
       "id": "observability",
       "label": "Observability: telemetry data flow",
       "href": "/?d=observability"
@@ -455,9 +470,19 @@
       "href": "/?d=privilegefirstgateway-gateway"
     },
     {
+      "id": "rate-limit-bucket",
+      "label": "Rate limits: a refilling bucket, in-flight cap and shared limit",
+      "href": "/?d=rate-limit-bucket"
+    },
+    {
       "id": "resource-server-placement",
       "label": "Where the resource-server check sits",
       "href": "/?d=resource-server-placement"
+    },
+    {
+      "id": "semantic-cache",
+      "label": "Semantic Cache: a similar prompt reuses an earlier answer",
+      "href": "/?d=semantic-cache"
     },
     {
       "id": "session-lab",

@@ -170,6 +170,12 @@ export const TAG_OVERRIDES = {
   'resource-server-placement': { add: ['pinggateway'] }, // its gateway box is IG, PingGateway
   'architectureoverview-overview': { add: ['ai-agent-security'] },
   'gateway-enforcement-journey': { add: ['agent-gateway'] },
+  // Model-gateway flows (2026-11-24): LLM keys at the Privilege gateway; the words do not always say so.
+  'model-fallback': { add: ['pingone-privilege', 'agent-gateway', 'ai-agent-security'] },
+  'semantic-cache': { add: ['pingone-privilege', 'agent-gateway', 'ai-agent-security'] },
+  'model-armor-inspector': { add: ['pingone-privilege', 'agent-gateway'] },
+  'bedrock-assumed-role': { add: ['pingone-privilege', 'agent-gateway'] },
+  'rate-limit-bucket': { add: ['pingone-privilege', 'agent-gateway', 'ai-agent-security'] },
 };
 
 const cache = new WeakMap();

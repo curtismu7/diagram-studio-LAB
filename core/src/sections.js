@@ -8,6 +8,7 @@ export const SECTIONS = [
   { id: 'architecture', title: 'Architecture', blurb: 'How the pieces fit together and where each runs.' },
   { id: 'tokens', title: 'Tokens and delegation', blurb: 'Token exchange, delegation chains, approval and the standards behind them.' },
   { id: 'privilege', title: 'Agent privilege', blurb: 'Gateways, MCP doors, policy decisions and what each enforces.' },
+  { id: 'model-gateway', title: 'Model gateway', blurb: 'LLM keys at the gateway: fallback, cache, external inspector, assumed role and rate limits.' },
   { id: 'personal-agent', title: 'Personal agent', blurb: 'A person’s own agent reaching services through a governed door.' },
   { id: 'onboarding', title: 'Agent onboarding and audit', blurb: 'Registering agents, who approves them, and how it is audited.' },
   { id: 'signin', title: 'Sign-in and approval', blurb: 'Sign-in journeys, push and link approval, consent.' },
@@ -50,6 +51,7 @@ const ROUTE_OF = {
   'privilegefirstgateway-fork': '/privilege-first-gateway', 'privilegefirstgateway-gateway': '/privilege-first-gateway', 'sim-push': '/mfa-test#push-diagram',
   'ciba-approval-sequence': '/ciba-approval-sequence', 'pf-cedar': '/privilege-ai-policies', 'identity-for-ai': '/architecture/token-flow',
 };
+const MODEL_GATEWAY_IDS = new Set(['model-fallback', 'semantic-cache', 'model-armor-inspector', 'bedrock-assumed-role', 'rate-limit-bucket']);
 const BASIC_IDS = new Set(['auth-code-pkce', 'token-exchange', 'mcp-step-up', 'delegation-chain']);
 const LAB_IDS = new Set(['idjagrunner-flow', 'p1az-inspector-flow', 'mock-authorize-flow', 'agent-door-flow', 'cedar-act-sub-flow', 'cedar-in-privilege-flow']);
 
@@ -59,6 +61,7 @@ const LAB_IDS = new Set(['idjagrunner-flow', 'p1az-inspector-flow', 'mock-author
  */
 export function sectionOf(id, routes = {}) {
   if (BASIC_IDS.has(id)) return 'basics';
+  if (MODEL_GATEWAY_IDS.has(id)) return 'model-gateway';
   if (LAB_IDS.has(id) || /^pfl-/.test(id)) return 'labs';
   const route = routes[id] || ROUTE_OF[id];
   return (route && ROUTE_SECTION[route]) || 'more';

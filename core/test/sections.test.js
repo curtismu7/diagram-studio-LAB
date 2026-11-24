@@ -16,6 +16,10 @@ test('the four basics, the lab flows and the pi.flow family are placed by id', (
   for (const id of ['idjagrunner-flow', 'cedar-act-sub-flow', 'pfl-par', 'pfl-token-exchange']) assert.equal(sectionOf(id), 'labs', id);
 });
 
+test('the five model-gateway flows are placed by id in their own section', () => {
+  for (const id of ['model-fallback', 'semantic-cache', 'model-armor-inspector', 'bedrock-assumed-role', 'rate-limit-bucket']) assert.equal(sectionOf(id), 'model-gateway', id);
+});
+
 test('a diagram is placed by the route it came from; a route we do not know, and no route, go under More', () => {
   assert.equal(sectionOf('poc-scope-to-tool-ciba'), 'tokens');
   assert.equal(sectionOf('ciba-approval-sequence'), 'tokens');
