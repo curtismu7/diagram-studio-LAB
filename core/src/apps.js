@@ -1809,11 +1809,11 @@ export const BEDROCK_ASSUMED_ROLE_FLOW = {
   lede: 'An LLM key can reach Amazon Bedrock under an assumed IAM role with no provider credential stored on the key, and with metering, AI Guard and audit intact; it also works as a fallback target (release notes). Google Vertex AI as the gateway’s own service account is the sibling feature and is not drawn. The role, trust policy, external ID and short-lived credentials are the lab’s own model.',
   groups: { key: G('Caller', 'dark'), gw: G('Gateway', 'red'), aws: G('Customer’s AWS account (lab model)', 'blue'), obs: G('Same call', 'grey') },
   nodes: [
-    N('key', 'key', 'LLM key', ['No provider credential stored on the key', 'Release notes'], 0, 170),
-    N('gw', 'gw', 'Gateway', ['Reaches Bedrock under an assumed IAM role (release notes)'], 400, 170),
+    N('key', 'key', 'LLM key', ['No provider credential stored on the key', 'Release notes'], 0, 140),
+    N('gw', 'gw', 'Gateway', ['Reaches Bedrock under an assumed IAM role (release notes)'], 400, 140),
     N('role', 'aws', 'Customer IAM role', ['Trust policy and external ID: lab model', 'Who may assume it: lab model'], 800, 0),
-    N('bedrock', 'aws', 'Amazon Bedrock', ['The model call runs under the assumed role (release notes)', 'Also works as a fallback target (release notes)'], 800, 170),
-    N('obs', 'obs', 'Metering, AI Guard, audit', ['Intact on the same call', 'Release notes'], 800, 320),
+    N('bedrock', 'aws', 'Amazon Bedrock', ['The model call runs under the assumed role (release notes)', 'Also works as a fallback target (release notes)'], 800, 140),
+    N('obs', 'obs', 'Metering, AI Guard, audit', ['Intact on the same call', 'Release notes'], 800, 290),
   ],
   edges: [
     E('key', 'gw', '1 call with the key'),
