@@ -2,7 +2,7 @@ export * from './validate.js';
 export * from './stepper.js';
 export * from './edit.js';
 export { SAMPLES } from './samples.js';
-export { APP_DIAGRAMS, PINGFEDERATE_LAB_DIAGRAMS, AGENT_DOOR_FLOW, CEDAR_ACT_SUB_FLOW, CEDAR_IN_PRIVILEGE_FLOW, P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW } from './apps.js';
+export { APP_DIAGRAMS, PINGFEDERATE_LAB_DIAGRAMS, AGENT_DOOR_FLOW, CEDAR_ACT_SUB_FLOW, CEDAR_IN_PRIVILEGE_FLOW, P1AZ_INSPECTOR_FLOW, MOCK_AUTHORIZE_FLOW, MODEL_GATEWAY_DIAGRAMS, MODEL_FALLBACK_FLOW, SEMANTIC_CACHE_FLOW, MODEL_ARMOR_INSPECTOR_FLOW, BEDROCK_ASSUMED_ROLE_FLOW, RATE_LIMIT_BUCKET_FLOW } from './apps.js';
 export * from './stories.js';
 export { toSvg, xmlText } from './svg.js';
 export * as history from './history.js';

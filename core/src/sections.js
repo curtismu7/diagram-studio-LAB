@@ -3,11 +3,14 @@
 // route of the page it was converted from (DIAGRAM_ROUTES: diagram id -> route); lab flows and the four basics are placed by id.
 // No route is ever shown or linked: it is only the key that decides the section.
 
+import { MODEL_GATEWAY_DIAGRAMS } from './apps.js';
+
 export const SECTIONS = [
   { id: 'basics', title: 'Basics', blurb: 'The four patterns most other diagrams build on.' },
   { id: 'architecture', title: 'Architecture', blurb: 'How the pieces fit together and where each runs.' },
   { id: 'tokens', title: 'Tokens and delegation', blurb: 'Token exchange, delegation chains, approval and the standards behind them.' },
   { id: 'privilege', title: 'Agent privilege', blurb: 'Gateways, MCP doors, policy decisions and what each enforces.' },
+  { id: 'model-gateway', title: 'Model gateway', blurb: 'LLM keys at the gateway: fallback, cache, external inspector, assumed role and rate limits.' },
   { id: 'personal-agent', title: 'Personal agent', blurb: 'A person’s own agent reaching services through a governed door.' },
   { id: 'onboarding', title: 'Agent onboarding and audit', blurb: 'Registering agents, who approves them, and how it is audited.' },
   { id: 'signin', title: 'Sign-in and approval', blurb: 'Sign-in journeys, push and link approval, consent.' },
@@ -59,6 +62,7 @@ const LAB_IDS = new Set(['idjagrunner-flow', 'p1az-inspector-flow', 'mock-author
  */
 export function sectionOf(id, routes = {}) {
   if (BASIC_IDS.has(id)) return 'basics';
+  if (MODEL_GATEWAY_DIAGRAMS.some((d) => d.id === id)) return 'model-gateway'; // single source: any diagram added to that list lands here
   if (LAB_IDS.has(id) || /^pfl-/.test(id)) return 'labs';
   const route = routes[id] || ROUTE_OF[id];
   return (route && ROUTE_SECTION[route]) || 'more';
