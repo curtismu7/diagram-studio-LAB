@@ -10,6 +10,8 @@ import AllDiagrams from "./AllDiagrams.jsx";
 import { download, svgToPng } from "./exportImage.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
+import HelpDialog from "./help-dialog/HelpDialog.jsx";
+import { HELP_SECTIONS } from "./helpContent";
 import FloatingDialog from "./floating-dialog/FloatingDialog.jsx";
 import talkMd from "../../docs/talk-track.md?raw";
 import { useStepper } from "./useStepper.js";
@@ -28,6 +30,7 @@ const diagramIdFromPath = () => {
 export default function App() {
   const [list, setList] = useState([]);
   const [talkOpen, setTalkOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const talkSteps = (() => {
     const steps = []; let n = 0;
     for (const line of talkMd.split("\n")) {
@@ -342,7 +345,7 @@ export default function App() {
           fontSize={{ value: fontStep, onChange: setFontStep }}
           present={{ active: present, onToggle: () => { focusAfter.current = true; setPresent(!present); setEditing(false); } }}
           talkTrack={{ active: talkOpen, onToggle: () => setTalkOpen((v) => !v) }}
-          help={{ href: "https://github.com/curtismu7/diagram-studio-LAB#readme" }}
+          help={{ onClick: () => setHelpOpen(true), title: "What this lab is, and what is simulated" }}
           version={LAB_VERSION}
           onReset={reset}
         >
@@ -478,6 +481,7 @@ export default function App() {
       </>)}
       </main>
       <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
+      <HelpDialog isOpen={helpOpen} onClose={() => setHelpOpen(false)} sections={HELP_SECTIONS} docsUrl="https://github.com/curtismu7/diagram-studio-LAB#readme" />
 
     </div>
   );
